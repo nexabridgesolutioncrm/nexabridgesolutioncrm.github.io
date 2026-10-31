@@ -277,9 +277,19 @@ async function list(kind){
  }
  throw Error('Too many '+kind+' records to load safely. Please use a filtered export.');
 }
+async function listPayments(){
+ const rows=[],pageSize=500,maxRecords=10000;
+ for(let offset=0;offset<maxRecords;offset+=pageSize){
+  const batch=await secured('/rest/v1/crm_payments?select=*&org_id=eq.'+encodeURIComponent(orgId)+'&order=received_at.desc&limit='+pageSize+'&offset='+offset);
+  if(!Array.isArray(batch))throw Error('Invalid payments response.');
+  rows.push(...batch);
+  if(batch.length<pageSize)return rows;
+ }
+ throw Error('Too many payments to load safely.');
+}
 async function getData(){
  const [projects,contracts,expenses,leads,clients,deals,tasks,jobs,documents,calendar,email_queue,email_templates,messages,notifications,catalog,equipment,technicians,time_entries,checklists,service_plans,stock_movements,activity]=await Promise.all([list('projects'),list('contracts'),list('expenses'),list('leads'),list('clients'),list('deals'),list('tasks'),list('jobs'),list('documents'),list('calendar'),list('email_queue'),list('email_templates'),secured('/rest/v1/crm_messages?select=*&org_id=eq.'+orgId+'&order=created_at.desc&limit=300'),secured('/rest/v1/crm_notifications?select=*&org_id=eq.'+orgId+'&order=created_at.desc&limit=100'),list('catalog'),list('equipment'),list('technicians'),list('time_entries'),list('checklists'),list('service_plans'),list('stock_movements'),secured('/rest/v1/crm_activities?select=*&org_id=eq.'+orgId+'&order=created_at.desc&limit=150')]);
- return {projects,contracts,expenses,leads,clients,deals,tasks,jobs,documents,calendar,email_queue,email_templates,messages,notifications,catalog,equipment,technicians,time_entries,checklists,service_plans,stock_movements,payments:await secured('/rest/v1/crm_payments?select=*&org_id=eq.'+orgId+'&order=received_at.desc'),activity:activity.map(x=>({...x,createdAt:x.created_at,actor:'CRM team'})),users:['owner','admin'].includes(member?.role)?(await secured('/functions/v1/nexabridge-team-admin',{method:'POST',body:{action:'list'}}).catch(()=>({members:[]}))).members:[],directory:(await secured('/functions/v1/nexabridge-team-admin',{method:'POST',body:{action:'directory'}}).catch(()=>({members:[]}))).members||[],settings:defaultSettings};
+ return {projects,contracts,expenses,leads,clients,deals,tasks,jobs,documents,calendar,email_queue,email_templates,messages,notifications,catalog,equipment,technicians,time_entries,checklists,service_plans,stock_movements,payments:await listPayments(),activity:activity.map(x=>({...x,createdAt:x.created_at,actor:'CRM team'})),users:['owner','admin'].includes(member?.role)?(await secured('/functions/v1/nexabridge-team-admin',{method:'POST',body:{action:'list'}}).catch(()=>({members:[]}))).members:[],directory:(await secured('/functions/v1/nexabridge-team-admin',{method:'POST',body:{action:'directory'}}).catch(()=>({members:[]}))).members||[],settings:defaultSettings};
 }
 function csv(v){let s=String(v??'');if(/^[\s]*[=+\-@\t\r]/.test(s))s="'"+s;return '"'+s.replaceAll('"','""')+'"'}
 function csvExport(kind,records){const cols=['id',...Object.keys(FIELDS[kind]),'createdAt','updatedAt'];return '\ufeff'+[cols.map(csv).join(','),...records.map(r=>cols.map(k=>csv(r[k])).join(','))].join('\r\n')}
@@ -802,10 +812,16 @@ function contractsAlertsPanel(){
  const activeValue=rows.filter(x=>x.status==='active').reduce((n,x)=>n+Number(x.value||0),0);
  return '<section class="wz-panel" style="margin-bottom:16px"><div class="doc-page-stats">'+[['Active contract value',docMoney(activeValue)],['Expired by date',expired.length],['Expiring in 30 days',upcoming.length]].map(([label,val])=>'<div class="doc-page-stat"><small>'+e(label)+'</small><strong>'+val+'</strong></div>').join('')+'</div>'+(expired.length||upcoming.length?'<div class="wz-tablewrap"><table class="wz-table"><thead><tr><th>Contract</th><th>Alert</th><th>Expiry</th><th>Value</th></tr></thead><tbody>'+[...expired.map(x=>[x,'Past expiry']),...upcoming.map(x=>[x,'Expiring soon'])].map(([x,label])=>'<tr><td>'+e(x.title)+'</td><td>'+e(label)+'</td><td>'+e(x.dueDate||'—')+'</td><td>'+docMoney(x.value)+'</td></tr>').join('')+'</tbody></table></div>':'<p class="muted" style="padding:10px 18px">No contracts currently approaching expiry.</p>')+'</section>';
 }
+function extensionLabel(key,val){
+ if(!val)return '—';
+ if(key==='clientId'){const item=(data.clients||[]).find(x=>x.id===val);return item?(item.name||item.contact||val):val;}
+ if(key==='projectId'){const item=(data.projects||[]).find(x=>x.id===val);return item?(item.title||val):val;}
+ return String(val);
+}
 function extensionPage(kind){
  const fields=NEXA_EXTENSION_FIELDS[kind],rows=data[kind]||[];
  const total=rows.reduce((v,x)=>v+Number(x[kind==='projects'?'budget':kind==='contracts'?'value':'amount']||0),0);
- return (kind==='projects'?projectAlertsPanel()+projectFinancePanel():kind==='contracts'?contractsAlertsPanel():'')+'<div class="doc-page-head">'+wzHead(kind[0].toUpperCase()+kind.slice(1),'NexaBridge Solutions operations','<button class="wz-action" data-action="extensionEdit" data-kind="'+kind+'">+ New '+kind.slice(0,-1)+'</button>')+'</div><section class="wz-panel"><div class="doc-page-stats"><div class="doc-page-stat"><small>Records</small><strong>'+rows.length+'</strong></div><div class="doc-page-stat"><small>Total value (USD)</small><strong>'+docMoney(total)+'</strong></div></div><div class="wz-tablewrap"><table class="wz-table"><thead><tr>'+fields.filter(x=>x[0]!=='description'&&x[0]!=='notes').map(x=>'<th>'+e(x[1])+'</th>').join('')+'<th>Actions</th></tr></thead><tbody>'+rows.map(r=>'<tr>'+fields.filter(x=>x[0]!=='description'&&x[0]!=='notes').map(x=>'<td>'+e(r[x[0]]||'—')+'</td>').join('')+'<td><button class="wz-ref" data-action="extensionEdit" data-kind="'+kind+'" data-id="'+e(r.id)+'">Edit</button>'+(['owner','admin'].includes(user.role)?' <button class="wz-ref" data-action="extensionDelete" data-kind="'+kind+'" data-id="'+e(r.id)+'">Delete</button>':'')+'</td></tr>').join('')+'</tbody></table></div></section>';
+ return (kind==='projects'?projectAlertsPanel()+projectFinancePanel():kind==='contracts'?contractsAlertsPanel():'')+'<div class="doc-page-head">'+wzHead(kind[0].toUpperCase()+kind.slice(1),'NexaBridge Solutions operations','<button class="wz-action" data-action="extensionEdit" data-kind="'+kind+'">+ New '+kind.slice(0,-1)+'</button>')+'</div><section class="wz-panel"><div class="doc-page-stats"><div class="doc-page-stat"><small>Records</small><strong>'+rows.length+'</strong></div><div class="doc-page-stat"><small>Total value (USD)</small><strong>'+docMoney(total)+'</strong></div></div><div class="wz-tablewrap"><table class="wz-table"><thead><tr>'+fields.filter(x=>x[0]!=='description'&&x[0]!=='notes').map(x=>'<th>'+e(x[1])+'</th>').join('')+'<th>Actions</th></tr></thead><tbody>'+rows.map(r=>'<tr>'+fields.filter(x=>x[0]!=='description'&&x[0]!=='notes').map(x=>'<td>'+e(extensionLabel(x[0],r[x[0]]))+'</td>').join('')+'<td><button class="wz-ref" data-action="extensionEdit" data-kind="'+kind+'" data-id="'+e(r.id)+'">Edit</button>'+(['owner','admin'].includes(user.role)?' <button class="wz-ref" data-action="extensionDelete" data-kind="'+kind+'" data-id="'+e(r.id)+'">Delete</button>':'')+'</td></tr>').join('')+'</tbody></table></div></section>';
 }
 function extensionEdit(kind,id){
  const old=id?(data[kind]||[]).find(x=>x.id===id):{},fields=NEXA_EXTENSION_FIELDS[kind];if(id&&!old)throw Error('Record not found');
