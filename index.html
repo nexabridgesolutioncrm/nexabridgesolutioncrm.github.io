@@ -267,7 +267,16 @@ function toRow(kind,rec){const out={};for(const [k,col] of Object.entries(FIELDS
  return out;
 }
 async function audit(action,kind,label){/* Server-side CRM audit triggers record changes atomically. */}
-async function list(kind){return (await secured('/rest/v1/'+table(kind)+'?select=*&org_id=eq.'+orgId+'&order=created_at.desc')).map(x=>fromRow(kind,x))}
+async function list(kind){
+ const rows=[],pageSize=500,maxRecords=10000;
+ for(let offset=0;offset<maxRecords;offset+=pageSize){
+  const page=await secured('/rest/v1/'+table(kind)+'?select=*&org_id=eq.'+encodeURIComponent(orgId)+'&order=created_at.desc&limit='+pageSize+'&offset='+offset);
+  if(!Array.isArray(page))throw Error('Invalid CRM data response');
+  rows.push(...page);
+  if(page.length<pageSize)return rows.map(x=>fromRow(kind,x));
+ }
+ throw Error('Too many '+kind+' records to load safely. Please use a filtered export.');
+}
 async function getData(){
  const [leads,clients,deals,tasks,jobs,documents,calendar,email_queue,email_templates,messages,notifications,catalog,equipment,technicians,time_entries,checklists,service_plans,stock_movements,activity]=await Promise.all([list('leads'),list('clients'),list('deals'),list('tasks'),list('jobs'),list('documents'),list('calendar'),list('email_queue'),list('email_templates'),secured('/rest/v1/crm_messages?select=*&org_id=eq.'+orgId+'&order=created_at.desc&limit=300'),secured('/rest/v1/crm_notifications?select=*&org_id=eq.'+orgId+'&order=created_at.desc&limit=100'),list('catalog'),list('equipment'),list('technicians'),list('time_entries'),list('checklists'),list('service_plans'),list('stock_movements'),secured('/rest/v1/crm_activities?select=*&org_id=eq.'+orgId+'&order=created_at.desc&limit=150')]);
  return {leads,clients,deals,tasks,jobs,documents,calendar,email_queue,email_templates,messages,notifications,catalog,equipment,technicians,time_entries,checklists,service_plans,stock_movements,payments:await secured('/rest/v1/crm_payments?select=*&org_id=eq.'+orgId+'&order=received_at.desc'),activity:activity.map(x=>({...x,createdAt:x.created_at,actor:'CRM team'})),users:['owner','admin'].includes(member?.role)?(await secured('/functions/v1/nexabridge-team-admin',{method:'POST',body:{action:'list'}}).catch(()=>({members:[]}))).members:[],directory:(await secured('/functions/v1/nexabridge-team-admin',{method:'POST',body:{action:'directory'}}).catch(()=>({members:[]}))).members||[],settings:defaultSettings};
