@@ -134,6 +134,15 @@ async function adapter(input,init={}){
  if(init.body!==undefined)try{b=typeof init.body==='string'?JSON.parse(init.body):init.body}catch{return err('Invalid JSON')}
  try{
  if(path==='status')return reply({setup_required:false,setup_token_required:false,version:'2.0-professional-online'});
+ if(path==='accept-invite'&&method==='POST'){
+ const at=String(b.accessToken||''),rt=String(b.refreshToken||''),password=String(b.password||'');
+ if(!at||!rt||password.length<12||password.length>72)return err('Invalid invitation or password',400);
+ const resp=await fetch(URL_BASE+'/auth/v1/user',{method:'PUT',headers:{'apikey':PUBLIC_KEY,'Authorization':'Bearer '+at,'Content-Type':'application/json'},body:JSON.stringify({password}),cache:'no-store'});
+ const result=await resp.json().catch(()=>({}));
+ if(!resp.ok)throw Error(result.message||result.msg||'Unable to activate account');
+ session={access_token:at,refresh_token:rt};await loadMember();
+ return reply({user:member,csrf:'supabase-auth'});
+ }
  if(path==='login'&&method==='POST')return reply(await login(b.username,b.password));
  if(path==='me'&&method==='GET'){if(!session)throw Error('Please sign in.');await loadMember();return reply({user:member,csrf:'supabase-auth'})}
  if(path==='logout'&&method==='POST'){try{await request('/auth/v1/logout',{method:'POST'})}catch{}session=null;member=null;orgId=null;return reply({ok:true})}
@@ -274,7 +283,13 @@ async function api(path,options={}){
  return res.status===204?null:res.json();
 }
 async function loadData(){data=await api('data');}
-async function start(){setLanguage(lang,false);try{const status=await api('status');setupTokenRequired=!!status.setup_token_required;if(status.setup_required){renderAuth(true);return;}const me=await api('me');user=me.user;csrf=me.csrf;await loadData();render();}catch(err){renderAuth(false);}}
+function renderInvite(){
+ const params=new URLSearchParams(location.hash.slice(1)),accessToken=params.get('access_token'),refreshToken=params.get('refresh_token');
+ if(!accessToken||!refreshToken){renderAuth(false);notify('This invitation link is incomplete or expired.',true);return}
+ root.innerHTML='<div class="auth-page"><section class="auth-aside"><div>'+brand(false)+'<h1>Welcome to the NexaBridge Team</h1><p>Your private NexaBridge Solutions CRM workspace.</p></div></section><main class="auth-form-panel"><div class="auth-box"><h2>Activate your account</h2><p class="lead">Set a password with at least 12 characters to complete your secure invitation.</p><form id="inviteActivate"><div class="field"><label>New password</label><input type="password" name="password" required minlength="12" maxlength="72" autocomplete="new-password"></div><div class="field"><label>Confirm password</label><input type="password" name="confirm" required minlength="12" maxlength="72" autocomplete="new-password"></div><button class="btn primary" type="submit">Activate account →</button></form></div></main></div>';
+ $('#inviteActivate').onsubmit=async ev=>{ev.preventDefault();const f=new FormData(ev.target),password=f.get('password');if(password!==f.get('confirm'))return notify('Passwords do not match',true);try{const r=await api('accept-invite',{method:'POST',body:{accessToken,refreshToken,password}});history.replaceState(null,'',location.pathname+location.search);user=r.user;csrf=r.csrf;await loadData();page='dashboard';render();notify('Account activated successfully')}catch(err){notify(err.message,true)}};
+}
+async function start(){setLanguage(lang,false);if(location.hash.includes('access_token=')){renderInvite();return}try{const status=await api('status');setupTokenRequired=!!status.setup_token_required;if(status.setup_required){renderAuth(true);return;}const me=await api('me');user=me.user;csrf=me.csrf;await loadData();render();}catch(err){renderAuth(false);}}
 function setLanguage(next,rebuild=true){document.documentElement.lang='en';document.documentElement.dir='ltr';if(rebuild){if(user&&data)render();else renderAuth(root.dataset.setup==='1');}}
 function langSwitcher(){return `<span class="lang-button" aria-label="Interface language">English · Online</span>`;}
 function brand(side=false){return `<div class="${side?'side-brand':'brandline'}"><img class="brandlogo" src="https://nexabridgesolution.github.io/assets/nexabridge-footer-logo.png" alt="NexaBridge Solutions logo" width="52" height="52" loading="eager"><div><strong>NexaBridge</strong><small>SOLUTIONS CRM</small></div></div>`;}
