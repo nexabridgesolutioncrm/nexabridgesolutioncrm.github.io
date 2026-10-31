@@ -318,7 +318,20 @@ async function adapter(input,init={}){
  if(path==='settings'&&method==='PUT')return err('Online company settings require administrator configuration.',403);
  if(path==='import'&&method==='POST')return err('Import is disabled for safety in the online version.',403);
  if(path.startsWith('users'))return err('Manage team users from Supabase dashboard.',403);
- if(path==='change-password' || path==='password')return err('Change password through the secure Supabase account recovery flow.',403);
+ if(path==='account/password'&&method==='POST'){
+  const current=String(b.current||''),password=String(b.password||'');
+  if(!current||password.length<12||password.length>72||password===current)return err('Use a different password of 12–72 characters and enter your current password.',400);
+  const identity=await secured('/auth/v1/user');
+  if(!identity?.email)return err('Unable to verify your account.',401);
+  const check=await request('/auth/v1/token?grant_type=password',{method:'POST',auth:false,body:{email:identity.email,password:current}}).catch(()=>null);
+  if(!check?.access_token)return err('Current password is incorrect.',401);
+  const updated=await fetch(URL_BASE+'/auth/v1/user',{method:'PUT',headers:{apikey:PUBLIC_KEY,Authorization:'Bearer '+check.access_token,'Content-Type':'application/json'},body:JSON.stringify({password}),cache:'no-store'});
+  if(!updated.ok){const detail=await updated.json().catch(()=>({}));return err(detail?.msg||detail?.message||'Unable to update password.',updated.status);}
+  try{await fetch(URL_BASE+'/auth/v1/logout',{method:'POST',headers:{apikey:PUBLIC_KEY,Authorization:'Bearer '+check.access_token}})}catch{}
+  session=null;member=null;orgId=null;
+  return reply({success:true,signInRequired:true});
+ }
+ if(path==='change-password' || path==='password')return err('Use the secure account password form.',403);
  const pieces=path.split('/');
  if(pieces[0]==='convert'&&pieces.length===2&&method==='POST'){
   const r=await secured('/rest/v1/crm_leads?select=*&id=eq.'+pieces[1]+'&org_id=eq.'+orgId);if(r.length!==1)throw Error('Lead not found');const lead=r[0];if(lead.status==='converted')throw Error('Lead already converted');
