@@ -819,10 +819,20 @@ function extensionLabel(key,val){
  if(key==='projectId'){const item=(data.projects||[]).find(x=>x.id===val);return item?(item.title||val):val;}
  return String(val);
 }
+function expenseAnalysisPanel(){
+ const rows=data.expenses||[],categories=new Map(),months=new Map();
+ for(const x of rows){
+  const amount=Number(x.amount||0),category=String(x.category||'general').trim()||'general',month=x.expenseDate?String(x.expenseDate).slice(0,7):'Unscheduled';
+  categories.set(category,(categories.get(category)||0)+amount);
+  months.set(month,(months.get(month)||0)+amount);
+ }
+ const summary=(heading,items)=>'<div style="flex:1;min-width:230px"><strong>'+heading+'</strong><div class="wz-tablewrap"><table class="wz-table"><thead><tr><th>Name</th><th>Amount</th></tr></thead><tbody>'+items.map(([name,value])=>'<tr><td>'+e(name)+'</td><td>'+docMoney(value)+'</td></tr>').join('')+'</tbody></table></div></div>';
+ return '<section class="wz-panel" style="padding:14px;margin-bottom:16px"><h3>Expense analytics</h3><div style="display:flex;gap:20px;flex-wrap:wrap">'+summary('By category',[...categories.entries()].sort((a,b)=>b[1]-a[1]))+summary('By month',[...months.entries()].sort((a,b)=>String(b[0]).localeCompare(String(a[0]))))+'</div></section>';
+}
 function extensionPage(kind){
  const fields=NEXA_EXTENSION_FIELDS[kind],rows=data[kind]||[];
  const total=rows.reduce((v,x)=>v+Number(x[kind==='projects'?'budget':kind==='contracts'?'value':'amount']||0),0);
- return (kind==='projects'?projectAlertsPanel()+projectFinancePanel():kind==='contracts'?contractsAlertsPanel():'')+'<div class="doc-page-head">'+wzHead(kind[0].toUpperCase()+kind.slice(1),'NexaBridge Solutions operations','<button class="wz-action" data-action="extensionEdit" data-kind="'+kind+'">+ New '+kind.slice(0,-1)+'</button>')+'</div><section class="wz-panel"><div class="doc-page-stats"><div class="doc-page-stat"><small>Records</small><strong>'+rows.length+'</strong></div><div class="doc-page-stat"><small>Total value (USD)</small><strong>'+docMoney(total)+'</strong></div></div><div class="wz-tablewrap"><table class="wz-table"><thead><tr>'+fields.filter(x=>x[0]!=='description'&&x[0]!=='notes').map(x=>'<th>'+e(x[1])+'</th>').join('')+'<th>Actions</th></tr></thead><tbody>'+rows.map(r=>'<tr>'+fields.filter(x=>x[0]!=='description'&&x[0]!=='notes').map(x=>'<td>'+e(extensionLabel(x[0],r[x[0]]))+'</td>').join('')+'<td><button class="wz-ref" data-action="extensionEdit" data-kind="'+kind+'" data-id="'+e(r.id)+'">Edit</button>'+(['owner','admin'].includes(user.role)?' <button class="wz-ref" data-action="extensionDelete" data-kind="'+kind+'" data-id="'+e(r.id)+'">Delete</button>':'')+'</td></tr>').join('')+'</tbody></table></div></section>';
+ return (kind==='projects'?projectAlertsPanel()+projectFinancePanel():kind==='contracts'?contractsAlertsPanel():kind==='expenses'?expenseAnalysisPanel():'')+'<div class="doc-page-head">'+wzHead(kind[0].toUpperCase()+kind.slice(1),'NexaBridge Solutions operations','<button class="wz-action" data-action="extensionEdit" data-kind="'+kind+'">+ New '+kind.slice(0,-1)+'</button>')+'</div><section class="wz-panel"><div class="doc-page-stats"><div class="doc-page-stat"><small>Records</small><strong>'+rows.length+'</strong></div><div class="doc-page-stat"><small>Total value (USD)</small><strong>'+docMoney(total)+'</strong></div></div><div class="wz-tablewrap"><table class="wz-table"><thead><tr>'+fields.filter(x=>x[0]!=='description'&&x[0]!=='notes').map(x=>'<th>'+e(x[1])+'</th>').join('')+'<th>Actions</th></tr></thead><tbody>'+rows.map(r=>'<tr>'+fields.filter(x=>x[0]!=='description'&&x[0]!=='notes').map(x=>'<td>'+e(extensionLabel(x[0],r[x[0]]))+'</td>').join('')+'<td><button class="wz-ref" data-action="extensionEdit" data-kind="'+kind+'" data-id="'+e(r.id)+'">Edit</button>'+(['owner','admin'].includes(user.role)?' <button class="wz-ref" data-action="extensionDelete" data-kind="'+kind+'" data-id="'+e(r.id)+'">Delete</button>':'')+'</td></tr>').join('')+'</tbody></table></div></section>';
 }
 function extensionEdit(kind,id){
  const old=id?(data[kind]||[]).find(x=>x.id===id):{},fields=NEXA_EXTENSION_FIELDS[kind];if(id&&!old)throw Error('Record not found');
