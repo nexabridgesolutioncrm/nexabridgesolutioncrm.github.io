@@ -950,142 +950,9 @@ function teamEdit(id){
 }
 function internalAutomation(){
  if(!['owner','admin'].includes(user.role))return '<div class="wz-empty">Access restricted</div>';
- const notes=data.notifications||[],emails=data.email_queue||[];
- return wzHead('Automation & Reminders','Daily reminders run at 08:00 Kabul time. Email delivery requires a server-side provider.')+
- '<div class="wz-kpis">'+[['Unread reminders',notes.filter(x=>!x.read_at).length,'Automatically generated'],['Email drafts',emails.filter(x=>x.state==='draft').length,'Prepared, not sent'],['Scheduled meetings',data.calendar.length,'Internal calendar'],['Open tasks',data.tasks.filter(x=>x.status!=='done').length,'Task management']].map(([title,v,desc])=>'<div class="wz-kpi"><small>'+title+'</small><strong>'+v+'</strong><em>'+desc+'</em></div>').join('')+'</div>'+
- wzBox('Automated notifications',notes.slice(0,15).map(n=>'<div class="wz-item"><div class="wz-body"><b>'+e(n.title)+'</b><small>'+e(n.message)+'</small></div>'+(n.read_at?'<span class="wz-pill">Read</span>':'<button class="wz-ref" data-action="markNotice" data-id="'+e(n.id)+'">Mark read</button>')+'</div>').join('')||'<div class="wz-empty">No notifications yet</div>')+
- wzBox('Email draft outbox',emails.slice(0,20).map(n=>'<div class="wz-item"><div class="wz-body"><b>'+e(n.subject)+'</b><small>To: '+e(n.recipientEmail)+' · '+e(n.state)+'</small></div></div>').join('')||'<div class="wz-empty">No email drafts</div>','<button class="wz-action" data-action="newEmailDraft">+ Draft email</button>')+
- '<p class="muted" style="font-size:12px">Gmail connected to ChatGPT is not an authorization for CRM background emailing. Drafts will not be sent until CRM-specific mail authorization is configured.</p>';
-}
-
-let emailSearch='',messengerPeer='general',messengerPollStarted=false,messengerPollBusy=false;
-function commAge(value){
- if(!value)return '';
- const dt=new Date(value);return isNaN(+dt)?'':dt.toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
-}
-function commEmailRows(){
- const q=emailSearch.trim().toLowerCase();
- const rows=(data.email_queue||[]).filter(x=>[x.recipientEmail,x.subject,x.body,x.state].some(t=>String(t||'').toLowerCase().includes(q)));
- if(!rows.length)return '<div class="wz-empty">No email drafts match your search.</div>';
- return rows.map(x=>'<div class="comm-email-row">'+
- '<div><strong>'+e(x.subject)+'</strong><small>'+e((x.body||'').slice(0,100))+'</small></div>'+
- '<div><b>'+e(x.recipientEmail)+'</b><small>'+commAge(x.createdAt)+'</small></div>'+
- '<div><span class="comm-pill">'+e(x.state||'draft')+'</span></div>'+
- '<div class="buttons"><button data-action="editEmail" data-id="'+e(x.id)+'">Edit</button><button data-action="openEmail" data-id="'+e(x.id)+'">Open in email app</button><button data-action="copyEmail" data-id="'+e(x.id)+'">Copy</button></div></div>').join('');
-}
-function emailCenter(){
- const drafts=data.email_queue||[],templates=data.email_templates||[],clients=data.clients||[];
- return '<div class="comm-head">'+wzHead('Email Center','Compose client messages, manage drafts and reusable templates','<button class="wz-action" data-action="composeEmail">+ Compose email</button>')+'</div>'+
- '<div class="comm-info"><strong>Email provider status: Not connected.</strong> The CRM saves private drafts and opens your installed email application when you choose. Emails are not automatically sent, received or tracked until an approved provider is connected.</div>'+
- '<div class="comm-metrics">'+[['Saved drafts',drafts.filter(x=>x.state==='draft').length],['Email templates',templates.length],['Clients with email',clients.filter(x=>x.email).length]].map(([title,val])=>'<div class="comm-metric"><small>'+title+'</small><strong>'+val+'</strong></div>').join('')+'</div>'+
- '<div class="comm-card" style="margin-bottom:19px"><div class="comm-card-header"><h3>Draft workspace</h3><input type="search" id="emailSearch" placeholder="Search drafts…" value="'+e(emailSearch)+'" style="padding:9px 11px;border:1px solid #dfe7ef;border-radius:8px;max-width:250px"></div><div id="emailResults">'+commEmailRows()+'</div></div>'+
- '<div class="comm-card"><div class="comm-card-header"><h3>Reusable email templates</h3><button class="wz-action wz-lite" data-action="newEmailTemplate">+ New template</button></div>'+
- '<div class="comm-template-grid">'+(templates.length?templates.map(x=>'<div class="comm-template"><b>'+e(x.name)+'</b><p>'+e(x.subject)+'<br>'+e(x.body.slice(0,130))+'</p><button data-action="useEmailTemplate" data-id="'+e(x.id)+'">Use template</button> '+(['owner','admin'].includes(user.role)?'<button data-action="editEmailTemplate" data-id="'+e(x.id)+'">Edit</button>':'')+'</div>').join(''):'<div class="wz-empty">No templates yet. Add reusable outreach and follow-up messages.</div>')+'</div></div>';
-}
-function emailComposer(id=null,starting={}){
- const existing=id?(data.email_queue||[]).find(x=>x.id===id):null;
- if(id&&!existing)return notify('Draft not found.',true);
- const r=existing||starting;
- const clientOptions='<option value="">Select client for recipient</option>'+(data.clients||[]).filter(x=>x.email).map(x=>'<option value="'+e(x.id)+'">'+e(x.name)+' — '+e(x.email)+'</option>').join('');
- const templateOptions='<option value="">Use a saved template</option>'+(data.email_templates||[]).map(x=>'<option value="'+e(x.id)+'">'+e(x.name)+'</option>').join('');
- const body='<form id="commEmailForm" class="comm-compose-grid">'+
- '<label>Client contact<select id="commSelectClient">'+clientOptions+'</select></label>'+
- '<label>Template<select id="commSelectTemplate">'+templateOptions+'</select></label>'+
- '<label class="full">To (email address)<input name="recipientEmail" type="email" required maxlength="250" value="'+e(r.recipientEmail||'')+'" placeholder="client@example.com" autocomplete="email"></label>'+
- '<label class="full">Subject<input name="subject" required maxlength="240" value="'+e(r.subject||'')+'" placeholder="Email subject"></label>'+
- '<label class="full">Message<textarea name="body" required maxlength="10000" placeholder="Write your message…">'+e(r.body||'')+'</textarea></label>'+
- '</form><div class="comm-composer-note">Saving creates a private CRM draft. The “Open in email app” button later lets you send it manually using your configured email application.</div>';
- closeModal();modalWindow(id?'Edit email draft':'Compose client email',body,'<button class="btn neutral" data-action="closeModal">Cancel</button><button class="btn primary" form="commEmailForm">Save draft</button>');
- $('#modalLayer').classList.add('comm-compose');
- const form=$('#commEmailForm');
- $('#commSelectClient').onchange=ev=>{const x=data.clients.find(c=>c.id===ev.target.value);if(x)form.elements.recipientEmail.value=x.email||''};
- $('#commSelectTemplate').onchange=ev=>{const x=data.email_templates.find(t=>t.id===ev.target.value);if(x){form.elements.subject.value=x.subject;form.elements.body.value=x.body}};
- form.onsubmit=async ev=>{ev.preventDefault();const b=Object.fromEntries(new FormData(form));const button=form.getAttribute('id')&&document.querySelector('.comm-compose .dialog-footer .btn.primary');if(button)button.disabled=true;
-  try{await api('records/email_queue'+(id?'/'+encodeURIComponent(id):''),{method:id?'PUT':'POST',body:b});closeModal();await refresh();notify('Draft saved — no email sent.');}
-  catch(err){notify(err.message,true);if(button)button.disabled=false}
- };
-}
-function emailTemplateEditor(id=null){
- const r=id?(data.email_templates||[]).find(x=>x.id===id):{};if(id&&!r)return notify('Template not found.',true);
- const body='<form id="emailTemplateForm" class="comm-compose-grid"><label class="full">Template name<input name="name" required maxlength="140" value="'+e(r.name||'')+'" placeholder="Follow-up after meeting"></label><label class="full">Email subject<input name="subject" required maxlength="240" value="'+e(r.subject||'')+'"></label><label class="full">Reusable message<textarea name="body" required maxlength="10000">'+e(r.body||'')+'</textarea></label></form>';
- closeModal();modalWindow(id?'Edit email template':'New reusable email template',body,'<button class="btn neutral" data-action="closeModal">Cancel</button><button class="btn primary" form="emailTemplateForm">Save template</button>');
- $('#modalLayer').classList.add('comm-compose');
- $('#emailTemplateForm').onsubmit=async ev=>{ev.preventDefault();try{await api('records/email_templates'+(id?'/'+encodeURIComponent(id):''),{method:id?'PUT':'POST',body:Object.fromEntries(new FormData(ev.target))});closeModal();await refresh();notify('Template saved');}catch(err){notify(err.message,true)}};
-}
-function emailHandoff(id){
- const draft=(data.email_queue||[]).find(x=>x.id===id);if(!draft)return notify('Draft not found.',true);
- if(!confirm('Open your email application with this draft? The CRM will not send or mark it as sent.'))return;
- const url='mailto:'+encodeURIComponent(draft.recipientEmail)+'?subject='+encodeURIComponent(draft.subject)+'&body='+encodeURIComponent(draft.body);
- if(url.length>4000){notify('Message is long. Copy it instead of opening a mailto link.',true);return}
- window.location.href=url;
-}
-async function emailCopy(id){
- const draft=(data.email_queue||[]).find(x=>x.id===id);if(!draft)return;
- try{await navigator.clipboard.writeText('To: '+draft.recipientEmail+'\nSubject: '+draft.subject+'\n\n'+draft.body);notify('Email draft copied');}
- catch{notify('Could not copy automatically. Open Edit to copy text.',true)}
-}
-function draftEditor(){emailComposer()}
-function messengerMembers(){
- const me=user?.id;
- return (data.directory||[]).filter(m=>m.id!==me);
-}
-function messengerPeerName(){
- if(messengerPeer==='general')return 'NexaBridge · Team General';
- const member=messengerMembers().find(x=>x.id===messengerPeer);return member?.email||'Team member';
-}
-function messengerMessages(){
- const me=user?.id;
- const list=(data.messages||[]).filter(m=>messengerPeer==='general'?!m.recipient_id:((m.sender_id===me&&m.recipient_id===messengerPeer)||(m.sender_id===messengerPeer&&m.recipient_id===me)));
- return list.sort((a,b)=>String(a.created_at).localeCompare(String(b.created_at)));
-}
-function messengerHistory(){
- const items=messengerMessages(),me=user?.id;
- if(!items.length)return '<div class="comm-chat-empty">No messages here yet.<br>Start the conversation with your colleagues.</div>';
- return items.map(m=>{
-  const mine=m.sender_id===me;
-  const sender=mine?'You':(data.directory||[]).find(x=>x.id===m.sender_id)?.email||'Colleague';
-  return '<div class="comm-message '+(mine?'mine':'')+'"><div class="comm-bubble">'+(messengerPeer==='general'?'<div style="font-size:10px;opacity:.72;font-weight:800;margin-bottom:5px">'+e(sender)+'</div>':'')+
-  '<p>'+e(m.body)+'</p><small>'+commAge(m.created_at)+'</small></div></div>';
- }).join('');
-}
-function messengerPage(){
- const members=messengerMembers();
- if(messengerPeer!=='general'&&!members.some(x=>x.id===messengerPeer))messengerPeer='general';
- const peer=(id,name,caption,icon)=>'<button class="comm-peer '+(messengerPeer===id?'selected':'')+'" data-action="messengerPeer" data-peer="'+e(id)+'"><span class="comm-peer-avatar">'+e(icon)+'</span><span class="comm-peer-text"><strong>'+e(name)+'</strong><small>'+e(caption)+'</small></span></button>';
- return '<div class="comm-head"><h1>Team Messenger</h1><p>Private NexaBridge conversations · Protected by Supabase access policies</p></div>'+
- '<div class="comm-chat-layout"><aside class="comm-chat-list"><div class="comm-chat-list-head"><b>Conversations</b><span>Company team & direct messages</span></div><div class="comm-chat-peers">'+
- peer('general','Team General','Company-wide channel','NB')+
- members.map(m=>peer(m.id,m.email||'Colleague',m.role+' · Direct message',String(m.email||'T').slice(0,1).toUpperCase())).join('')+
- '</div></aside><div class="comm-chat-work"><div class="comm-chat-header"><div><strong>'+e(messengerPeerName())+'</strong><small>'+(messengerPeer==='general'?'Visible to all NexaBridge team members':'Only you and this colleague can access these messages')+'</small></div><span class="comm-pill">Internal</span></div>'+
- '<div class="comm-stream" id="commStream">'+messengerHistory()+'</div>'+
- (user.role==='viewer'?'<div class="comm-chat-form">Read-only team access. Ask an administrator to grant Agent access to send messages.</div>':'<form class="comm-chat-form" id="commMessageForm"><textarea name="message" aria-label="Write a message" maxlength="5000" required placeholder="Write your message… (Ctrl + Enter to send)"></textarea><button type="submit">Send</button></form>')+'</div></div>';
-}
-function messengerBind(){
- const stream=$('#commStream');if(stream)stream.scrollTop=stream.scrollHeight;
- const form=$('#commMessageForm');
- if(form){
-  form.onsubmit=async ev=>{
-   ev.preventDefault();const message=form.elements.message.value.trim();if(!message)return;
-   const button=form.querySelector('button');button.disabled=true;
-   try{
-    await api('messages',{method:'POST',body:{message,recipientId:messengerPeer==='general'?'':messengerPeer}});
-    data.messages=await api('messages');renderContent();
-   }catch(err){notify(err.message,true);button.disabled=false}
-  };
-  form.elements.message.addEventListener('keydown',ev=>{if(ev.key==='Enter'&&ev.ctrlKey){ev.preventDefault();form.requestSubmit()}});
- }
- if(!messengerPollStarted){
-  messengerPollStarted=true;
-  window.setInterval(async()=>{
-   if(page!=='messenger'||!user||messengerPollBusy)return;
-   messengerPollBusy=true;
-   try{
-    const latest=await api('messages');
-    const old=(data.messages||[]).map(x=>x.id).join(','),newer=latest.map(x=>x.id).join(',');
-    if(old!==newer){data.messages=latest;const list=$('#commStream');if(list){const follow=list.scrollHeight-list.scrollTop-list.clientHeight<100;list.innerHTML=messengerHistory();if(follow)list.scrollTop=list.scrollHeight}}
-   }catch{}finally{messengerPollBusy=false}
-  },15000);
- }
+ const notes=data.notifications||[];
+ return wzHead('Automation & Reminders','Internal reminders, calendar and task monitoring.')+
+ '<div class="wz-kpis">'+[['Unread reminders',notes.filter(x=>!x.read_at).length,'Review notifications'],['Scheduled meetings',(data.calendar||[]).length,'Company calendar'],['Open tasks',(data.tasks||[]).filter(x=>x.status!=='done').length,'Task management']].map(([title,value,detail])=>'<div class="wz-kpi"><small>'+e(title)+'</small><strong>'+value+'</strong><span>'+e(detail)+'</span></div>').join('')+'</div>'+wzBox('Notifications',notes.slice(0,30).map(n=>'<div class="wz-item"><div class="wz-body"><b>'+e(n.title)+'</b><small>'+e(n.message)+'</small></div>'+(n.read_at?'<span class="wz-pill">Read</span>':'<button class="wz-ref" data-action="markNotice" data-id="'+e(n.id)+'">Mark read</button>')+'</div>').join('')||'<div class="wz-empty">No notifications</div>');
 }
 
 function renderContent(){const content=$('#content');if(!content)return;content.innerHTML=page==='dashboard'?internalDash():page==='calendar'?internalCalendar():page==='automation'?internalAutomation():page==='team'?internalTeam():['catalog','equipment','technicians','time_entries','checklists','service_plans'].includes(page)?opsPage(page):page==='schedule'?wzSchedule():NEXA_EXTENSION_FIELDS[page]?extensionPage(page):page==='jobs'?wzRecords('jobs'):page==='documents'?wzRecords('documents'):page==='dispatch'?wzDispatch():page==='reports'?reports():page==='settings'?settingsPage():page==='users'?usersPage():recordPage(page);const listSearch=$('#listSearch');if(listSearch)listSearch.addEventListener('input',ev=>{query=ev.target.value;const newContent=page==='dashboard'?dashboard():recordPage(page);const tmp=document.createElement('div');tmp.innerHTML=newContent;const table=$('.table-scroll')?.parentElement;const fresh=tmp.querySelector('.table-scroll')?.parentElement;if(table&&fresh)table.replaceWith(fresh);if(page==='deals'){const old=$('.kanban'),board=tmp.querySelector('.kanban');if(old&&board)old.replaceWith(board);}});const filterEl=$('#statusFilter');if(filterEl)filterEl.addEventListener('change',ev=>{filter=ev.target.value;renderContent();});const gs=$('#globalSearch');if(gs)gs.addEventListener('input',ev=>showSearchHits(ev.target.value));if(page==='messenger')messengerBind();if(page==='email'){const search=$('#emailSearch');if(search)search.addEventListener('input',ev=>{emailSearch=ev.target.value;const rows=$('#emailResults');if(rows)rows.innerHTML=commEmailRows()})}if(page==='documents'){const inp=$('#docSearch'),sel=$('#docFilter');if(inp)inp.addEventListener('input',ev=>{docSearchQuery=ev.target.value;$('#docTableBody').innerHTML=documentTableBody()});if(sel)sel.addEventListener('change',ev=>{docTypeFilter=ev.target.value;$('#docTableBody').innerHTML=documentTableBody()})}
@@ -1127,14 +994,7 @@ function openMyPassword(){closeModal();modal={kind:'password'};
  $('#passwordForm').addEventListener('submit',async ev=>{ev.preventDefault();const f=new FormData(ev.target);try{await api('account/password',{method:'POST',body:{current:f.get('current'),password:f.get('password')}});closeModal();user=null;csrf=null;data=null;renderAuth(false);notify(t('passwordChanged'));}catch(err){notify(err.message,true);}});
 }
 
-async function handleAction(action,el){const kind=el.dataset.kind,id=el.dataset.id;try{if(action==='newEvent'){eventEditor();return}if(action==='editEvent'){eventEditor(id);return}if(action==='eventICS'){eventICS(id);return}if(action==='inviteMember'){teamInvite();return}if(action==='editMember'){teamEdit(id);return}if(action==='removeMember'){if(!confirm('Revoke this employee\'s CRM access?'))return;await api('team',{method:'POST',body:{action:'remove',userId:id}});await refresh();notify('Access revoked');return}if(action==='markNotice'){await api('notifications/'+id,{method:'PATCH',body:{}});await refresh();return}if(action==='newEmailDraft'||action==='composeEmail'){emailComposer();return}
- if(action==='editEmail'){emailComposer(id);return}
- if(action==='openEmail'){emailHandoff(id);return}
- if(action==='copyEmail'){await emailCopy(id);return}
- if(action==='newEmailTemplate'){emailTemplateEditor();return}
- if(action==='editEmailTemplate'){emailTemplateEditor(id);return}
- if(action==='useEmailTemplate'){const source=(data.email_templates||[]).find(x=>x.id===id);if(source)emailComposer(null,{subject:source.subject,body:source.body});return}
- if(action==='messengerPeer'){messengerPeer=el.dataset.peer||'general';renderContent();return}if(action==='opsStock'){opsStock();return}if(action==='opsNew'||action==='opsEdit'){opsEditor(kind,action==='opsEdit'?id:null);return}if(action==='createEstimate'){invoiceEditor(null,{docType:'estimate'});return}if(action==='createInvoice'){invoiceEditor();return}
+async function handleAction(action,el){const kind=el.dataset.kind,id=el.dataset.id;try{if(action==='newEvent'){eventEditor();return}if(action==='editEvent'){eventEditor(id);return}if(action==='eventICS'){eventICS(id);return}if(action==='inviteMember'){teamInvite();return}if(action==='editMember'){teamEdit(id);return}if(action==='removeMember'){if(!confirm('Revoke this employee\'s CRM access?'))return;await api('team',{method:'POST',body:{action:'remove',userId:id}});await refresh();notify('Access revoked');return}if(action==='markNotice'){await api('notifications/'+id,{method:'PATCH',body:{}});await refresh();return}if(action==='opsStock'){opsStock();return}if(action==='opsNew'||action==='opsEdit'){opsEditor(kind,action==='opsEdit'?id:null);return}if(action==='createEstimate'){invoiceEditor(null,{docType:'estimate'});return}if(action==='createInvoice'){invoiceEditor();return}
  if(action==='convertEstimate'||action==='duplicateDocument'){
   const original=(data.documents||[]).find(x=>x.id===id);
   if(!original)return notify('Document unavailable.',true);
