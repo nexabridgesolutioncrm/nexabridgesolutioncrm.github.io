@@ -356,6 +356,10 @@ async function adapter(input,init={}){
    const row=toRow(kind,b);const updated=await secured(target+'?select=*&id=eq.'+id+'&org_id=eq.'+orgId,{method:'PATCH',body:row,prefer:'return=representation'});if(!updated.length)return err('Record not found or access denied',404);await audit('update',kind,updated[0].name||updated[0].title);return reply(fromRow(kind,updated[0]));
   }
   if(pieces.length===3&&method==='DELETE'){
+   if(kind==='documents'){
+    const payments=await secured('/rest/v1/crm_payments?select=id&org_id=eq.'+encodeURIComponent(orgId)+'&document_id=eq.'+encodeURIComponent(id)+'&limit=1');
+    if(payments.length)return err('Cannot delete a document with recorded payments. Preserve the invoice and its financial history.',409);
+   }
    const deleted=await secured(target+'?select=id&org_id=eq.'+orgId+'&id=eq.'+id,{method:'DELETE',prefer:'return=representation'});if(!deleted.length)return err('Record not found or delete permission denied',403);await audit('delete',kind,id);return reply({ok:true});
   }
  }
@@ -755,7 +759,7 @@ function documentTableBody(){
   (!paid&&d.status!=='paid'?'<button class="wz-ref" data-action="wzEdit" data-kind="documents" data-id="'+e(d.id)+'">Edit</button>':'')+
   (d.docType==='estimate'?'<button class="wz-ref" data-action="convertEstimate" data-id="'+e(d.id)+'">Create invoice</button>':'')+
   (d.docType==='invoice'&&balance>0&&d.status!=='void'?'<button class="wz-ref" data-action="invoicePay" data-id="'+e(d.id)+'">Record payment</button>':'')+
-  '<button class="wz-ref" data-action="duplicateDocument" data-id="'+e(d.id)+'">Duplicate</button></div></td></tr>';
+  '<button class="wz-ref" data-action="duplicateDocument" data-id="'+e(d.id)+'">Duplicate</button>'+(!paid&&['owner','admin'].includes(user?.role)?'<button class="wz-ref" style="color:#b42336" data-action="deleteInvoice" data-id="'+e(d.id)+'">Delete</button>':'')+'</div></td></tr>';
  }).join('');
 }
 function documentsPage(){
@@ -1080,6 +1084,7 @@ async function handleAction(action,el){const kind=el.dataset.kind,id=el.dataset.
  if(action==='addUser'){openUserForm();return;}
  if(action==='edit'){openForm(kind,id);return;}
  if(action==='closeModal'){closeModal();return;}
+ if(action==='deleteInvoice'){const doc=data.documents.find(d=>d.id===id);if(!doc)throw Error('Invoice or estimate not found.');if((data.payments||[]).some(p=>p.document_id===id))throw Error('This document has recorded payments and cannot be deleted.');if(!confirm('Permanently delete '+(doc.number||'this document')+'? This cannot be undone.'))return;await api('records/documents/'+encodeURIComponent(id),{method:'DELETE'});await refresh();notify('Document deleted successfully.');return;}
  if(action==='delete'){if(!confirm(t('confirmDelete')))return;await api(`records/${kind}/${id}`,{method:'DELETE'});await refresh();notify(t('deleted'));return;}
  if(action==='convert'){if(!confirm(t('confirmConvert')))return;await api(`convert/${id}`,{method:'POST',body:{}});await refresh();notify(t('convertedToast'));return;}
  if(action==='toggleTask'){let obj=data.tasks.find(x=>x.id===id);await api(`records/tasks/${id}`,{method:'PUT',body:{status:obj.status==='done'?'open':'done'}});await refresh();notify(t('updated'));return;}
