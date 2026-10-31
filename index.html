@@ -70,7 +70,154 @@ html,body{background:#f5f7fa;color:#263849}
 .brandline strong{color:#fff!important}.brandline small{color:#c9d8e7!important}
 @media(max-width:700px){.sidebar{width:250px!important}.topbar{padding:12px!important}.wz-kpi{padding:13px!important}.wz-kpi strong{font-size:22px!important}.wz-day{padding:4px!important;min-height:73px!important}.wz-switch button{padding:6px 9px;font-size:11px}}
 
-</style><meta content="noindex,nofollow,noarchive" name="robots"/><link rel="icon" href="https://nexabridgesolution.github.io/assets/favicon.png" type="image/png"><style>.doc-line{display:grid;grid-template-columns:2fr 1fr 1fr 42px;align-items:end;gap:10px;margin:10px 0}.doc-line input{width:100%}.doc-totals{background:#f2f7fc;padding:15px;margin:15px 0;font-weight:700;border-radius:10px}#docPrint{display:none}@media(max-width:680px){.doc-line{grid-template-columns:1fr 1fr}.doc-line label:first-child{grid-column:1/-1}}@media print{body>*:not(#docPrint){display:none!important}#docPrint{display:block!important;color:#14283c;padding:25px;font:14px Arial}#docPrint table{border-collapse:collapse;width:100%;margin:25px 0}#docPrint td,#docPrint th{padding:10px;border-bottom:1px solid #ccc;text-align:left}#docPrint .doc-total{text-align:right}#docPrint footer{margin-top:35px;font-size:11px}}</style></head><body>
+</style><meta content="noindex,nofollow,noarchive" name="robots"/><link rel="icon" href="https://nexabridgesolution.github.io/assets/favicon.png" type="image/png"><style>.doc-line{display:grid;grid-template-columns:2fr 1fr 1fr 42px;align-items:end;gap:10px;margin:10px 0}.doc-line input{width:100%}.doc-totals{background:#f2f7fc;padding:15px;margin:15px 0;font-weight:700;border-radius:10px}#docPrint{display:none}@media(max-width:680px){.doc-line{grid-template-columns:1fr 1fr}.doc-line label:first-child{grid-column:1/-1}}@media print{body>*:not(#docPrint){display:none!important}#docPrint{display:block!important;color:#14283c;padding:25px;font:14px Arial}#docPrint table{border-collapse:collapse;width:100%;margin:25px 0}#docPrint td,#docPrint th{padding:10px;border-bottom:1px solid #ccc;text-align:left}#docPrint .doc-total{text-align:right}#docPrint footer{margin-top:35px;font-size:11px}}</style><style id="doc-pro-style">
+/* NexaBridge Professional Billing — dedicated scoped design */
+.doc-modal .dialog{width:min(1160px,calc(100vw - 32px));max-width:1160px;max-height:94vh;overflow:hidden;border-radius:18px;box-shadow:0 32px 110px #0d243f46}
+.doc-modal .dialog-head{background:#fff;border-bottom:1px solid #e6edf5;padding:19px 27px}
+.doc-modal .dialog-head h3{font-size:19px;color:#17344c;font-weight:800}
+.doc-modal .dialog-body{padding:0!important;overflow-y:auto;max-height:calc(94vh - 144px)}
+.doc-modal .dialog-footer{border-top:1px solid #e4ebf3;background:#fff;padding:15px 26px;justify-content:flex-end;display:flex;gap:10px}
+.doc-modal .dialog-footer .btn{min-width:108px;font-weight:750}
+.doc-editor{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(280px,.85fr);align-items:start;background:#f9fbfe}
+.doc-edit-main{padding:27px;min-width:0}
+.doc-edit-aside{background:#fff;border-left:1px solid #e5edf5;padding:27px 25px;position:sticky;top:0;min-height:100%}
+.doc-kicker{color:#63809e;text-transform:uppercase;letter-spacing:1.2px;font-size:10px;font-weight:800}
+.doc-section{background:#fff;border:1px solid #e5ecf4;border-radius:13px;padding:22px 22px 20px;margin-bottom:18px;box-shadow:0 3px 13px #19375005}
+.doc-section-top{display:flex;align-items:center;gap:12px;margin-bottom:20px}
+.doc-section-icon{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;background:#edf5fd;color:#2579bc;font-weight:800}
+.doc-section-top h4{margin:0;font-size:14px;font-weight:790;color:#163450}
+.doc-section-top p{font-size:11px;color:#8294a8;margin:2px 0 0}
+.doc-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}
+.doc-grid .span2{grid-column:1/-1}
+.doc-field{display:flex;flex-direction:column;gap:6px;min-width:0;color:#465b71!important;font-size:12px!important;font-weight:730!important}
+.doc-field input,.doc-field select,.doc-field textarea{width:100%;min-width:0;max-width:none;min-height:41px;padding:10px 12px;background:#fff!important;border:1px solid #dae4ef!important;border-radius:8px!important;color:#1e3549!important;font:inherit!important;font-size:13px!important;box-shadow:none!important}
+.doc-field textarea{min-height:72px;resize:vertical}
+.doc-field input:focus,.doc-field select:focus,.doc-field textarea:focus{border-color:#4b9deb!important;box-shadow:0 0 0 3px #2b83d318!important}
+.doc-field .hint{color:#9aa9bb;font-weight:400;font-size:11px}
+.doc-field input[readonly]{background:#f8fafc!important;color:#6c7e8e!important}
+.doc-item-head,.doc-line{display:grid;grid-template-columns:minmax(0,2.7fr) 78px 116px 116px 36px;gap:10px;align-items:center}
+.doc-item-head{font-size:10px;text-transform:uppercase;letter-spacing:.6px;font-weight:800;color:#8395a9;margin:0 0 10px}
+.doc-line{border:1px solid #e9eef5;background:#fdfefe;border-radius:10px;padding:12px 9px;margin:9px 0}
+.doc-line .doc-field{min-width:0}
+.doc-line input{font-size:12px!important;min-height:36px;padding:8px 9px}
+.doc-line .doc-line-amount{font-weight:780;font-size:13px;color:#1a3d5b;text-align:right;white-space:nowrap}
+.doc-line .doc-remove{border:1px solid #ffdce1!important;background:#fff7f8!important;color:#ba5061!important;padding:6px 8px!important;border-radius:7px;cursor:pointer}
+.doc-add{display:inline-flex;align-items:center;gap:6px;margin-top:7px;color:#1e75c7!important;background:#eef6ff!important;border:1px dashed #abd0f1!important;border-radius:8px;padding:9px 13px;font-size:12px;font-weight:760;cursor:pointer}
+.doc-summary-top{border-radius:12px;padding:16px;background:#183851;color:#fff;margin-bottom:19px}
+.doc-summary-top small{color:#a6c4de;display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px}
+.doc-summary-top strong{font-size:17px}
+.doc-summary-top p{color:#c3d5e4;font-size:11px;margin:5px 0 0}
+.doc-aside-preview{padding:16px 0;border-bottom:1px solid #e9eef5}
+.doc-aside-preview b{display:block;font-size:10px;letter-spacing:.65px;text-transform:uppercase;color:#8c9aad;margin-bottom:6px}
+.doc-aside-preview span{display:block;color:#25435b;font-size:13px;overflow-wrap:anywhere}
+.doc-total-lines{margin-top:22px}
+.doc-total-row{display:flex;justify-content:space-between;align-items:baseline;margin:14px 0;font-size:12px;color:#637a8e}
+.doc-total-row strong{color:#284358;font-size:13px;font-variant-numeric:tabular-nums}
+.doc-total-row.grand{margin-top:16px;padding:17px 0;border-top:2px solid #dbe6ef;font-size:15px;font-weight:850;color:#1f3d56}
+.doc-total-row.grand strong{font-size:24px;color:#153752}
+.doc-total-note{background:#f5f8fc;padding:13px;border-radius:9px;margin:18px 0;font-size:11px;color:#8393a4}
+.doc-type-chip{display:inline-block;background:#fff1c1;padding:5px 10px;border-radius:99px;color:#775c06;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.55px}
+.doc-controls{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0 5px}
+.doc-controls button{padding:9px 12px;background:#f4f8fe;color:#236eae;border:1px solid #cfdef0;border-radius:8px;font-weight:740;font-size:12px;cursor:pointer}
+.doc-page-head{margin-bottom:23px}
+.doc-page-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:0 0 20px}
+.doc-page-stat{padding:18px 19px;background:#fff;border:1px solid #e2e9f1;border-radius:12px}
+.doc-page-stat small{display:block;color:#7f91a5;font-size:11px;margin-bottom:8px}
+.doc-page-stat strong{font-size:23px;color:#203d57;font-variant-numeric:tabular-nums}
+.doc-page-tools{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:19px}
+.doc-page-tools input,.doc-page-tools select{border:1px solid #d9e2ec;border-radius:8px;padding:10px;font-size:12px;background:#fff;max-width:240px}
+.doc-list-actions{display:flex;gap:7px;flex-wrap:wrap;white-space:normal}
+.doc-list-actions .wz-ref{padding:5px 6px;font-size:11px;text-decoration:none;border-radius:6px;background:#f2f7fb}
+.doc-list-actions .wz-ref:hover{background:#e2effb}
+.doc-client-name{font-weight:740;color:#244762}
+.doc-number{font-weight:790;color:#1763b0}
+.doc-record-small{font-size:10px;color:#93a3b4}
+.docPrintSheet{display:none}
+@media(max-width:1080px){.doc-editor{grid-template-columns:1fr}.doc-edit-aside{border-left:0;border-top:1px solid #e5ecf3;position:static}.doc-page-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:700px){.doc-modal .dialog{max-height:96vh;width:calc(100vw - 12px)}.doc-modal .dialog-body{max-height:calc(96vh - 130px)}.doc-edit-main,.doc-edit-aside{padding:16px}.doc-section{padding:15px}.doc-grid{grid-template-columns:1fr}.doc-grid .span2{grid-column:auto}.doc-item-head{display:none}.doc-line{grid-template-columns:1fr 1fr;gap:6px}.doc-line .doc-field:first-child{grid-column:1/-1}.doc-line .doc-line-amount{align-self:end;text-align:left}.doc-line .doc-remove{justify-self:end}.doc-page-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@page{size:A4;margin:16mm}
+@media print{
+ body>*:not(#docPrint){display:none!important}
+ #docPrint.docPrintSheet{display:block!important;position:static!important;background:#fff!important;color:#23374a!important;box-shadow:none!important;max-width:100%!important;padding:0!important}
+ #docPrint .print-heading{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #194663;padding-bottom:24px;margin-bottom:25px}
+ #docPrint .print-brand{font-size:20px;font-weight:850;color:#153f61}
+ #docPrint .print-brand small{display:block;color:#5e8ba5;letter-spacing:2px;font-size:9px}
+ #docPrint .print-brand img{width:55px;height:55px;object-fit:contain;margin-right:11px}
+ #docPrint .print-heading h1{font-size:26px;letter-spacing:1.5px;text-transform:uppercase;color:#1b4e6a;margin:0}
+ #docPrint .print-meta{font-size:11px;text-align:right;line-height:1.75}
+ #docPrint .print-grid{display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-bottom:27px}
+ #docPrint .print-grid h4{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#8a9eae;margin:0 0 8px}
+ #docPrint .print-grid p{font-size:12px;line-height:1.7;margin:0;color:#25415a}
+ #docPrint .print-table{width:100%;border-collapse:collapse;font-size:11px;margin-top:28px}
+ #docPrint .print-table th{background:#183e5b!important;color:#fff!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;text-transform:uppercase;letter-spacing:.5px}
+ #docPrint .print-table td,#docPrint .print-table th{padding:11px 10px;border-bottom:1px solid #e2e8ee;text-align:left}
+ #docPrint .print-table td.num,#docPrint .print-table th.num{text-align:right}
+ #docPrint .print-table tr{break-inside:avoid}
+ #docPrint .print-summary{margin:18px 0 26px auto;width:290px;font-size:12px}
+ #docPrint .print-summary div{display:flex;justify-content:space-between;padding:7px 0}
+ #docPrint .print-summary .final{font-size:17px;font-weight:800;border-top:2px solid #24445d;margin-top:8px;padding-top:12px}
+ #docPrint .print-note{padding:13px 0;font-size:11px;line-height:1.65;white-space:pre-wrap;overflow-wrap:anywhere}
+ #docPrint .print-note strong{display:block;margin-bottom:4px;color:#25435b}
+ #docPrint .print-footer{margin-top:37px;border-top:1px solid #d8e2ea;padding-top:13px;color:#8294a4;font-size:10px}
+}
+</style><style id="nexa-comm-style">
+/* Private NexaBridge communications — crisp, responsive two-panel workspace */
+.comm-head{margin-bottom:19px}.comm-head h1{font-size:27px;color:#213a50;margin:0 0 4px;font-weight:800}.comm-head p{font-size:12px;color:#8194a8}.comm-actions{display:flex;gap:9px;flex-wrap:wrap}
+.comm-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px;margin-bottom:18px}
+.comm-metric{padding:19px;background:white;border:1px solid #e3eaf2;border-radius:12px}
+.comm-metric small{display:block;color:#8394a8;font-size:11px;margin-bottom:8px}
+.comm-metric strong{font-size:24px;color:#284762;font-variant-numeric:tabular-nums}
+.comm-card{background:#fff;border:1px solid #e1e9f1;border-radius:13px;box-shadow:0 5px 20px #1e45600a;overflow:hidden}
+.comm-card-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;padding:17px 20px;border-bottom:1px solid #edf1f6}
+.comm-card-header h3{font-size:14px;color:#234056;margin:0}
+.comm-info{padding:13px 17px;font-size:11px;line-height:1.7;color:#6b7f92;background:#f1f7fd;border:1px solid #d9e9f7;border-radius:9px;margin-bottom:18px}
+.comm-pill{display:inline-block;border-radius:30px;padding:4px 10px;font-size:10px;font-weight:800;color:#236aa2;background:#edf5ff}
+.comm-email-row{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(140px,1fr) 95px minmax(160px,1.3fr);align-items:center;gap:10px;padding:17px 20px;border-bottom:1px solid #edf1f6;font-size:12px}
+.comm-email-row:hover{background:#f9fbfe}.comm-email-row:last-child{border:0}.comm-email-row strong{font-size:12px;color:#2b4358}.comm-email-row small{display:block;color:#9aaabb;margin-top:4px}
+.comm-email-row .buttons{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.comm-email-row .buttons button{border:1px solid #dce9f5;background:#f7fbff;color:#296eae;font-size:11px;font-weight:750;border-radius:7px;padding:7px 9px;cursor:pointer}
+.comm-email-row .buttons button:hover{background:#e9f4fc}
+.comm-template-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px;padding:17px}
+.comm-template{background:#fff;border:1px solid #e6edf4;border-radius:10px;padding:17px;min-width:0}
+.comm-template b{font-size:13px;color:#26465d}.comm-template p{color:#7a8ca0;margin:7px 0 12px;font-size:12px;line-height:1.5}
+.comm-template button{background:#f0f7ff;color:#206eb7;border:1px solid #d6e7fa;border-radius:7px;padding:7px 11px;font-size:11px;font-weight:750;cursor:pointer}
+.comm-compose .dialog{width:min(790px,calc(100vw - 30px));max-width:790px;border-radius:16px}
+.comm-compose .dialog-body{padding:22px 25px!important;max-height:65vh;overflow-y:auto}
+.comm-compose .dialog-head,.comm-compose .dialog-footer{padding:17px 25px}
+.comm-compose-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.comm-compose-grid label{font-size:12px;color:#3b5671;font-weight:740}
+.comm-compose-grid label.full{grid-column:1/-1}
+.comm-compose-grid input,.comm-compose-grid select,.comm-compose-grid textarea{width:100%;padding:11px 12px;margin-top:6px;border:1px solid #dce7f0;border-radius:8px;font:inherit;font-size:13px;background:#fff;color:#243d53}
+.comm-compose-grid textarea{min-height:184px;resize:vertical;line-height:1.65}
+.comm-composer-note{font-size:11px;color:#7991a6;background:#f1f7fe;border-radius:8px;padding:11px 13px;margin-top:16px}
+.comm-chat-layout{display:grid;grid-template-columns:285px minmax(0,1fr);border:1px solid #e2eaf2;border-radius:14px;overflow:hidden;background:#fff;height:min(720px,calc(100vh - 230px));min-height:440px;box-shadow:0 5px 28px #1b3b550a}
+.comm-chat-list{background:#f8fafc;border-right:1px solid #e3e9f1;display:flex;flex-direction:column;min-width:0}
+.comm-chat-list-head{padding:19px 17px;border-bottom:1px solid #e5ebf1}
+.comm-chat-list-head b{font-size:14px;color:#2b435b}.comm-chat-list-head span{font-size:11px;color:#7d8e9e;display:block}
+.comm-chat-peers{flex:1;overflow:auto;padding:9px}
+.comm-peer{display:flex;align-items:center;gap:10px;border:0;background:transparent;border-radius:9px;width:100%;text-align:left;padding:11px 10px;cursor:pointer;color:#30455a}
+.comm-peer:hover{background:#ebf1f8}.comm-peer.selected{background:#fff5cc;border-left:3px solid #f0ba23}
+.comm-peer-avatar{width:36px;height:36px;border-radius:10px;background:#e6f0fb;color:#2771aa;display:grid;place-items:center;font-weight:800;font-size:14px;flex:none}
+.comm-peer.selected .comm-peer-avatar{background:#fce89a;color:#766011}
+.comm-peer-text{min-width:0;display:block}.comm-peer-text strong{font-size:12px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.comm-peer-text small{color:#95a5b4;font-size:10px}
+.comm-chat-work{min-width:0;display:flex;flex-direction:column;background:#fff}
+.comm-chat-header{border-bottom:1px solid #e7edf3;padding:18px 20px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.comm-chat-header strong{font-size:14px;color:#234057}.comm-chat-header small{display:block;font-size:11px;color:#91a0b2}
+.comm-stream{flex:1;overflow:auto;padding:19px 22px;display:flex;flex-direction:column;gap:15px;background:radial-gradient(circle at 15% 15%,#f9fbfe,#fff 55%)}
+.comm-message{max-width:78%;display:flex;gap:9px;align-items:flex-end}
+.comm-message.mine{align-self:flex-end;flex-direction:row-reverse}
+.comm-bubble{padding:11px 14px;border-radius:12px 12px 12px 3px;background:#eff4fa;color:#234057;box-shadow:0 2px 6px #112c3b08;min-width:70px;white-space:normal;overflow-wrap:anywhere}
+.comm-message.mine .comm-bubble{background:#fff3c6;border-radius:12px 12px 3px 12px;color:#4e450f}
+.comm-bubble p{color:inherit;font-size:13px;line-height:1.6;white-space:pre-wrap;margin:0}
+.comm-bubble small{display:block;font-size:9px;opacity:.65;margin:5px 0 0;text-align:right}
+.comm-chat-form{border-top:1px solid #e8eef4;padding:13px 16px;display:flex;gap:9px;align-items:flex-end;background:#fff}
+.comm-chat-form textarea{flex:1;resize:none;max-height:130px;min-height:49px;padding:13px;border:1px solid #dbe5ef;border-radius:10px;background:#fafcff;font:inherit;font-size:13px}
+.comm-chat-form button{border:0;background:#f6c82d;border-radius:9px;padding:14px 20px;font-weight:800;color:#233c4f;cursor:pointer}
+.comm-chat-form button:disabled{opacity:.5}
+.comm-chat-empty{margin:auto;text-align:center;color:#9baabd;padding:25px;font-size:13px}
+@media(max-width:850px){.comm-email-row{grid-template-columns:1fr 1fr}.comm-chat-layout{grid-template-columns:200px 1fr}}
+@media(max-width:620px){.comm-chat-layout{grid-template-columns:118px minmax(0,1fr);height:calc(100vh - 210px);min-height:390px}.comm-peer{padding:9px 6px}.comm-peer-avatar{display:none}.comm-peer-text strong{font-size:10px}.comm-chat-header{padding:12px}.comm-stream{padding:12px}.comm-message{max-width:95%}.comm-template-grid{grid-template-columns:1fr}.comm-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.comm-email-row{grid-template-columns:1fr}.comm-compose-grid{grid-template-columns:1fr}.comm-compose-grid label.full{grid-column:auto}}
+</style></head><body>
 <div id="root"><div class="startup">NexaBridge CRM — Secure Workspace</div></div><div aria-live="polite" class="toast-host" id="toast" role="status"></div>
 <script>
 
@@ -78,8 +225,8 @@ html,body{background:#f5f7fa;color:#263849}
 (()=>{'use strict';
 const URL_BASE='https://eahoudfosrblcsbjgjoa.supabase.co';
 const PUBLIC_KEY='sb_publishable_kxVCDTegJm-_nRrvaBAzrw_hbMPoG_5';
-const COLLECTIONS={leads:'crm_leads',clients:'crm_clients',deals:'crm_deals',tasks:'crm_tasks',jobs:'crm_jobs',documents:'crm_documents',calendar:'crm_calendar_events',email_queue:'crm_email_queue',catalog:'crm_catalog',stock_movements:'crm_stock_movements',equipment:'crm_equipment',technicians:'crm_technicians',time_entries:'crm_time_entries',checklists:'crm_checklists',service_plans:'crm_service_plans'};
-const FIELDS={leads:{name:'name',company:'company',phone:'phone',email:'email',source:'source',interest:'interest',status:'status',followup:'followup',owner:'owner',notes:'notes'},clients:{name:'name',contact:'contact',phone:'phone',email:'email',industry:'industry',notes:'notes'},deals:{title:'title',value:'value',clientId:'client_id',leadId:'lead_id',stage:'stage',service:'service',closeDate:'close_date',notes:'notes'},tasks:{title:'title',dueDate:'due_date',priority:'priority',status:'status',notes:'notes'},jobs:{title:'title',clientId:'client_id',leadId:'lead_id',service:'service',address:'address',scheduledStart:'scheduled_start',scheduledEnd:'scheduled_end',assignedTo:'assigned_to',status:'status',priority:'priority',notes:'notes'},documents:{docType:'doc_type',number:'number',description:'description',amount:'amount',clientId:'client_id',jobId:'job_id',status:'status',issueDate:'issue_date',dueDate:'due_date',notes:'notes'},calendar:{title:'title',eventType:'event_type',startAt:'start_at',endAt:'end_at',location:'location',description:'description',clientId:'client_id',leadId:'lead_id',assignedTo:'assigned_to'},email_queue:{recipientEmail:'recipient_email',subject:'subject',body:'body',sendAfter:'send_after',state:'state'},catalog:{name:'name',sku:'sku',kind:'kind',category:'category',unitPrice:'unit_price',unitCost:'unit_cost',stockQty:'stock_qty',reorderPoint:'reorder_point',taxable:'taxable',active:'active',notes:'notes'},equipment:{clientId:'client_id',name:'name',serialNumber:'serial_number',model:'model',location:'location',installedOn:'installed_on',warrantyUntil:'warranty_until',status:'status',notes:'notes'},technicians:{name:'name',email:'email',phone:'phone',skills:'skills',serviceArea:'service_area',status:'status',notes:'notes'},time_entries:{jobId:'job_id',technician:'technician',startedAt:'started_at',endedAt:'ended_at',hourlyRate:'hourly_rate',notes:'notes'},checklists:{jobId:'job_id',title:'title',isDone:'is_done',notes:'notes'},service_plans:{clientId:'client_id',name:'name',intervalDays:'interval_days',nextVisit:'next_visit',price:'price',status:'status',notes:'notes'},stock_movements:{catalogId:'catalog_id',jobId:'job_id',delta:'delta',reason:'reason',notes:'notes'}};
+const COLLECTIONS={leads:'crm_leads',clients:'crm_clients',deals:'crm_deals',tasks:'crm_tasks',jobs:'crm_jobs',documents:'crm_documents',calendar:'crm_calendar_events',email_queue:'crm_email_queue',email_templates:'crm_email_templates',catalog:'crm_catalog',stock_movements:'crm_stock_movements',equipment:'crm_equipment',technicians:'crm_technicians',time_entries:'crm_time_entries',checklists:'crm_checklists',service_plans:'crm_service_plans'};
+const FIELDS={leads:{name:'name',company:'company',phone:'phone',email:'email',source:'source',interest:'interest',status:'status',followup:'followup',owner:'owner',notes:'notes'},clients:{name:'name',contact:'contact',phone:'phone',email:'email',industry:'industry',notes:'notes'},deals:{title:'title',value:'value',clientId:'client_id',leadId:'lead_id',stage:'stage',service:'service',closeDate:'close_date',notes:'notes'},tasks:{title:'title',dueDate:'due_date',priority:'priority',status:'status',notes:'notes'},jobs:{title:'title',clientId:'client_id',leadId:'lead_id',service:'service',address:'address',scheduledStart:'scheduled_start',scheduledEnd:'scheduled_end',assignedTo:'assigned_to',status:'status',priority:'priority',notes:'notes'},documents:{billToName:'bill_to_name',billToEmail:'bill_to_email',billToPhone:'bill_to_phone',billToAddress:'bill_to_address',reference:'reference',paymentTerms:'payment_terms',footerText:'footer_text',docType:'doc_type',number:'number',description:'description',amount:'amount',clientId:'client_id',jobId:'job_id',status:'status',issueDate:'issue_date',dueDate:'due_date',notes:'notes'},calendar:{title:'title',eventType:'event_type',startAt:'start_at',endAt:'end_at',location:'location',description:'description',clientId:'client_id',leadId:'lead_id',assignedTo:'assigned_to'},email_queue:{recipientEmail:'recipient_email',subject:'subject',body:'body',sendAfter:'send_after',state:'state'},email_templates:{name:'name',subject:'subject',body:'body'},catalog:{name:'name',sku:'sku',kind:'kind',category:'category',unitPrice:'unit_price',unitCost:'unit_cost',stockQty:'stock_qty',reorderPoint:'reorder_point',taxable:'taxable',active:'active',notes:'notes'},equipment:{clientId:'client_id',name:'name',serialNumber:'serial_number',model:'model',location:'location',installedOn:'installed_on',warrantyUntil:'warranty_until',status:'status',notes:'notes'},technicians:{name:'name',email:'email',phone:'phone',skills:'skills',serviceArea:'service_area',status:'status',notes:'notes'},time_entries:{jobId:'job_id',technician:'technician',startedAt:'started_at',endedAt:'ended_at',hourlyRate:'hourly_rate',notes:'notes'},checklists:{jobId:'job_id',title:'title',isDone:'is_done',notes:'notes'},service_plans:{clientId:'client_id',name:'name',intervalDays:'interval_days',nextVisit:'next_visit',price:'price',status:'status',notes:'notes'},stock_movements:{catalogId:'catalog_id',jobId:'job_id',delta:'delta',reason:'reason',notes:'notes'}};
 const COMPANY='NexaBridge Solutions';
 let session=null, member=null, orgId=null;
 const defaultSettings={company:COMPANY,currency:'USD',services:['Customer Support','Appointment Scheduling','Dispatch Coordination','CRM Management','Customer Follow-ups','Administrative Support']};
@@ -122,8 +269,8 @@ function toRow(kind,rec){const out={};for(const [k,col] of Object.entries(FIELDS
 async function audit(action,kind,label){/* Server-side CRM audit triggers record changes atomically. */}
 async function list(kind){return (await secured('/rest/v1/'+table(kind)+'?select=*&org_id=eq.'+orgId+'&order=created_at.desc')).map(x=>fromRow(kind,x))}
 async function getData(){
- const [leads,clients,deals,tasks,jobs,documents,calendar,email_queue,notifications,catalog,equipment,technicians,time_entries,checklists,service_plans,stock_movements,activity]=await Promise.all([list('leads'),list('clients'),list('deals'),list('tasks'),list('jobs'),list('documents'),list('calendar'),list('email_queue'),secured('/rest/v1/crm_notifications?select=*&org_id=eq.'+orgId+'&order=created_at.desc&limit=100'),list('catalog'),list('equipment'),list('technicians'),list('time_entries'),list('checklists'),list('service_plans'),list('stock_movements'),secured('/rest/v1/crm_activities?select=*&org_id=eq.'+orgId+'&order=created_at.desc&limit=150')]);
- return {leads,clients,deals,tasks,jobs,documents,calendar,email_queue,notifications,catalog,equipment,technicians,time_entries,checklists,service_plans,stock_movements,payments:await secured('/rest/v1/crm_payments?select=*&org_id=eq.'+orgId+'&order=received_at.desc'),activity:activity.map(x=>({...x,createdAt:x.created_at,actor:'CRM team'})),users:['owner','admin'].includes(member?.role)?(await secured('/functions/v1/nexabridge-team-admin',{method:'POST',body:{action:'list'}}).catch(()=>({members:[]}))).members:[],settings:defaultSettings};
+ const [leads,clients,deals,tasks,jobs,documents,calendar,email_queue,email_templates,messages,notifications,catalog,equipment,technicians,time_entries,checklists,service_plans,stock_movements,activity]=await Promise.all([list('leads'),list('clients'),list('deals'),list('tasks'),list('jobs'),list('documents'),list('calendar'),list('email_queue'),list('email_templates'),secured('/rest/v1/crm_messages?select=*&org_id=eq.'+orgId+'&order=created_at.desc&limit=300'),secured('/rest/v1/crm_notifications?select=*&org_id=eq.'+orgId+'&order=created_at.desc&limit=100'),list('catalog'),list('equipment'),list('technicians'),list('time_entries'),list('checklists'),list('service_plans'),list('stock_movements'),secured('/rest/v1/crm_activities?select=*&org_id=eq.'+orgId+'&order=created_at.desc&limit=150')]);
+ return {leads,clients,deals,tasks,jobs,documents,calendar,email_queue,email_templates,messages,notifications,catalog,equipment,technicians,time_entries,checklists,service_plans,stock_movements,payments:await secured('/rest/v1/crm_payments?select=*&org_id=eq.'+orgId+'&order=received_at.desc'),activity:activity.map(x=>({...x,createdAt:x.created_at,actor:'CRM team'})),users:['owner','admin'].includes(member?.role)?(await secured('/functions/v1/nexabridge-team-admin',{method:'POST',body:{action:'list'}}).catch(()=>({members:[]}))).members:[],directory:(await secured('/functions/v1/nexabridge-team-admin',{method:'POST',body:{action:'directory'}}).catch(()=>({members:[]}))).members||[],settings:defaultSettings};
 }
 function csv(v){let s=String(v??'');if(/^[\s]*[=+\-@\t\r]/.test(s))s="'"+s;return '"'+s.replaceAll('"','""')+'"'}
 function csvExport(kind,records){const cols=['id',...Object.keys(FIELDS[kind]),'createdAt','updatedAt'];return '\ufeff'+[cols.map(csv).join(','),...records.map(r=>cols.map(k=>csv(r[k])).join(','))].join('\r\n')}
@@ -148,6 +295,19 @@ async function adapter(input,init={}){
  if(path==='logout'&&method==='POST'){try{await request('/auth/v1/logout',{method:'POST'})}catch{}session=null;member=null;orgId=null;return reply({ok:true})}
  if(!session||!orgId)return err('Please sign in.',401);
  if(path==='data'&&method==='GET')return reply(await getData());
+ if(path==='messages'&&method==='GET'){const rows=await secured('/rest/v1/crm_messages?select=*&org_id=eq.'+orgId+'&order=created_at.desc&limit=300');return reply(rows);}
+ if(path==='messages'&&method==='POST'){
+  const body=String(b.message||'').trim(),recipient=String(b.recipientId||'');
+  if(!body||body.length>5000||recipient&& !/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(recipient))return err('Invalid message',400);
+  const row={org_id:orgId,body,recipient_id:recipient||null};
+  const written=await secured('/rest/v1/crm_messages?select=*&org_id=eq.'+orgId,{method:'POST',body:row,prefer:'return=representation'});
+  return reply(written[0],201);
+ }
+ if(path.startsWith('messages/')&&method==='PATCH'){
+  const msgid=path.split('/')[1];
+  const rows=await secured('/rest/v1/crm_messages?select=*&org_id=eq.'+orgId+'&id=eq.'+msgid,{method:'PATCH',body:{read_at:new Date().toISOString()},prefer:'return=representation'});
+  return reply(rows[0]||{ok:false});
+ }
  if(path==='stock'&&method==='POST'){const row={org_id:orgId,catalog_id:b.catalogId,job_id:b.jobId||null,delta:Number(b.delta),reason:b.reason||'adjustment',notes:b.notes||''};if(!Number.isFinite(row.delta)||!row.delta)return err('Invalid quantity',400);const r=await secured('/rest/v1/crm_stock_movements?select=*&org_id=eq.'+orgId,{method:'POST',body:row,prefer:'return=representation'});return reply(r[0],201)}
  if(path==='team'&&method==='POST')return reply(await secured('/functions/v1/nexabridge-team-admin',{method:'POST',body:b}));
  if(path.startsWith('notifications/')&&method==='PATCH'){const id=path.split('/')[1];const list=await secured('/rest/v1/crm_notifications?select=id&id=eq.'+id+'&org_id=eq.'+orgId,{method:'PATCH',body:{read_at:new Date().toISOString()},prefer:'return=representation'});return reply(list[0]||{ok:false});}
@@ -235,7 +395,7 @@ const root = $('#root');
 const lang = 'en';
 let setupTokenRequired=false, importMode='replace';
 let user = null, csrf = null, data = null, page = 'dashboard', query = '', filter = 'all', modal = null, menuOpen = false;
-const nav = [['dashboard','▦'],['leads','♧'],['clients','♙'],['deals','◈'],['calendar','▤'],['tasks','☑'],['documents','▣'],['reports','▥'],['automation','⚡'],['team','♙']];
+const nav = [['dashboard','▦'],['leads','♧'],['clients','♙'],['deals','◈'],['calendar','▤'],['tasks','☑'],['documents','▣'],['email','✉'],['messenger','▣'],['reports','▥'],['automation','⚡'],['team','♙']];
 const STATUS = {leads:['new','contacted','qualified','converted','closed'],deals:['new','qualified','proposal','negotiation','won','lost'],tasks:['open','done']};
 const SOURCES = [['website','sourceWebsite'],['google','sourceGoogle'],['social','sourceSocial'],['referral','sourceReferral'],['direct','sourceDirect'],['event','sourceEvent'],['other','sourceOther']];
 const FIELDS = {
@@ -305,9 +465,9 @@ function renderAuth(setup){root.dataset.setup=setup?'1':'0';root.innerHTML=`<div
  try{const result=await api(setup?'setup':'login',{method:'POST',body:{name:f.get('name'),username:f.get('username'),password:p,setup_token:f.get('setup_token')||''}});user=result.user;csrf=result.csrf;await loadData();page='dashboard';render();}catch(err){notify(err.message,true);}finally{submit.disabled=false;}});
 }
 function render(){if(!user||!data){renderAuth(false);return;}if(['settings','users'].includes(page))page='dashboard';
- const navHtml=nav.filter(n=>!['documents','reports','automation','team'].includes(n[0])||['owner','admin'].includes(user.role)).map(([id,ic])=>`<button class="nav-item ${page===id?'active':''}" data-action="page" data-page="${id}"><span class="nav-icon">${ic}</span><span>${e(({calendar:'Company Calendar',automation:'Automation Center',team:'Team & Access',documents:'Invoices & Estimates'})[id]||t(id))}</span>${id==='tasks'&&overdueTasks().length?`<span class="nav-count">${fmt(overdueTasks().length)}</span>`:''}</button>`).join('');
+ const navHtml=nav.filter(n=>(!['documents','reports','automation','team'].includes(n[0])||['owner','admin'].includes(user.role))&&(n[0]!=='email'||user.role!=='viewer')).map(([id,ic])=>`<button class="nav-item ${page===id?'active':''}" data-action="page" data-page="${id}"><span class="nav-icon">${ic}</span><span>${e(({calendar:'Company Calendar',automation:'Automation Center',team:'Team & Access',documents:'Invoices & Estimates',email:'Email Center',messenger:'Team Messenger'})[id]||t(id))}</span>${id==='tasks'&&overdueTasks().length?`<span class="nav-count">${fmt(overdueTasks().length)}</span>`:''}</button>`).join('');
  root.innerHTML=`<div class="shell"><aside class="sidebar ${menuOpen?'open':''}" id="sidebar">${brand(true)}<div class="nav-caption">${e(t('navigation'))}</div><nav class="nav-list" aria-label="${e(t('navigation'))}">${navHtml}</nav><div class="side-bottom"><strong><span class="online-dot"></span>${e(data.settings.company)}</strong><small>${e(window.__NEXA_OFFLINE__?'Stored on this device':t('siteLocal'))}</small></div></aside>
- <div class="mobile-backdrop ${menuOpen?'open':''}" data-action="closeMenu"></div><div class="work"><header class="topbar"><div class="top-right"><button class="btn neutral icon-only menu-button" data-action="menu" aria-label="Menu">☰</button><div><div class="top-title">${e(({calendar:'Company Calendar',automation:'Automation Center',team:'Team & Access',documents:'Invoices & Estimates'})[page]||t(page))}</div><div class="top-detail">${e(data.settings.company)} / ${e(t('workspace'))}</div></div></div><div class="top-right"><div class="top-search">⌕ <input type="search" id="globalSearch" placeholder="${e(t('searchGlobal'))}" autocomplete="off"><div class="global-hits hide" id="globalHits"></div></div>${langSwitcher()}${window.__NEXA_OFFLINE__?'':`<span class="top-avatar" aria-label="Account">N</span><button class="btn neutral" data-action="logout">${e(t('logout'))}</button>`}</div></header>
+ <div class="mobile-backdrop ${menuOpen?'open':''}" data-action="closeMenu"></div><div class="work"><header class="topbar"><div class="top-right"><button class="btn neutral icon-only menu-button" data-action="menu" aria-label="Menu">☰</button><div><div class="top-title">${e(({calendar:'Company Calendar',automation:'Automation Center',team:'Team & Access',documents:'Invoices & Estimates',email:'Email Center',messenger:'Team Messenger'})[page]||t(page))}</div><div class="top-detail">${e(data.settings.company)} / ${e(t('workspace'))}</div></div></div><div class="top-right"><div class="top-search">⌕ <input type="search" id="globalSearch" placeholder="${e(t('searchGlobal'))}" autocomplete="off"><div class="global-hits hide" id="globalHits"></div></div>${langSwitcher()}${window.__NEXA_OFFLINE__?'':`<span class="top-avatar" aria-label="Account">N</span><button class="btn neutral" data-action="logout">${e(t('logout'))}</button>`}</div></header>
  <main id="content" class="main-content"></main></div></div>`;
  renderContent();
 }
@@ -365,33 +525,228 @@ function wzSchedule(){let month=new Date();month.setDate(1);month.setMonth(month
 function wzDispatch(){return wzHead('Dispatch Board','Track job progress and assignments',wzBtn('New job','jobs'))+'<div class="wz-boards">'+['new','scheduled','dispatched','in_progress','completed'].map(st=>'<div class="wz-column"><strong>'+e(st.replaceAll('_',' '))+' <span>'+data.jobs.filter(x=>x.status===st).length+'</span></strong>'+data.jobs.filter(x=>x.status===st).map(x=>'<div class="wz-job"><b>'+e(x.title)+'</b><small>'+e(x.assignedTo||'Unassigned')+'</small><small>'+wzWhen(x.scheduledStart)+'</small><button class="wz-ref" data-action="wzEdit" data-kind="jobs" data-id="'+e(x.id)+'">Edit / move →</button></div>').join('')+'</div>').join('')+'</div>'}
 
 function docBalance(d){return Math.max(0,Number(d.amount||0)-(data.payments||[]).filter(p=>p.document_id===d.id).reduce((n,p)=>n+Number(p.amount||0),0))}
-function docLine(x={}){return '<div class="doc-line"><label>Description<input name="line_desc" required value="'+e(x.description||'')+'"></label><label>Qty<input type="number" name="line_qty" min=".01" step=".01" required value="'+e(x.quantity||1)+'"></label><label>Unit price<input type="number" name="line_price" min="0" step=".01" required value="'+e(x.unit_price??0)+'"></label><button type="button" class="btn neutral doc-remove">×</button></div>'}
-function invoiceEditor(id=null){
- closeModal();const r=id?data.documents.find(x=>x.id===id):{},lines=Array.isArray(r?.items)&&r.items.length?r.items:[{description:r?.description||'Service',quantity:1,unit_price:r?.amount||0}];
- const linked=(kind,value)=>'<option value="">Not linked</option>'+data[kind].map(x=>'<option value="'+e(x.id)+'" '+(x.id===value?'selected':'')+'>'+e(x.name||x.title)+'</option>').join('');
- const form='<form id="invoiceForm"><div class="form-grid"><label>Document type<select name="docType"><option value="invoice" '+(r.docType==='invoice'||!r.docType?'selected':'')+'>Invoice</option><option value="estimate" '+(r.docType==='estimate'?'selected':'')+'>Estimate</option></select></label><label>Number<input required name="number" maxlength="40" value="'+e(r.number||('INV-'+Date.now()))+'"></label><label>Client<select name="clientId">'+linked('clients',r.clientId)+'</select></label><label>Job<select name="jobId">'+linked('jobs',r.jobId)+'</select></label><label>Issue date<input required type="date" name="issueDate" value="'+e(r.issueDate||new Date().toISOString().slice(0,10))+'"></label><label>Due date<input type="date" name="dueDate" value="'+e(r.dueDate||'')+'"></label><label>Description<input name="description" value="'+e(r.description||'')+'"></label><label>Status<select name="status">'+['draft','sent','accepted','paid','void'].map(x=>'<option value="'+x+'" '+(r.status===x?'selected':'')+'>'+x+'</option>').join('')+'</select></label></div><h3>Line items</h3><div id="docLines">'+lines.map(docLine).join('')+'</div><button class="btn neutral" type="button" id="addDocLine">+ Add item</button><div class="form-grid"><label>Discount USD<input type="number" min="0" step=".01" name="discountAmount" value="'+e(r.discountAmount||0)+'"></label><label>Tax rate %<input type="number" min="0" max="100" step=".01" name="taxRate" value="'+e(r.taxRate||0)+'"></label><label class="full">Notes<textarea name="notes">'+e(r.notes||'')+'</textarea></label></div><div id="docTotals" class="doc-totals"></div></form>';
- modalWindow(id?'Edit invoice / estimate':'New invoice / estimate',form,'<button class="btn neutral" data-action="closeModal">Cancel</button><button class="btn primary" type="submit" form="invoiceForm">Save</button>');
+
+function docMoney(v){return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',minimumFractionDigits:2,maximumFractionDigits:2}).format(Number(v)||0)}
+function docDate(v){return v?new Date(v+'T12:00:00').toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'}):'—'}
+function docId(type){return (type==='estimate'?'EST-':'INV-')+new Date().toISOString().slice(0,10).replaceAll('-','')+'-'+Math.random().toString(36).slice(2,7).toUpperCase()}
+function docField(name,label,value='',type='text',extra=''){
+ return '<label class="doc-field">'+label+'<input name="'+name+'" type="'+type+'" value="'+e(value)+'" '+extra+'></label>';
+}
+function docText(name,label,value='',rows=2){
+ return '<label class="doc-field">'+label+'<textarea name="'+name+'" rows="'+rows+'">'+e(value)+'</textarea></label>';
+}
+function docEditorLine(item={}){
+ const qty=item.quantity??1,rate=item.unit_price??0;
+ return '<div class="doc-line">'+docField('line_desc','Item / service',item.description||'','text','required maxlength="350"')+
+ docField('line_qty','Quantity',qty,'number','min="0.01" max="100000" step="0.01" required')+
+ docField('line_price','Unit rate (USD)',rate,'number','min="0" max="100000000" step="0.01" required')+
+ '<div class="doc-line-amount">'+docMoney(Math.round(Number(qty)*Number(rate)*100)/100)+'</div>'+
+ '<button class="doc-remove" type="button" aria-label="Remove item" title="Remove item">×</button></div>';
+}
+function docBillName(d){
+ const client=(data.clients||[]).find(c=>c.id===d.clientId);
+ return d.billToName||client?.name||'Not specified';
+}
+function docCost(lines,discount=0,tax=0){
+ const subtotalCents=lines.reduce((n,x)=>n+Math.round(Number(x.quantity||0)*Number(x.unit_price||0)*100),0);
+ const discountCents=Math.round(Number(discount||0)*100);
+ const taxCents=Math.round(Math.max(0,subtotalCents-discountCents)*Number(tax||0)/100);
+ return {subtotal:subtotalCents/100,discount:discountCents/100,tax:taxCents/100,total:(subtotalCents-discountCents+taxCents)/100};
+}
+function invoiceEditor(id=null,prefill=null){
+ const saved=id?(data.documents||[]).find(x=>x.id===id):null;
+ if(id&&!saved)return notify('Document not found',true);
+ if(saved&&(saved.status==='paid'||(data.payments||[]).some(p=>p.document_id===saved.id))){
+  return notify('Payments have been recorded against this invoice. Use Duplicate to create an adjustment document.',true);
+ }
+ const r=saved||prefill||{},kind=r.docType==='estimate'?'estimate':'invoice';
+ const items=Array.isArray(r.items)&&r.items.length?r.items:[{description:r.description||'',quantity:1,unit_price:Number(r.amount||0)}];
+ const clientOptions='<option value="">Enter recipient manually</option>'+(data.clients||[]).map(c=>'<option value="'+e(c.id)+'" '+(r.clientId===c.id?'selected':'')+'>'+e(c.name)+'</option>').join('');
+ const statusOptions=['draft','sent','accepted','void'].map(x=>'<option value="'+x+'" '+(r.status===x?'selected':'')+'>'+x.charAt(0).toUpperCase()+x.slice(1)+'</option>').join('');
+ const terms=r.paymentTerms??(kind==='invoice'?'Payment is due by the stated due date.':'This estimate is valid for 30 days from the issue date.');
+ const form='<form id="invoiceForm" class="doc-editor"><div class="doc-edit-main">'+
+ '<section class="doc-section"><div class="doc-section-top"><span class="doc-section-icon">01</span><div><h4>Document details</h4><p>Identification, dates and business reference</p></div></div><div class="doc-grid">'+
+ '<label class="doc-field">Document type<select name="docType"><option value="invoice" '+(kind==='invoice'?'selected':'')+'>Invoice</option><option value="estimate" '+(kind==='estimate'?'selected':'')+'>Estimate / Quotation</option></select></label>'+
+ docField('number','Document number',r.number||docId(kind),'text','required maxlength="40"')+
+ docField('issueDate','Issue date',r.issueDate||dateToday(),'date','required')+
+ docField('dueDate',r.docType==='estimate'?'Valid until':'Payment due date',r.dueDate||'','date')+
+ docField('reference','Reference / PO number',r.reference||'','text','maxlength="120"')+
+ '<label class="doc-field">Status<select name="status">'+statusOptions+'</select></label>'+
+ '</div></section>'+
+ '<section class="doc-section"><div class="doc-section-top"><span class="doc-section-icon">02</span><div><h4>Bill to</h4><p>Customer billing and contact information</p></div></div><div class="doc-grid">'+
+ '<label class="doc-field span2">Select existing client (optional)<select name="clientId" id="docClient">'+clientOptions+'</select></label>'+
+ docField('billToName','Customer / business name',r.billToName||((data.clients||[]).find(x=>x.id===r.clientId)?.name||''),'text','required maxlength="240"')+
+ docField('billToEmail','Customer email',r.billToEmail||((data.clients||[]).find(x=>x.id===r.clientId)?.email||''),'email','maxlength="250"')+
+ docField('billToPhone','Phone',r.billToPhone||((data.clients||[]).find(x=>x.id===r.clientId)?.phone||''),'tel','maxlength="100"')+
+ docField('description','Project / service',r.description||'','text','maxlength="400"')+
+ '<div class="span2">'+docText('billToAddress','Billing address',r.billToAddress||'',2)+'</div>'+
+ '</div></section>'+
+ '<section class="doc-section"><div class="doc-section-top"><span class="doc-section-icon">03</span><div><h4>Products & services</h4><p>Detailed work items and transparent pricing</p></div></div>'+
+ '<div class="doc-item-head"><span>Description</span><span>Qty</span><span>Rate</span><span style="text-align:right">Amount</span><span></span></div>'+
+ '<div id="docLines">'+items.map(docEditorLine).join('')+'</div>'+
+ '<button type="button" id="addDocLine" class="doc-add">＋ Add line item</button>'+
+ '</section>'+
+ '<section class="doc-section"><div class="doc-section-top"><span class="doc-section-icon">04</span><div><h4>Totals & terms</h4><p>Discounts, tax and payment information</p></div></div><div class="doc-grid">'+
+ docField('discountAmount','Discount (USD)',r.discountAmount||0,'number','min="0" step="0.01"')+
+ docField('taxRate','Tax rate (%)',r.taxRate||0,'number','min="0" max="100" step="0.01"')+
+ '<div class="span2">'+docText('paymentTerms','Payment / estimate terms',terms,3)+'</div>'+
+ '<div class="span2">'+docText('notes','Client-visible notes',r.notes||'',2)+'</div>'+
+ '<div class="span2">'+docField('footerText','Footer message',r.footerText||'Thank you for choosing NexaBridge Solutions.','text','maxlength="500"')+'</div>'+
+ '</div></section></div>'+
+ '<aside class="doc-edit-aside"><div class="doc-summary-top"><small>NexaBridge Solutions</small><strong id="docPreviewTitle">'+(kind==='invoice'?'INVOICE':'ESTIMATE')+'</strong><p>Professional billing · USD</p></div>'+
+ '<span id="docTypeChip" class="doc-type-chip">'+kind.toUpperCase()+'</span>'+
+ '<div class="doc-aside-preview"><b>Document</b><span id="docPreviewNumber">'+e(r.number||'New document')+'</span></div>'+
+ '<div class="doc-aside-preview"><b>Prepared for</b><span id="docPreviewClient">'+e(docBillName(r))+'</span></div>'+
+ '<div class="doc-aside-preview"><b>Issued / due</b><span id="docPreviewDates">'+e(r.issueDate||dateToday())+' · '+e(r.dueDate||'Not set')+'</span></div>'+
+ '<div class="doc-total-lines"><div class="doc-total-row"><span>Subtotal</span><strong id="docSub">'+docMoney(0)+'</strong></div>'+
+ '<div class="doc-total-row"><span>Discount</span><strong id="docDiscount">'+docMoney(0)+'</strong></div>'+
+ '<div class="doc-total-row"><span>Tax</span><strong id="docTax">'+docMoney(0)+'</strong></div>'+
+ '<div class="doc-total-row grand"><span>Total due</span><strong id="docGrand">'+docMoney(0)+'</strong></div></div>'+
+ '<div class="doc-total-note" id="docSummaryHint">Amounts update automatically. Calculations are checked again by the server when saved.</div>'+
+ '<div class="doc-controls"><button type="button" id="docLivePrint">Preview / Print PDF</button></div>'+
+ '<p class="hint" style="font-size:11px;color:#8294a8;margin-top:15px">Use your browser’s “Save as PDF” option to create a PDF copy.</p></aside></form>';
+ closeModal();
+ modalWindow(id?'Edit '+kind.charAt(0).toUpperCase()+kind.slice(1):'Create professional invoice / estimate',form,
+ '<button class="btn neutral" data-action="closeModal">Cancel</button><button class="btn primary" id="docSave" type="submit" form="invoiceForm">'+(id?'Save changes':'Create document')+'</button>');
+ $('#modalLayer').classList.add('doc-modal');
  const el=$('#invoiceForm');
- const extract=()=>[...el.querySelectorAll('.doc-line')].map(n=>({description:n.querySelector('[name=line_desc]').value.trim(),quantity:Number(n.querySelector('[name=line_qty]').value),unit_price:Number(n.querySelector('[name=line_price]').value)}));
- const calc=()=>{let sum=extract().reduce((v,x)=>v+x.quantity*x.unit_price,0),disc=Number(el.discountAmount.value||0),tax=Number(el.taxRate.value||0);$('#docTotals').textContent='Subtotal: '+money(sum)+'  ·  Discount: '+money(disc)+'  ·  Tax: '+money(Math.max(0,sum-disc)*tax/100)+'  ·  TOTAL: '+money(Math.max(0,sum-disc)*(1+tax/100))};
- $('#addDocLine').onclick=()=>{$('#docLines').insertAdjacentHTML('beforeend',docLine());calc()};
- $('#docLines').onclick=ev=>{if(ev.target.classList.contains('doc-remove')){if($('#docLines').children.length===1)return notify('At least one line required',true);ev.target.closest('.doc-line').remove();calc()}};
- el.oninput=calc;calc();
- el.onsubmit=async ev=>{ev.preventDefault();let b=Object.fromEntries(new FormData(el));['line_desc','line_qty','line_price'].forEach(k=>delete b[k]);b.items=extract();if(b.items.some(x=>!x.description||!(x.quantity>0)||x.unit_price<0))return notify('Invalid line item',true);b.taxRate=Number(b.taxRate);b.discountAmount=Number(b.discountAmount);b.amount=0;for(let k of ['clientId','jobId','dueDate'])if(!b[k])b[k]=null;try{await api('records/documents'+(id?'/'+id:''),{method:id?'PUT':'POST',body:b});closeModal();await refresh();notify('Document saved')}catch(err){notify(err.message,true)}};
+ const getLines=()=>[...el.querySelectorAll('.doc-line')].map(n=>({
+ description:n.querySelector('[name=line_desc]').value.trim(),
+ quantity:Number(n.querySelector('[name=line_qty]').value),
+ unit_price:Number(n.querySelector('[name=line_price]').value)
+ }));
+ const getPayload=()=>{
+  const body=Object.fromEntries(new FormData(el));
+  ['line_desc','line_qty','line_price'].forEach(k=>delete body[k]);
+  body.items=getLines();body.taxRate=Number(body.taxRate||0);body.discountAmount=Number(body.discountAmount||0);
+  body.amount=0;body.clientId=body.clientId||null;
+  body.dueDate=body.dueDate||null;body.jobId=r.jobId||null;
+  if(body.docType==='estimate'&&body.status==='paid')body.status='draft';
+  return body;
+ };
+ const update=()=>{
+  const b=getPayload(),v=docCost(b.items,b.discountAmount,b.taxRate);
+  [...el.querySelectorAll('.doc-line')].forEach((node,i)=>{
+   const x=b.items[i];node.querySelector('.doc-line-amount').textContent=docMoney(Math.round(x.quantity*x.unit_price*100)/100);
+  });
+  const put=(id,val)=>{const node=$('#'+id);if(node)node.textContent=val};
+  put('docSub',docMoney(v.subtotal));put('docDiscount','− '+docMoney(v.discount));put('docTax',docMoney(v.tax));put('docGrand',docMoney(v.total));
+  put('docPreviewTitle',b.docType==='estimate'?'ESTIMATE':'INVOICE');
+  put('docTypeChip',b.docType.toUpperCase());put('docPreviewNumber',b.number||'New document');
+  put('docPreviewClient',b.billToName||'Customer name required');
+  put('docPreviewDates',(b.issueDate||'Not set')+' · '+(b.dueDate||'No due date'));
+  put('docSummaryHint',v.discount>v.subtotal?'Discount cannot exceed subtotal.':'All amounts in USD. Financial totals are validated on save.');
+ };
+ $('#docClient').addEventListener('change',ev=>{
+  const client=(data.clients||[]).find(c=>c.id===ev.target.value);
+  if(client){
+   for(const [f,val] of Object.entries({billToName:client.name,billToEmail:client.email,billToPhone:client.phone})){
+    el.elements[f].value=val||'';
+   }
+  }
+  update();
+ });
+ el.elements.docType.addEventListener('change',ev=>{
+  if(!id&&/^INV-|^EST-/.test(el.elements.number.value))el.elements.number.value=docId(ev.target.value);
+  update();
+ });
+ $('#addDocLine').addEventListener('click',()=>{$('#docLines').insertAdjacentHTML('beforeend',docEditorLine());update();});
+ $('#docLines').addEventListener('click',ev=>{
+  const remove=ev.target.closest('.doc-remove');if(!remove)return;
+  if($('#docLines').children.length<=1)return notify('At least one service line is required.',true);
+  remove.closest('.doc-line').remove();update();
+ });
+ el.addEventListener('input',update);el.addEventListener('change',update);update();
+ $('#docLivePrint').addEventListener('click',()=>{
+  const b=getPayload(),v=docCost(b.items,b.discountAmount,b.taxRate);
+  if(!b.billToName.trim()||!b.number.trim()||b.items.some(x=>!x.description||!(x.quantity>0)||x.unit_price<0)||v.discount>v.subtotal)return notify('Complete valid client, document and line item information before preview.',true);
+  invoicePrintData({...b,subtotal:v.subtotal,discountAmount:v.discount,taxAmount:v.tax,amount:v.total},id?'Saved document':'DRAFT PREVIEW');
+ });
+ el.addEventListener('submit',async ev=>{
+  ev.preventDefault();const b=getPayload(),v=docCost(b.items,b.discountAmount,b.taxRate);
+  if(!b.billToName.trim()||!b.number.trim())return notify('Customer name and document number are required.',true);
+  if(!b.items.length||b.items.some(x=>!x.description||!Number.isFinite(x.quantity)||x.quantity<=0||!Number.isFinite(x.unit_price)||x.unit_price<0))return notify('Check the quantities, rates and descriptions.',true);
+  if(b.discountAmount<0||b.discountAmount>v.subtotal||b.taxRate<0||b.taxRate>100)return notify('Check discount and tax rate.',true);
+  if(b.dueDate&&b.dueDate<b.issueDate)return notify('Due date cannot be earlier than issue date.',true);
+  const save=$('#docSave');save.disabled=true;save.textContent='Saving…';
+  try{
+   await api('records/documents'+(id?'/'+encodeURIComponent(id):''),{method:id?'PUT':'POST',body:b});
+   closeModal();await refresh();notify((b.docType==='estimate'?'Estimate':'Invoice')+' saved successfully');
+  }catch(err){notify(err.message,true);save.disabled=false;save.textContent=id?'Save changes':'Create document';}
+ });
 }
 function invoicePayment(id){
  const d=data.documents.find(x=>x.id===id),balance=d?docBalance(d):0;if(!d||balance<=0||d.docType!=='invoice')return notify('No invoice balance due',true);
  closeModal();modalWindow('Record payment','<form id="payForm"><div class="form-grid"><label>Amount USD · Balance '+money(balance)+'<input type="number" name="amount" required min=".01" max="'+balance.toFixed(2)+'" step=".01" value="'+balance.toFixed(2)+'"></label><label>Method<select name="method"><option value="bank_transfer">Bank transfer</option><option value="cash">Cash</option><option value="card_external">Card paid externally</option><option value="check">Check</option><option value="other">Other</option></select></label><label>Reference<input name="reference"></label><label>Notes<textarea name="notes"></textarea></label></div></form>','<button class="btn neutral" data-action="closeModal">Cancel</button><button class="btn primary" form="payForm">Record payment</button>');
  $('#payForm').onsubmit=async ev=>{ev.preventDefault();const b=Object.fromEntries(new FormData(ev.target));b.documentId=id;try{await api('payments',{method:'POST',body:b});closeModal();await refresh();notify('Payment recorded')}catch(err){notify(err.message,true)}};
 }
+
+function invoicePrintData(d,tag=''){
+ const items=Array.isArray(d.items)&&d.items.length?d.items:[{description:d.description||'Professional services',quantity:1,unit_price:d.subtotal||d.amount||0}];
+ const due=d.docType==='invoice'?(d.id?docBalance(d):Number(d.amount||0)):0;
+ const client=data.clients?.find(x=>x.id===d.clientId);
+ const name=d.billToName||client?.name||'Client';
+ const email=d.billToEmail||client?.email||'';
+ const phone=d.billToPhone||client?.phone||'';
+ const rows=items.map(x=>'<tr><td>'+e(x.description)+'</td><td class="num">'+e(x.quantity)+'</td><td class="num">'+docMoney(x.unit_price)+'</td><td class="num">'+docMoney(Math.round(Number(x.quantity)*Number(x.unit_price)*100)/100)+'</td></tr>').join('');
+ const box=(heading,value)=>value?'<div class="print-note"><strong>'+heading+'</strong>'+e(value)+'</div>':'';
+ const sheet=document.createElement('section');sheet.id='docPrint';sheet.className='docPrintSheet';
+ sheet.innerHTML='<div class="print-heading"><div class="print-brand"><img src="https://nexabridgesolution.github.io/assets/nexabridge-footer-logo.png" alt="" style="vertical-align:middle"><span>NexaBridge Solutions<small>BUSINESS SERVICES</small></span></div><div class="print-meta"><h1>'+(d.docType==='estimate'?'Estimate':'Invoice')+'</h1><strong>№ '+e(d.number||'DRAFT')+'</strong><div>'+e(tag||d.status||'Draft')+'</div></div></div>'+
+ '<div class="print-grid"><div><h4>Issued by</h4><p><strong>NexaBridge Solutions</strong><br>Business solutions & professional services</p></div>'+
+ '<div><h4>Bill to</h4><p><strong>'+e(name)+'</strong><br>'+e(email)+'<br>'+e(phone)+'<br>'+e(d.billToAddress||'').replaceAll('\n','<br>')+'</p></div></div>'+
+ '<div class="print-grid"><div><h4>Document details</h4><p>Issue date: '+docDate(d.issueDate)+'<br>'+(d.docType==='estimate'?'Valid until: ':'Due date: ')+docDate(d.dueDate)+'</p></div><div><h4>Reference</h4><p>'+e(d.reference||'—')+'<br>'+e(d.description||'')+'</p></div></div>'+
+ '<table class="print-table"><thead><tr><th>Description</th><th class="num">Quantity</th><th class="num">Unit price</th><th class="num">Amount</th></tr></thead><tbody>'+rows+'</tbody></table>'+
+ '<div class="print-summary"><div><span>Subtotal</span><strong>'+docMoney(d.subtotal)+'</strong></div><div><span>Discount</span><strong>− '+docMoney(d.discountAmount)+'</strong></div><div><span>Tax ('+e(d.taxRate||0)+'%)</span><strong>'+docMoney(d.taxAmount)+'</strong></div><div class="final"><span>Total (USD)</span><strong>'+docMoney(d.amount)+'</strong></div>'+
+ (d.docType==='invoice'?'<div><span>Outstanding balance</span><strong>'+docMoney(due)+'</strong></div>':'')+'</div>'+
+ box('Payment / estimate terms',d.paymentTerms)+box('Additional notes',d.notes)+
+ '<div class="print-footer">'+e(d.footerText||'Thank you for working with NexaBridge Solutions.')+'<br>Generated by NexaBridge CRM. This document is not proof of payment.</div>';
+ const prior=document.getElementById('docPrint');if(prior)prior.remove();
+ document.body.append(sheet);
+ const remove=()=>{if(sheet.isConnected)sheet.remove();window.removeEventListener('afterprint',remove)};
+ window.addEventListener('afterprint',remove,{once:true});
+ window.print();
+ setTimeout(remove,120000);
+}
 function invoicePrint(id){
- const d=data.documents.find(x=>x.id===id);if(!d)return;
- const client=data.clients.find(c=>c.id===d.clientId),lines=Array.isArray(d.items)&&d.items.length?d.items:[{description:d.description||'Service',quantity:1,unit_price:d.subtotal||d.amount}];
- const sheet=document.createElement('section');sheet.id='docPrint';sheet.innerHTML='<h1>NexaBridge Solutions</h1><h2>'+e(d.docType.toUpperCase())+' '+e(d.number)+'</h2><p>Client: '+e(client?.name||'Not linked')+'</p><p>Issued '+e(d.issueDate)+' · Due '+e(d.dueDate||'—')+'</p><table><thead><tr><th>Service</th><th>Qty</th><th>Unit price</th><th>Line total</th></tr></thead><tbody>'+lines.map(x=>'<tr><td>'+e(x.description)+'</td><td>'+e(x.quantity)+'</td><td>'+money(x.unit_price)+'</td><td>'+money(Number(x.quantity)*Number(x.unit_price))+'</td></tr>').join('')+'</tbody></table><p class="doc-total">Subtotal '+money(d.subtotal)+'<br>Discount '+money(d.discountAmount)+'<br>Tax '+money(d.taxAmount)+'<br><strong>Total '+money(d.amount)+'</strong><br>Balance due '+money(docBalance(d))+'</p><p>'+e(d.notes||'')+'</p><footer>Document generated by NexaBridge CRM · Not a receipt for payment.</footer>';
- document.body.append(sheet);window.print();setTimeout(()=>sheet.remove(),2000);
+ const d=data.documents.find(x=>x.id===id);if(!d)return notify('Document not found.',true);
+ invoicePrintData(d);
 }
 
-function wzRecords(k){let job=k==='jobs',rows=data[k]||[],cols=job?[['title','Job'],['service','Service'],['scheduledStart','Scheduled'],['assignedTo','Assigned'],['status','Status']]:[['number','Number'],['docType','Type'],['description','Description'],['amount','Amount'],['status','Status']];return wzHead(job?'Jobs':'Estimates & Invoices',job?'Manage all work orders and customers':'Track documents; payments are not processed here.',wzBtn(job?'New job':'New document',k)) +wzBox(rows.length+' records','<div class="wz-tablewrap"><table class="wz-table"><thead><tr>'+cols.map(x=>'<th>'+x[1]+'</th>').join('')+'<th>Actions</th></tr></thead><tbody>'+rows.map(r=>'<tr>'+cols.map(([f])=>'<td>'+(f==='status'?wzTag(r[f]):f==='amount'?money(r[f]):f==='scheduledStart'?wzWhen(r[f]):e(r[f]||'—'))+'</td>').join('')+'<td><button class="wz-ref" data-action="wzEdit" data-kind="'+k+'" data-id="'+e(r.id)+'">Edit</button>'+(k==='documents'?'<button class="wz-ref" data-action="invoicePrint" data-id="'+e(r.id)+'">Print / PDF</button>'+(r.docType==='invoice'&&docBalance(r)>0?'<button class="wz-ref" data-action="invoicePay" data-id="'+e(r.id)+'">Record payment</button>':''):'')+'</td></tr>').join('')+'</tbody></table>'+(rows.length?'':'<div class="wz-empty">No records yet</div>')+'</div>')}
+let docTypeFilter='all',docSearchQuery='';
+function documentRows(){
+ const query=docSearchQuery.toLowerCase().trim();
+ return (data.documents||[]).filter(d=>(docTypeFilter==='all'||d.docType===docTypeFilter)&&(!query||[d.number,d.billToName,d.billToEmail,d.description,d.reference,d.status].some(x=>String(x||'').toLowerCase().includes(query)))).sort((a,b)=>String(b.issueDate||'').localeCompare(String(a.issueDate||'')));
+}
+function documentTableBody(){
+ const rows=documentRows();
+ if(!rows.length)return '<tr><td colspan="8" class="wz-empty">No matching invoices or estimates. Create your first document above.</td></tr>';
+ return rows.map(d=>{
+  const balance=d.docType==='invoice'?docBalance(d):null;
+  const paid=(data.payments||[]).some(p=>p.document_id===d.id);
+  return '<tr><td><span class="doc-number">'+e(d.number)+'</span><div class="doc-record-small">'+e(d.reference||'')+'</div></td>'+
+  '<td><span class="doc-type-chip">'+e(d.docType)+'</span></td>'+
+  '<td><div class="doc-client-name">'+e(docBillName(d))+'</div><span class="doc-record-small">'+e(d.billToEmail||'')+'</span></td>'+
+  '<td>'+docDate(d.issueDate)+'</td><td>'+docDate(d.dueDate)+'</td>'+
+  '<td style="font-weight:750">'+docMoney(d.amount)+'</td><td>'+(balance===null?'—':docMoney(balance))+'</td>'+
+  '<td>'+wzTag(d.status)+'</td><td><div class="doc-list-actions">'+
+  '<button class="wz-ref" data-action="invoicePrint" data-id="'+e(d.id)+'">Print / PDF</button>'+
+  (!paid&&d.status!=='paid'?'<button class="wz-ref" data-action="wzEdit" data-kind="documents" data-id="'+e(d.id)+'">Edit</button>':'')+
+  (d.docType==='estimate'?'<button class="wz-ref" data-action="convertEstimate" data-id="'+e(d.id)+'">Create invoice</button>':'')+
+  (d.docType==='invoice'&&balance>0&&d.status!=='void'?'<button class="wz-ref" data-action="invoicePay" data-id="'+e(d.id)+'">Record payment</button>':'')+
+  '<button class="wz-ref" data-action="duplicateDocument" data-id="'+e(d.id)+'">Duplicate</button></div></td></tr>';
+ }).join('');
+}
+function documentsPage(){
+ const rows=data.documents||[],invoices=rows.filter(x=>x.docType==='invoice'&&x.status!=='void'),quotes=rows.filter(x=>x.docType==='estimate'),balance=invoices.reduce((n,d)=>n+docBalance(d),0),paid=invoices.reduce((n,d)=>n+Number(d.amount||0)-docBalance(d),0);
+ return '<div class="doc-page-head">'+wzHead('Invoices & Estimates','Professional quotations, itemized invoices and payment tracking','<button class="wz-action wz-lite" data-action="createEstimate">+ New estimate</button> <button class="wz-action" data-action="createInvoice">+ New invoice</button>')+'</div>'+
+ '<div class="doc-page-stats">'+[['Total documents',rows.length],['Estimates',quotes.length],['Outstanding',docMoney(balance)],['Recorded payments',docMoney(paid)]].map(([name,value])=>'<div class="doc-page-stat"><small>'+name+'</small><strong>'+value+'</strong></div>').join('')+'</div>'+
+ '<section class="wz-panel"><div class="doc-page-tools"><input id="docSearch" type="search" value="'+e(docSearchQuery)+'" placeholder="Search number, customer, status…" aria-label="Search documents"><select id="docFilter" aria-label="Filter document type">'+[['all','All documents'],['invoice','Invoices'],['estimate','Estimates']].map(([v,label])=>'<option value="'+v+'" '+(docTypeFilter===v?'selected':'')+'>'+label+'</option>').join('')+'</select><span class="muted" style="font-size:11px">All amounts USD · Documents are stored in Supabase</span></div>'+
+ '<div class="wz-tablewrap"><table class="wz-table"><thead><tr><th>Number</th><th>Type</th><th>Customer</th><th>Issued</th><th>Due</th><th>Total</th><th>Balance</th><th>Status</th><th>Actions</th></tr></thead><tbody id="docTableBody">'+documentTableBody()+'</tbody></table></div></section>';
+}
+function wzRecords(k){if(k==='documents')return documentsPage();
+ const rows=data[k]||[],cols=[['title','Job'],['service','Service'],['scheduledStart','Scheduled'],['assignedTo','Assigned'],['status','Status']];
+ return wzHead('Jobs','Service orders',wzBtn('New job','jobs'))+wzBox(rows.length+' records','<div class="wz-tablewrap"><table class="wz-table"><thead><tr>'+cols.map(x=>'<th>'+x[1]+'</th>').join('')+'<th>Actions</th></tr></thead><tbody>'+rows.map(r=>'<tr>'+cols.map(([f])=>'<td>'+(f==='status'?wzTag(r[f]):f==='scheduledStart'?wzWhen(r[f]):e(r[f]||'—'))+'</td>').join('')+'<td><button class="wz-ref" data-action="wzEdit" data-kind="jobs" data-id="'+e(r.id)+'">Edit</button></td></tr>').join('')+'</tbody></table></div>');
+}
 function wzForm(k,id){if(k==='documents'){invoiceEditor(id);return}if(!WZFIELDS[k]){openForm(k,id);return}let r=id?data[k].find(x=>x.id===id):null,body='<form id="wzForm"><div class="form-grid">'+WZFIELDS[k].map(([f,label,type])=>{let val=r?.[f]??'',widget='';if(Array.isArray(type))widget='<select name="'+f+'">'+type.map(x=>'<option value="'+x+'" '+(x===val?'selected':'')+'>'+x.replaceAll('_',' ')+'</option>').join('')+'</select>';else if(['client','job'].includes(type)){let list=type==='client'?data.clients:data.jobs;widget='<select name="'+f+'"><option value="">Unlinked</option>'+list.map(x=>'<option value="'+e(x.id)+'" '+(x.id===val?'selected':'')+'>'+e(x.name||x.title)+'</option>').join('')+'</select>'}else if(type==='textarea')widget='<textarea name="'+f+'">'+e(val)+'</textarea>';else widget='<input name="'+f+'" type="'+type+'" value="'+e(type==='datetime-local'&&val?val.slice(0,16):val)+'" '+(['title','number'].includes(f)?'required':'')+'>';return '<div class="field"><label>'+e(label)+'</label>'+widget+'</div>'}).join('')+'</div></form>';modalWindow((id?'Edit ':'Create ')+(k==='jobs'?'Job':'Document'),body,'<button class="btn neutral" data-action="closeModal">Cancel</button><button class="btn primary" form="wzForm">Save record</button>');$('#wzForm').addEventListener('submit',async ev=>{ev.preventDefault();let body=Object.fromEntries(new FormData(ev.target));for(let f of ['clientId','jobId','leadId','dueDate','scheduledStart','scheduledEnd'])if(body[f]==='')body[f]=null;for(let f of ['scheduledStart','scheduledEnd'])if(body[f])body[f]=new Date(body[f]).toISOString();try{await api('records/'+k+(id?'/'+encodeURIComponent(id):''),{method:id?'PUT':'POST',body});closeModal();await refresh();notify('Saved successfully')}catch(err){notify(err.message,true)}})}
 
 
@@ -505,12 +860,138 @@ function internalAutomation(){
  wzBox('Email draft outbox',emails.slice(0,20).map(n=>'<div class="wz-item"><div class="wz-body"><b>'+e(n.subject)+'</b><small>To: '+e(n.recipientEmail)+' · '+e(n.state)+'</small></div></div>').join('')||'<div class="wz-empty">No email drafts</div>','<button class="wz-action" data-action="newEmailDraft">+ Draft email</button>')+
  '<p class="muted" style="font-size:12px">Gmail connected to ChatGPT is not an authorization for CRM background emailing. Drafts will not be sent until CRM-specific mail authorization is configured.</p>';
 }
-function draftEditor(){
- closeModal();modalWindow('Prepare email draft','<form id="draftForm"><div class="form-grid"><label class="field">Recipient<input type="email" name="recipientEmail" required></label><label class="field">Subject<input name="subject" required maxlength="240"></label><label class="field full">Message<textarea name="body" required rows="8"></textarea></label></div></form>','<button class="btn neutral" data-action="closeModal">Cancel</button><button class="btn primary" form="draftForm">Save draft</button>');
- $('#draftForm').onsubmit=async ev=>{ev.preventDefault();try{await api('records/email_queue',{method:'POST',body:Object.fromEntries(new FormData(ev.target))});closeModal();await refresh();notify('Saved as draft. No email was sent.')}catch(err){notify(err.message,true)}};
+
+let emailSearch='',messengerPeer='general',messengerPollStarted=false,messengerPollBusy=false;
+function commAge(value){
+ if(!value)return '';
+ const dt=new Date(value);return isNaN(+dt)?'':dt.toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+}
+function commEmailRows(){
+ const q=emailSearch.trim().toLowerCase();
+ const rows=(data.email_queue||[]).filter(x=>[x.recipientEmail,x.subject,x.body,x.state].some(t=>String(t||'').toLowerCase().includes(q)));
+ if(!rows.length)return '<div class="wz-empty">No email drafts match your search.</div>';
+ return rows.map(x=>'<div class="comm-email-row">'+
+ '<div><strong>'+e(x.subject)+'</strong><small>'+e((x.body||'').slice(0,100))+'</small></div>'+
+ '<div><b>'+e(x.recipientEmail)+'</b><small>'+commAge(x.createdAt)+'</small></div>'+
+ '<div><span class="comm-pill">'+e(x.state||'draft')+'</span></div>'+
+ '<div class="buttons"><button data-action="editEmail" data-id="'+e(x.id)+'">Edit</button><button data-action="openEmail" data-id="'+e(x.id)+'">Open in email app</button><button data-action="copyEmail" data-id="'+e(x.id)+'">Copy</button></div></div>').join('');
+}
+function emailCenter(){
+ const drafts=data.email_queue||[],templates=data.email_templates||[],clients=data.clients||[];
+ return '<div class="comm-head">'+wzHead('Email Center','Compose client messages, manage drafts and reusable templates','<button class="wz-action" data-action="composeEmail">+ Compose email</button>')+'</div>'+
+ '<div class="comm-info"><strong>Email provider status: Not connected.</strong> The CRM saves private drafts and opens your installed email application when you choose. Emails are not automatically sent, received or tracked until an approved provider is connected.</div>'+
+ '<div class="comm-metrics">'+[['Saved drafts',drafts.filter(x=>x.state==='draft').length],['Email templates',templates.length],['Clients with email',clients.filter(x=>x.email).length]].map(([title,val])=>'<div class="comm-metric"><small>'+title+'</small><strong>'+val+'</strong></div>').join('')+'</div>'+
+ '<div class="comm-card" style="margin-bottom:19px"><div class="comm-card-header"><h3>Draft workspace</h3><input type="search" id="emailSearch" placeholder="Search drafts…" value="'+e(emailSearch)+'" style="padding:9px 11px;border:1px solid #dfe7ef;border-radius:8px;max-width:250px"></div><div id="emailResults">'+commEmailRows()+'</div></div>'+
+ '<div class="comm-card"><div class="comm-card-header"><h3>Reusable email templates</h3><button class="wz-action wz-lite" data-action="newEmailTemplate">+ New template</button></div>'+
+ '<div class="comm-template-grid">'+(templates.length?templates.map(x=>'<div class="comm-template"><b>'+e(x.name)+'</b><p>'+e(x.subject)+'<br>'+e(x.body.slice(0,130))+'</p><button data-action="useEmailTemplate" data-id="'+e(x.id)+'">Use template</button> '+(['owner','admin'].includes(user.role)?'<button data-action="editEmailTemplate" data-id="'+e(x.id)+'">Edit</button>':'')+'</div>').join(''):'<div class="wz-empty">No templates yet. Add reusable outreach and follow-up messages.</div>')+'</div></div>';
+}
+function emailComposer(id=null,starting={}){
+ const existing=id?(data.email_queue||[]).find(x=>x.id===id):null;
+ if(id&&!existing)return notify('Draft not found.',true);
+ const r=existing||starting;
+ const clientOptions='<option value="">Select client for recipient</option>'+(data.clients||[]).filter(x=>x.email).map(x=>'<option value="'+e(x.id)+'">'+e(x.name)+' — '+e(x.email)+'</option>').join('');
+ const templateOptions='<option value="">Use a saved template</option>'+(data.email_templates||[]).map(x=>'<option value="'+e(x.id)+'">'+e(x.name)+'</option>').join('');
+ const body='<form id="commEmailForm" class="comm-compose-grid">'+
+ '<label>Client contact<select id="commSelectClient">'+clientOptions+'</select></label>'+
+ '<label>Template<select id="commSelectTemplate">'+templateOptions+'</select></label>'+
+ '<label class="full">To (email address)<input name="recipientEmail" type="email" required maxlength="250" value="'+e(r.recipientEmail||'')+'" placeholder="client@example.com" autocomplete="email"></label>'+
+ '<label class="full">Subject<input name="subject" required maxlength="240" value="'+e(r.subject||'')+'" placeholder="Email subject"></label>'+
+ '<label class="full">Message<textarea name="body" required maxlength="10000" placeholder="Write your message…">'+e(r.body||'')+'</textarea></label>'+
+ '</form><div class="comm-composer-note">Saving creates a private CRM draft. The “Open in email app” button later lets you send it manually using your configured email application.</div>';
+ closeModal();modalWindow(id?'Edit email draft':'Compose client email',body,'<button class="btn neutral" data-action="closeModal">Cancel</button><button class="btn primary" form="commEmailForm">Save draft</button>');
+ $('#modalLayer').classList.add('comm-compose');
+ const form=$('#commEmailForm');
+ $('#commSelectClient').onchange=ev=>{const x=data.clients.find(c=>c.id===ev.target.value);if(x)form.elements.recipientEmail.value=x.email||''};
+ $('#commSelectTemplate').onchange=ev=>{const x=data.email_templates.find(t=>t.id===ev.target.value);if(x){form.elements.subject.value=x.subject;form.elements.body.value=x.body}};
+ form.onsubmit=async ev=>{ev.preventDefault();const b=Object.fromEntries(new FormData(form));const button=form.getAttribute('id')&&document.querySelector('.comm-compose .dialog-footer .btn.primary');if(button)button.disabled=true;
+  try{await api('records/email_queue'+(id?'/'+encodeURIComponent(id):''),{method:id?'PUT':'POST',body:b});closeModal();await refresh();notify('Draft saved — no email sent.');}
+  catch(err){notify(err.message,true);if(button)button.disabled=false}
+ };
+}
+function emailTemplateEditor(id=null){
+ const r=id?(data.email_templates||[]).find(x=>x.id===id):{};if(id&&!r)return notify('Template not found.',true);
+ const body='<form id="emailTemplateForm" class="comm-compose-grid"><label class="full">Template name<input name="name" required maxlength="140" value="'+e(r.name||'')+'" placeholder="Follow-up after meeting"></label><label class="full">Email subject<input name="subject" required maxlength="240" value="'+e(r.subject||'')+'"></label><label class="full">Reusable message<textarea name="body" required maxlength="10000">'+e(r.body||'')+'</textarea></label></form>';
+ closeModal();modalWindow(id?'Edit email template':'New reusable email template',body,'<button class="btn neutral" data-action="closeModal">Cancel</button><button class="btn primary" form="emailTemplateForm">Save template</button>');
+ $('#modalLayer').classList.add('comm-compose');
+ $('#emailTemplateForm').onsubmit=async ev=>{ev.preventDefault();try{await api('records/email_templates'+(id?'/'+encodeURIComponent(id):''),{method:id?'PUT':'POST',body:Object.fromEntries(new FormData(ev.target))});closeModal();await refresh();notify('Template saved');}catch(err){notify(err.message,true)}};
+}
+function emailHandoff(id){
+ const draft=(data.email_queue||[]).find(x=>x.id===id);if(!draft)return notify('Draft not found.',true);
+ if(!confirm('Open your email application with this draft? The CRM will not send or mark it as sent.'))return;
+ const url='mailto:'+encodeURIComponent(draft.recipientEmail)+'?subject='+encodeURIComponent(draft.subject)+'&body='+encodeURIComponent(draft.body);
+ if(url.length>4000){notify('Message is long. Copy it instead of opening a mailto link.',true);return}
+ window.location.href=url;
+}
+async function emailCopy(id){
+ const draft=(data.email_queue||[]).find(x=>x.id===id);if(!draft)return;
+ try{await navigator.clipboard.writeText('To: '+draft.recipientEmail+'\nSubject: '+draft.subject+'\n\n'+draft.body);notify('Email draft copied');}
+ catch{notify('Could not copy automatically. Open Edit to copy text.',true)}
+}
+function draftEditor(){emailComposer()}
+function messengerMembers(){
+ const me=user?.id;
+ return (data.directory||[]).filter(m=>m.id!==me);
+}
+function messengerPeerName(){
+ if(messengerPeer==='general')return 'NexaBridge · Team General';
+ const member=messengerMembers().find(x=>x.id===messengerPeer);return member?.email||'Team member';
+}
+function messengerMessages(){
+ const me=user?.id;
+ const list=(data.messages||[]).filter(m=>messengerPeer==='general'?!m.recipient_id:((m.sender_id===me&&m.recipient_id===messengerPeer)||(m.sender_id===messengerPeer&&m.recipient_id===me)));
+ return list.sort((a,b)=>String(a.created_at).localeCompare(String(b.created_at)));
+}
+function messengerHistory(){
+ const items=messengerMessages(),me=user?.id;
+ if(!items.length)return '<div class="comm-chat-empty">No messages here yet.<br>Start the conversation with your colleagues.</div>';
+ return items.map(m=>{
+  const mine=m.sender_id===me;
+  const sender=mine?'You':(data.directory||[]).find(x=>x.id===m.sender_id)?.email||'Colleague';
+  return '<div class="comm-message '+(mine?'mine':'')+'"><div class="comm-bubble">'+(messengerPeer==='general'?'<div style="font-size:10px;opacity:.72;font-weight:800;margin-bottom:5px">'+e(sender)+'</div>':'')+
+  '<p>'+e(m.body)+'</p><small>'+commAge(m.created_at)+'</small></div></div>';
+ }).join('');
+}
+function messengerPage(){
+ const members=messengerMembers();
+ if(messengerPeer!=='general'&&!members.some(x=>x.id===messengerPeer))messengerPeer='general';
+ const peer=(id,name,caption,icon)=>'<button class="comm-peer '+(messengerPeer===id?'selected':'')+'" data-action="messengerPeer" data-peer="'+e(id)+'"><span class="comm-peer-avatar">'+e(icon)+'</span><span class="comm-peer-text"><strong>'+e(name)+'</strong><small>'+e(caption)+'</small></span></button>';
+ return '<div class="comm-head"><h1>Team Messenger</h1><p>Private NexaBridge conversations · Protected by Supabase access policies</p></div>'+
+ '<div class="comm-chat-layout"><aside class="comm-chat-list"><div class="comm-chat-list-head"><b>Conversations</b><span>Company team & direct messages</span></div><div class="comm-chat-peers">'+
+ peer('general','Team General','Company-wide channel','NB')+
+ members.map(m=>peer(m.id,m.email||'Colleague',m.role+' · Direct message',String(m.email||'T').slice(0,1).toUpperCase())).join('')+
+ '</div></aside><div class="comm-chat-work"><div class="comm-chat-header"><div><strong>'+e(messengerPeerName())+'</strong><small>'+(messengerPeer==='general'?'Visible to all NexaBridge team members':'Only you and this colleague can access these messages')+'</small></div><span class="comm-pill">Internal</span></div>'+
+ '<div class="comm-stream" id="commStream">'+messengerHistory()+'</div>'+
+ (user.role==='viewer'?'<div class="comm-chat-form">Read-only team access. Ask an administrator to grant Agent access to send messages.</div>':'<form class="comm-chat-form" id="commMessageForm"><textarea name="message" aria-label="Write a message" maxlength="5000" required placeholder="Write your message… (Ctrl + Enter to send)"></textarea><button type="submit">Send</button></form>')+'</div></div>';
+}
+function messengerBind(){
+ const stream=$('#commStream');if(stream)stream.scrollTop=stream.scrollHeight;
+ const form=$('#commMessageForm');
+ if(form){
+  form.onsubmit=async ev=>{
+   ev.preventDefault();const message=form.elements.message.value.trim();if(!message)return;
+   const button=form.querySelector('button');button.disabled=true;
+   try{
+    await api('messages',{method:'POST',body:{message,recipientId:messengerPeer==='general'?'':messengerPeer}});
+    data.messages=await api('messages');renderContent();
+   }catch(err){notify(err.message,true);button.disabled=false}
+  };
+  form.elements.message.addEventListener('keydown',ev=>{if(ev.key==='Enter'&&ev.ctrlKey){ev.preventDefault();form.requestSubmit()}});
+ }
+ if(!messengerPollStarted){
+  messengerPollStarted=true;
+  window.setInterval(async()=>{
+   if(page!=='messenger'||!user||messengerPollBusy)return;
+   messengerPollBusy=true;
+   try{
+    const latest=await api('messages');
+    const old=(data.messages||[]).map(x=>x.id).join(','),newer=latest.map(x=>x.id).join(',');
+    if(old!==newer){data.messages=latest;const list=$('#commStream');if(list){const follow=list.scrollHeight-list.scrollTop-list.clientHeight<100;list.innerHTML=messengerHistory();if(follow)list.scrollTop=list.scrollHeight}}
+   }catch{}finally{messengerPollBusy=false}
+  },15000);
+ }
 }
 
-function renderContent(){const content=$('#content');if(!content)return;content.innerHTML=page==='dashboard'?internalDash():page==='calendar'?internalCalendar():page==='automation'?internalAutomation():page==='team'?internalTeam():['catalog','equipment','technicians','time_entries','checklists','service_plans'].includes(page)?opsPage(page):page==='schedule'?wzSchedule():page==='jobs'?wzRecords('jobs'):page==='documents'?wzRecords('documents'):page==='dispatch'?wzDispatch():page==='reports'?reports():page==='settings'?settingsPage():page==='users'?usersPage():recordPage(page);const listSearch=$('#listSearch');if(listSearch)listSearch.addEventListener('input',ev=>{query=ev.target.value;const newContent=page==='dashboard'?dashboard():recordPage(page);const tmp=document.createElement('div');tmp.innerHTML=newContent;const table=$('.table-scroll')?.parentElement;const fresh=tmp.querySelector('.table-scroll')?.parentElement;if(table&&fresh)table.replaceWith(fresh);if(page==='deals'){const old=$('.kanban'),board=tmp.querySelector('.kanban');if(old&&board)old.replaceWith(board);}});const filterEl=$('#statusFilter');if(filterEl)filterEl.addEventListener('change',ev=>{filter=ev.target.value;renderContent();});const gs=$('#globalSearch');if(gs)gs.addEventListener('input',ev=>showSearchHits(ev.target.value));
+function renderContent(){const content=$('#content');if(!content)return;content.innerHTML=page==='dashboard'?internalDash():page==='calendar'?internalCalendar():page==='email'?emailCenter():page==='messenger'?messengerPage():page==='automation'?internalAutomation():page==='team'?internalTeam():['catalog','equipment','technicians','time_entries','checklists','service_plans'].includes(page)?opsPage(page):page==='schedule'?wzSchedule():page==='jobs'?wzRecords('jobs'):page==='documents'?wzRecords('documents'):page==='dispatch'?wzDispatch():page==='reports'?reports():page==='settings'?settingsPage():page==='users'?usersPage():recordPage(page);const listSearch=$('#listSearch');if(listSearch)listSearch.addEventListener('input',ev=>{query=ev.target.value;const newContent=page==='dashboard'?dashboard():recordPage(page);const tmp=document.createElement('div');tmp.innerHTML=newContent;const table=$('.table-scroll')?.parentElement;const fresh=tmp.querySelector('.table-scroll')?.parentElement;if(table&&fresh)table.replaceWith(fresh);if(page==='deals'){const old=$('.kanban'),board=tmp.querySelector('.kanban');if(old&&board)old.replaceWith(board);}});const filterEl=$('#statusFilter');if(filterEl)filterEl.addEventListener('change',ev=>{filter=ev.target.value;renderContent();});const gs=$('#globalSearch');if(gs)gs.addEventListener('input',ev=>showSearchHits(ev.target.value));if(page==='messenger')messengerBind();if(page==='email'){const search=$('#emailSearch');if(search)search.addEventListener('input',ev=>{emailSearch=ev.target.value;const rows=$('#emailResults');if(rows)rows.innerHTML=commEmailRows()})}if(page==='documents'){const inp=$('#docSearch'),sel=$('#docFilter');if(inp)inp.addEventListener('input',ev=>{docSearchQuery=ev.target.value;$('#docTableBody').innerHTML=documentTableBody()});if(sel)sel.addEventListener('change',ev=>{docTypeFilter=ev.target.value;$('#docTableBody').innerHTML=documentTableBody()})}
  const settingsForm=$('#settingsForm');if(settingsForm)settingsForm.addEventListener('submit',saveSettings);const restore=$('#restoreFile');if(restore)restore.addEventListener('change',importFile);}
 function optionsByType(type){if(type==='leadStatus')return STATUS.leads.map(s=>[s,t(s)]);if(type==='dealStatus')return STATUS.deals.map(s=>[s,t(s)]);if(type==='taskStatus')return STATUS.tasks.map(s=>[s,t(s)]);if(type==='priority')return ['low','medium','high'].map(s=>[s,t(s)]);if(type==='source')return [['',t('choose')],...SOURCES.map(([v,k])=>[v,t(k)])];if(type==='client')return [['',t('selectClient')],...data.clients.map(c=>[c.id,c.name])];if(type==='lead')return [['',t('selectLead')],...data.leads.map(c=>[c.id,c.name])];if(type==='service')return [['',t('choose')],...data.settings.services.map(s=>[s,s])];if(type==='relation')return [['',t('none')],...['leads','clients','deals'].flatMap(k=>data[k].map(v=>[`${k.slice(0,-1)}|${v.id}`,`${t(k.slice(0,-1))}: ${v.name||v.title}`]))];return [];}
 function formField(key,type,required,obj){let value=key==='linkedRef'?obj?.linkedType&&obj?.linkedId?`${obj.linkedType}|${obj.linkedId}`:'':fieldVal(obj,key);if(type==='priority'&&!value)value='medium';if(type==='taskStatus'&&!value)value='open';if(type==='leadStatus'&&!value)value='new';if(type==='dealStatus'&&!value)value='new';
@@ -549,7 +1030,23 @@ function openMyPassword(){closeModal();modal={kind:'password'};
  $('#passwordForm').addEventListener('submit',async ev=>{ev.preventDefault();const f=new FormData(ev.target);try{await api('account/password',{method:'POST',body:{current:f.get('current'),password:f.get('password')}});closeModal();user=null;csrf=null;data=null;renderAuth(false);notify(t('passwordChanged'));}catch(err){notify(err.message,true);}});
 }
 
-async function handleAction(action,el){const kind=el.dataset.kind,id=el.dataset.id;try{if(action==='newEvent'){eventEditor();return}if(action==='editEvent'){eventEditor(id);return}if(action==='eventICS'){eventICS(id);return}if(action==='inviteMember'){teamInvite();return}if(action==='editMember'){teamEdit(id);return}if(action==='removeMember'){if(!confirm('Revoke this employee\'s CRM access?'))return;await api('team',{method:'POST',body:{action:'remove',userId:id}});await refresh();notify('Access revoked');return}if(action==='markNotice'){await api('notifications/'+id,{method:'PATCH',body:{}});await refresh();return}if(action==='newEmailDraft'){draftEditor();return}if(action==='opsStock'){opsStock();return}if(action==='opsNew'||action==='opsEdit'){opsEditor(kind,action==='opsEdit'?id:null);return}if(action==='invoicePay'){invoicePayment(id);return}if(action==='invoicePrint'){invoicePrint(id);return}if(action==='wzAdd'||action==='wzEdit'){wzForm(kind,action==='wzEdit'?id:null);return}if(action==='wzMonth'){wzOffset=el.dataset.step==='0'?0:wzOffset+Number(el.dataset.step);renderContent();return}
+async function handleAction(action,el){const kind=el.dataset.kind,id=el.dataset.id;try{if(action==='newEvent'){eventEditor();return}if(action==='editEvent'){eventEditor(id);return}if(action==='eventICS'){eventICS(id);return}if(action==='inviteMember'){teamInvite();return}if(action==='editMember'){teamEdit(id);return}if(action==='removeMember'){if(!confirm('Revoke this employee\'s CRM access?'))return;await api('team',{method:'POST',body:{action:'remove',userId:id}});await refresh();notify('Access revoked');return}if(action==='markNotice'){await api('notifications/'+id,{method:'PATCH',body:{}});await refresh();return}if(action==='newEmailDraft'||action==='composeEmail'){emailComposer();return}
+ if(action==='editEmail'){emailComposer(id);return}
+ if(action==='openEmail'){emailHandoff(id);return}
+ if(action==='copyEmail'){await emailCopy(id);return}
+ if(action==='newEmailTemplate'){emailTemplateEditor();return}
+ if(action==='editEmailTemplate'){emailTemplateEditor(id);return}
+ if(action==='useEmailTemplate'){const source=(data.email_templates||[]).find(x=>x.id===id);if(source)emailComposer(null,{subject:source.subject,body:source.body});return}
+ if(action==='messengerPeer'){messengerPeer=el.dataset.peer||'general';renderContent();return}if(action==='opsStock'){opsStock();return}if(action==='opsNew'||action==='opsEdit'){opsEditor(kind,action==='opsEdit'?id:null);return}if(action==='createEstimate'){invoiceEditor(null,{docType:'estimate'});return}if(action==='createInvoice'){invoiceEditor();return}
+ if(action==='convertEstimate'||action==='duplicateDocument'){
+  const original=(data.documents||[]).find(x=>x.id===id);
+  if(!original)return notify('Document unavailable.',true);
+  const toInvoice=action==='convertEstimate';
+  const newType=toInvoice?'invoice':original.docType;
+  invoiceEditor(null,{...original,id:null,number:docId(newType),docType:newType,status:'draft',items:original.items});
+  return;
+ }
+ if(action==='invoicePay'){invoicePayment(id);return}if(action==='invoicePrint'){invoicePrint(id);return}if(action==='wzAdd'||action==='wzEdit'){wzForm(kind,action==='wzEdit'?id:null);return}if(action==='wzMonth'){wzOffset=el.dataset.step==='0'?0:wzOffset+Number(el.dataset.step);renderContent();return}
  if(action==='searchHit'){page=kind;query='';filter='all';render();openForm(kind,id);return;}
  if(action==='myPassword'){if(window.__NEXA_OFFLINE__){notify(t('offlineNotice'));return;}openMyPassword();return;}
  if(action==='menu'){menuOpen=!menuOpen;render();return;}
