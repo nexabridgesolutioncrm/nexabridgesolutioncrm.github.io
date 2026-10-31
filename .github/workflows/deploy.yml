@@ -1,4 +1,4 @@
-name: Deploy NexaBridge CRM to GitHub Pages
+name: Deploy NexaBridge CRM Professional
 
 on:
   push:
@@ -16,19 +16,29 @@ concurrency:
 
 jobs:
   deploy:
+    runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
-      - name: Configure Pages
+      - name: Verify and reconstruct professional CRM
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p _site
+          cat release/part{1,2,3,4}.txt | base64 -d > /tmp/nexabridge-crm.br
+          node -e 'const fs=require("node:fs");const z=require("node:zlib");fs.writeFileSync("_site/index.html",z.brotliDecompressSync(fs.readFileSync("/tmp/nexabridge-crm.br")))'
+          echo '6c82b8403fc9fd45d799ecbbac3c7c0cf961668b6ea7b57dc885d83f63e9cec9  _site/index.html' | sha256sum -c -
+          touch _site/.nojekyll
+          printf 'User-agent: *\nDisallow: /\n' > _site/robots.txt
+      - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
-      - name: Upload static CRM
+      - name: Upload release
         uses: actions/upload-pages-artifact@v4
         with:
-          path: '.'
-      - name: Deploy to GitHub Pages
+          path: '_site'
+      - name: Deploy Professional CRM
         id: deployment
         uses: actions/deploy-pages@v4
