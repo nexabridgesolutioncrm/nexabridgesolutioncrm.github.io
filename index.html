@@ -294,6 +294,7 @@ async function adapter(input,init={}){
  if(path==='me'&&method==='GET'){if(!session)throw Error('Please sign in.');await loadMember();return reply({user:member,csrf:'supabase-auth'})}
  if(path==='logout'&&method==='POST'){try{await request('/auth/v1/logout',{method:'POST'})}catch{}session=null;member=null;orgId=null;return reply({ok:true})}
  if(!session||!orgId)return err('Please sign in.',401);
+ if(path==='gmail'&&method==='POST'){if(!['owner','admin'].includes(member.role))return err('Administrator access required',403);return reply(await secured('/functions/v1/nexabridge-gmail',{method:'POST',body:b}));}
  if(path==='data'&&method==='GET')return reply(await getData());
  if(path==='messages'&&method==='GET'){const rows=await secured('/rest/v1/crm_messages?select=*&org_id=eq.'+orgId+'&order=created_at.desc&limit=300');return reply(rows);}
  if(path==='messages'&&method==='POST'){
@@ -874,12 +875,35 @@ function commEmailRows(){
  '<div><strong>'+e(x.subject)+'</strong><small>'+e((x.body||'').slice(0,100))+'</small></div>'+
  '<div><b>'+e(x.recipientEmail)+'</b><small>'+commAge(x.createdAt)+'</small></div>'+
  '<div><span class="comm-pill">'+e(x.state||'draft')+'</span></div>'+
- '<div class="buttons"><button data-action="editEmail" data-id="'+e(x.id)+'">Edit</button><button data-action="openEmail" data-id="'+e(x.id)+'">Open in email app</button><button data-action="copyEmail" data-id="'+e(x.id)+'">Copy</button></div></div>').join('');
+ '<div class="buttons"><button data-action="editEmail" data-id="'+e(x.id)+'">Edit</button><button data-action="openEmail" data-id="'+e(x.id)+'">Open in email app</button><button data-action="gmailSend" data-id="'+e(x.id)+'">Send with Gmail</button><button data-action="copyEmail" data-id="'+e(x.id)+'">Copy</button></div></div>').join('');
 }
+
+async function gmailAction(action,el){
+ if(!['owner','admin'].includes(user?.role))throw Error('Administrator access required');
+ el.disabled=true;
+ try{
+  if(action==='gmailSend'){
+   const draft=(data.email_queue||[]).find(x=>x.id===el.dataset.id);if(!draft)throw Error('Draft not found');
+   if(!confirm('Send this email from nexabridgeops@gmail.com?\nTo: '+draft.recipientEmail+'\nSubject: '+draft.subject))return;
+   await api('gmail',{method:'POST',body:{action:'send',requestId:draft.id,to:draft.recipientEmail,subject:draft.subject,body:draft.body}});
+   notify('Gmail accepted the message. Check Sent for the result.');return;
+  }
+  if(action==='gmailRead'){
+   const result=await api('gmail',{method:'POST',body:{action:'read',id:el.dataset.id}}),m=result.message;
+   modalWindow(m.subject||'(No subject)','<p>From: '+e(m.from)+'<br>To: '+e(m.to)+'</p><pre style="white-space:pre-wrap;overflow-wrap:anywhere">'+e(m.body)+'</pre>','<button data-action="closeModal">Close</button>');return;
+  }
+  const result=await api('gmail',{method:'POST',body:{action:action==='gmailStatus'?'status':action==='gmailSent'?'sent':'inbox',limit:30}});
+  if(action==='gmailStatus'){notify(result.connected?'Gmail connection verified: '+result.mailbox:'Gmail is not connected',!result.connected);return;}
+  const target=$('#gmailResults');if(!target)return;
+  target.innerHTML='<div class="comm-card" style="margin-bottom:18px"><div class="comm-card-header"><h3>'+ (action==='gmailSent'?'Sent':'Inbox')+'</h3><small>Latest 30 conversations</small></div>'+((result.messages||[]).map(m=>'<div class="comm-email-row"><div><strong>'+e(m.subject||'(No subject)')+'</strong><small>'+e(m.snippet)+'</small></div><div>'+e(m.from)+'<small>'+e(commAge(m.date))+'</small></div><span>'+e(m.unread?'Unread':'Read')+'</span><button data-action="gmailRead" data-id="'+e(m.id)+'">Read message</button></div>').join('')||'<div class="wz-empty">No messages</div>')+'</div>';
+ }finally{el.disabled=false;}
+}
+
 function emailCenter(){
  const drafts=data.email_queue||[],templates=data.email_templates||[],clients=data.clients||[];
  return '<div class="comm-head">'+wzHead('Email Center','Compose client messages, manage drafts and reusable templates','<button class="wz-action" data-action="composeEmail">+ Compose email</button>')+'</div>'+
- '<div class="comm-info"><strong>Email provider status: Not connected.</strong> The CRM saves private drafts and opens your installed email application when you choose. Emails are not automatically sent, received or tracked until an approved provider is connected.</div>'+
+ '<div class="comm-info"><strong>Gmail: nexabridgeops@gmail.com</strong> Check the connection before sending. Mailbox access requires an owner or administrator account. Saved CRM drafts are not sent automatically.</div>'+
+ '<div class="comm-actions" style="margin-bottom:15px"><button data-action="gmailStatus">Check Gmail connection</button><button data-action="gmailInbox">Inbox</button><button data-action="gmailSent">Sent</button></div><div id="gmailResults" aria-live="polite"></div>'+
  '<div class="comm-metrics">'+[['Saved drafts',drafts.filter(x=>x.state==='draft').length],['Email templates',templates.length],['Clients with email',clients.filter(x=>x.email).length]].map(([title,val])=>'<div class="comm-metric"><small>'+title+'</small><strong>'+val+'</strong></div>').join('')+'</div>'+
  '<div class="comm-card" style="margin-bottom:19px"><div class="comm-card-header"><h3>Draft workspace</h3><input type="search" id="emailSearch" placeholder="Search drafts…" value="'+e(emailSearch)+'" style="padding:9px 11px;border:1px solid #dfe7ef;border-radius:8px;max-width:250px"></div><div id="emailResults">'+commEmailRows()+'</div></div>'+
  '<div class="comm-card"><div class="comm-card-header"><h3>Reusable email templates</h3><button class="wz-action wz-lite" data-action="newEmailTemplate">+ New template</button></div>'+
@@ -1030,7 +1054,7 @@ function openMyPassword(){closeModal();modal={kind:'password'};
  $('#passwordForm').addEventListener('submit',async ev=>{ev.preventDefault();const f=new FormData(ev.target);try{await api('account/password',{method:'POST',body:{current:f.get('current'),password:f.get('password')}});closeModal();user=null;csrf=null;data=null;renderAuth(false);notify(t('passwordChanged'));}catch(err){notify(err.message,true);}});
 }
 
-async function handleAction(action,el){const kind=el.dataset.kind,id=el.dataset.id;try{if(action==='newEvent'){eventEditor();return}if(action==='editEvent'){eventEditor(id);return}if(action==='eventICS'){eventICS(id);return}if(action==='inviteMember'){teamInvite();return}if(action==='editMember'){teamEdit(id);return}if(action==='removeMember'){if(!confirm('Revoke this employee\'s CRM access?'))return;await api('team',{method:'POST',body:{action:'remove',userId:id}});await refresh();notify('Access revoked');return}if(action==='markNotice'){await api('notifications/'+id,{method:'PATCH',body:{}});await refresh();return}if(action==='newEmailDraft'||action==='composeEmail'){emailComposer();return}
+async function handleAction(action,el){const kind=el.dataset.kind,id=el.dataset.id;try{if(action.startsWith('gmail')){await gmailAction(action,el);return}if(action==='newEvent'){eventEditor();return}if(action==='editEvent'){eventEditor(id);return}if(action==='eventICS'){eventICS(id);return}if(action==='inviteMember'){teamInvite();return}if(action==='editMember'){teamEdit(id);return}if(action==='removeMember'){if(!confirm('Revoke this employee\'s CRM access?'))return;await api('team',{method:'POST',body:{action:'remove',userId:id}});await refresh();notify('Access revoked');return}if(action==='markNotice'){await api('notifications/'+id,{method:'PATCH',body:{}});await refresh();return}if(action==='newEmailDraft'||action==='composeEmail'){emailComposer();return}
  if(action==='editEmail'){emailComposer(id);return}
  if(action==='openEmail'){emailHandoff(id);return}
  if(action==='copyEmail'){await emailCopy(id);return}
