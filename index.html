@@ -972,7 +972,7 @@ async function gmailCall(action,body){
 }
 async function gmailShowInbox(){
  const info=await gmailCall('inbox'),items=info.messages||[];
- const html='<div style="max-height:58vh;overflow:auto">'+(items.map(x=>'<div class="mail-card" style="margin-bottom:10px"><strong>'+e(x.subject||'(No subject)')+'</strong><div class="mail-meta">'+e(x.from)+' · '+e(x.date)+'</div><p class="mail-preview">'+e(x.snippet)+'</p></div>').join('')||'<div class="mail-empty">No Inbox messages found.</div>')+'</div>';
+ const html='<div style="max-height:58vh;overflow:auto">'+(items.map(x=>'<div class="mail-card" style="margin-bottom:10px"><strong>'+e(x.subject||'(No subject)')+'</strong><div class="mail-meta">'+e(x.from)+' · '+e(x.date)+'</div><p class="mail-preview">'+e(x.snippet)+'</p><button class="mail-btn" data-action="gmailReply" data-id="'+e(x.id)+'">Reply</button></div>').join('')||'<div class="mail-empty">No Inbox messages found.</div>')+'</div>';
  modalWindow('Gmail Inbox',html,'<button class="btn neutral" data-action="closeModal">Close</button>');
 }
 async function gmailSendExistingDraft(id){
@@ -1045,6 +1045,8 @@ async function handleAction(action,el){const kind=el.dataset.kind,id=el.dataset.
  if(action==='closeMenu'){menuOpen=false;render();return;}
  if(action==='gmailStatus'){const result=await gmailCall('status');notify(result.message||'Gmail status checked',!result.configured);return;}
  if(action==='gmailInbox'){await gmailShowInbox();return;}
+ if(action==='gmailReply'){const body=prompt('Reply message (will be sent through Gmail after confirmation):');if(!body||!body.trim())return;if(!confirm('Send this reply now?'))return;const result=await gmailCall('reply',{id,body:body.trim()});if(result.sent){closeModal();notify('Gmail accepted the reply.');}return;}
+ 
  if(action==='gmailSendDraft'){await gmailSendExistingDraft(id);return;}
  if(action==='emailDraftEdit'){emailEditor('email_queue',id);return;}
  if(action==='emailTemplateEdit'){emailEditor('email_templates',id);return;}
