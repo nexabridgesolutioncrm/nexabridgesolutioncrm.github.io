@@ -256,6 +256,7 @@ async function login(email,password){
 }
 async function refresh(){if(!session?.refresh_token)throw Error('Please sign in again.');const r=await request('/auth/v1/token?grant_type=refresh_token',{method:'POST',auth:false,body:{refresh_token:session.refresh_token}});session={access_token:r.access_token,refresh_token:r.refresh_token};return r}
 async function secured(path,options={}){try{return await request(path,options)}catch(e){if(session&&/JWT expired|invalid JWT|token is expired/i.test(e.message)){await refresh();return request(path,options)}throw e}}
+window.nexaAuthenticatedRequest=(path,options)=>secured(path,options);
 const table = kind=>COLLECTIONS[kind];
 function fromRow(kind,row){const out={...row,createdAt:row.created_at,updatedAt:row.updated_at};const f=FIELDS[kind];for(const [k,col] of Object.entries(f))out[k]=row[col]??'';
  if(kind==='tasks'){const t=row.lead_id?'lead':row.client_id?'client':row.deal_id?'deal':'';out.linkedType=t;out.linkedId=t?row[t+'_id']:'';}
@@ -987,7 +988,7 @@ function emailCenterPage(){
  '<section class="mail-section"><div class="mail-section-title"><h3>Email Templates</h3><span>'+templates.length+' templates</span></div><div class="mail-grid">'+templateCards+'</div></section>';
 }
 async function gmailCall(action,body){
- return secured('/functions/v1/nexabridge-gmail-appsscript?action='+encodeURIComponent(action),body?{method:'POST',body}:{method:'GET'});
+ return window.nexaAuthenticatedRequest('/functions/v1/nexabridge-gmail-appsscript?action='+encodeURIComponent(action),body?{method:'POST',body}:{method:'GET'});
 }
 async function gmailShowInbox(){
  const info=await gmailCall('inbox'),items=info.messages||[];
