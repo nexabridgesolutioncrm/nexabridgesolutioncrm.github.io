@@ -608,6 +608,36 @@ body:has(#authForm) .auth-box button[type=submit]{
     border-radius:18px!important;
   }
 }
+</style><style id="nexa-login-autofill-contrast-v20">
+/* Keep Chrome/Edge password-manager autofill legible on the compact dark form. */
+body:has(#authForm) #root>.auth-page>.auth-form-panel>.auth-box{
+  color-scheme:dark!important;
+}
+body:has(#authForm) #authForm .field input[type="email"],
+body:has(#authForm) #authForm .field input[type="password"],
+body:has(#authForm) #authForm .field input[type="text"]{
+  background-color:#171a30!important;
+  color:#f7f6ff!important;
+  -webkit-text-fill-color:#f7f6ff!important;
+  caret-color:#f7f6ff!important;
+}
+body:has(#authForm) #authForm .field input:-webkit-autofill,
+body:has(#authForm) #authForm .field input:-webkit-autofill:hover,
+body:has(#authForm) #authForm .field input:-webkit-autofill:focus,
+body:has(#authForm) #authForm .field input:autofill{
+  -webkit-box-shadow:0 0 0 100px #171a30 inset!important;
+  box-shadow:0 0 0 100px #171a30 inset!important;
+  -webkit-text-fill-color:#f7f6ff!important;
+  color:#f7f6ff!important;
+  caret-color:#f7f6ff!important;
+  border-color:#424461!important;
+  transition:background-color 9999s ease-out 0s;
+}
+body:has(#authForm) #authForm input::placeholder{
+  color:#aeb0c5!important;
+  -webkit-text-fill-color:#aeb0c5!important;
+  opacity:1!important;
+}
 </style></head><body>
 <div id="root"><div class="startup">NexaBridge CRM — Secure Workspace</div></div><div aria-live="polite" class="toast-host" id="toast" role="status"></div>
 <script>
