@@ -1,0 +1,3 @@
+// Deploy as nexabridge-gmail only when v3 is verified and activated.
+// Retire the alternate OAuth route so it cannot bypass v3 authorization/idempotency.
+Deno.serve((req:Request)=>new Response(req.method==='OPTIONS'?null:JSON.stringify({error:'Legacy Gmail integration retired. Use the CRM Email Center.'}),{status:req.method==='OPTIONS'?204:410,headers:{'Content-Type':'application/json','Cache-Control':'no-store','Access-Control-Allow-Origin':'https://nexabridgesolutioncrm.github.io','Access-Control-Allow-Headers':'authorization,apikey,content-type,x-client-info','Access-Control-Allow-Methods':'POST,GET,OPTIONS'}}));
