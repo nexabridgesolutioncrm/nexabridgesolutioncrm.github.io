@@ -43,6 +43,20 @@ function doPost(e) {
         return {id:m.getId(),threadId:t.getId(),from:m.getFrom(),subject:m.getSubject(),date:m.getDate().toISOString(),snippet:m.getPlainBody().slice(0,400)};
       })});
     }
+    // Serialize outbound operations to prevent duplicate concurrent sends.
+    // The requestId is stable across retries and is supplied by the CRM.
+    if(action==="reply"||action==="send"){
+      const requestId=String(b.requestId||"");
+      if(!/^[a-f0-9-]{36}$/i.test(requestId))return respond_({ok:false,error:"Missing operation identifier"});
+      const lock=LockService.getScriptLock();
+      if(!lock.tryLock(10000))return respond_({ok:false,error:"Sending is busy; retry safely"});
+      try{
+        const store=PropertiesService.getScriptProperties(),key="mailop_"+requestId;
+        if(store.getProperty(key))return respond_({ok:false,error:"Duplicate operation blocked"});
+        // Fail closed: reserve before sending. If Gmail times out, do not retry blindly.
+        store.setProperty(key,String(Date.now()));
+      }finally{lock.releaseLock();}
+    }
     if(action==="reply"){
       const id=String(b.id||""),body=String(b.body||"").trim();
       if(!/^[0-9a-f]{12,32}$/i.test(id)||!body||body.length>20000)return respond_({ok:false,error:"Invalid reply"});
