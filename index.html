@@ -479,6 +479,30 @@ body:has(#authForm) .auth-box .nexa-password-visibility svg{display:block}
 body:has(#authForm) .auth-box .nexa-has-icon>input::placeholder{color:#a7aabf!important;opacity:1}
 body:has(#authForm) .auth-box .nexa-login-brand{margin-bottom:34px!important}
 body:has(#authForm) .auth-box form{margin-top:12px!important}
+</style><style id="nexa-compact-dashboard-v18">
+/* Focused CRM workspace: important pages first, other tools collapsed. */
+.sidebar .nav-list{padding-bottom:14px!important}
+.sidebar .nexa-more-tools{margin:10px 7px 12px;border-top:1px solid #34394d;padding-top:10px}
+.sidebar .nexa-more-tools>summary{display:flex;align-items:center;justify-content:space-between;list-style:none;padding:9px 12px;cursor:pointer;border-radius:8px;color:#bfc6d9;font-size:12px;font-weight:700}
+.sidebar .nexa-more-tools>summary::-webkit-details-marker{display:none}
+.sidebar .nexa-more-tools>summary:after{content:"⌄";transition:transform .15s}
+.sidebar .nexa-more-tools[open]>summary:after{transform:rotate(180deg)}
+.sidebar .nexa-more-tools>summary:hover{background:#ffffff10;color:#fff}
+.sidebar .nexa-more-inner{padding-top:5px}
+.sidebar .side-bottom{display:none!important}
+.main-content .nexa-dash-hero{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:15px!important;background:#111827!important;min-height:0!important;padding:20px 22px!important;border-radius:12px!important;margin:0 0 12px!important}
+.main-content .nexa-dash-hero h2{display:block!important;visibility:visible!important;color:#fff!important;font-size:21px!important;font-weight:750!important;line-height:1.3!important;margin:0 0 5px!important}
+.main-content .nexa-dash-hero p{color:#cbd5e1!important;font-size:12px!important}
+.main-content .nexa-dash-kpis{margin-bottom:12px!important}
+.main-content .nexa-dash-kpis .wz-kpi{min-height:74px!important;padding:12px 15px!important}
+.main-content .nexa-dash-kpis .wz-kpi strong{font-size:25px!important;line-height:1.15!important;display:block;margin-top:6px}
+.main-content .nexa-dash-charts{margin:0 0 12px!important;grid-template-columns:repeat(2,minmax(0,1fr))!important}
+.main-content .nexa-dash-charts .nexa-chart-card{min-height:0!important}
+.main-content .nexa-dash-activity{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+.main-content .nexa-dashboard-empty{padding:27px 24px;background:#fff;border:1px solid #e5e7eb;border-radius:12px;color:#1f2937}
+.main-content .nexa-dashboard-empty strong{font-size:16px}
+.main-content .nexa-dashboard-empty p{margin:6px 0 0;color:#6b7280;font-size:12px}
+@media(max-width:850px){.main-content .nexa-dash-hero{align-items:flex-start!important;flex-direction:column!important}.main-content .nexa-dash-charts,.main-content .nexa-dash-activity{grid-template-columns:1fr!important}}
 </style></head><body>
 <div id="root"><div class="startup">NexaBridge CRM — Secure Workspace</div></div><div aria-live="polite" class="toast-host" id="toast" role="status"></div>
 <script>
@@ -761,10 +785,14 @@ function installNexaShortcuts(){if(nexaShortcutsInstalled)return;nexaShortcutsIn
  if(!editing&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&event.key==='/'){const search=$('#globalSearch');if(search){event.preventDefault();search.focus();}}
 });}
 function render(){if(!user||!data){renderAuth(false);return;}if(['settings','users','messenger'].includes(page))page='dashboard';
- const navHtml=nav.filter(n=>(!['documents','reports','automation','team'].includes(n[0])||['owner','admin'].includes(user.role))&&(n[0]!=='email'||user.role!=='viewer')).map(([id,ic])=>`<button class="nav-item ${page===id?'active':''}" data-action="page" data-page="${id}"><span class="nav-icon">${ic}</span><span>${e(({calendar:'Company Calendar',automation:'Automation Center',team:'Team & Access',documents:'Invoices & Estimates',email:'Email Center',schedule:'Schedule',dispatch:'Dispatch Board',jobs:'Jobs',catalog:'Services Catalog',technicians:'Technicians',equipment:'Equipment',service_plans:'Service Plans',checklists:'Checklists',time_entries:'Time Tracking'})[id]||t(id))}</span>${id==='tasks'&&overdueTasks().length?`<span class="nav-count">${fmt(overdueTasks().length)}</span>`:''}</button>`).join('');
+ const navItems=items=>items.filter(n=>(!['documents','reports','automation','team'].includes(n[0])||['owner','admin'].includes(user.role))&&(n[0]!=='email'||user.role!=='viewer')).map(([id,ic])=>`<button class="nav-item ${page===id?'active':''}" data-action="page" data-page="${id}"><span class="nav-icon">${ic}</span><span>${e(({calendar:'Company Calendar',automation:'Automation Center',team:'Team & Access',documents:'Invoices & Estimates',email:'Email Center',schedule:'Schedule',dispatch:'Dispatch Board',jobs:'Jobs',catalog:'Services Catalog',technicians:'Technicians',equipment:'Equipment',service_plans:'Service Plans',checklists:'Checklists',time_entries:'Time Tracking'})[id]||t(id))}</span>${id==='tasks'&&overdueTasks().length?`<span class="nav-count">${fmt(overdueTasks().length)}</span>`:''}</button>`).join('');
+ const CORE_NAV=['dashboard','clients','leads','deals','jobs','dispatch','schedule','tasks','documents','email'];
+ const extraNavHtml=navItems(nav.filter(n=>!CORE_NAV.includes(n[0])));
+ const navHtml=navItems(nav.filter(n=>CORE_NAV.includes(n[0])))+
+ (extraNavHtml?`<details class="nexa-more-tools" ${!CORE_NAV.includes(page)?'open':''}><summary>More tools</summary><div class="nexa-more-inner">${extraNavHtml}</div></details>`:'');
  root.innerHTML=`<div class="shell"><aside class="sidebar ${menuOpen?'open':''}" id="sidebar">${brand(true)}<div class="nav-caption">${e(t('navigation'))}</div><nav class="nav-list" aria-label="${e(t('navigation'))}">${navHtml}</nav><div class="side-bottom"><strong><span class="online-dot"></span>${e(data.settings.company)}</strong><small>${e(window.__NEXA_OFFLINE__?'Stored on this device':t('siteLocal'))}</small></div></aside>
- <div class="mobile-backdrop ${menuOpen?'open':''}" data-action="closeMenu"></div><div class="work"><header class="topbar"><div class="top-right"><button class="btn neutral icon-only menu-button" data-action="menu" aria-label="Menu">☰</button><div><div class="top-title">${e(({calendar:'Company Calendar',automation:'Automation Center',team:'Team & Access',documents:'Invoices & Estimates'})[page]||t(page))}</div><div class="top-detail">${e(data.settings.company)} / ${e(t('workspace'))}</div></div></div><div class="top-right"><div class="top-search">⌕ <input type="search" id="globalSearch" placeholder="${e(t('searchGlobal'))}" autocomplete="off"><div class="global-hits hide" id="globalHits"></div></div>${langSwitcher()}${window.__NEXA_OFFLINE__?'':`<span class="top-avatar" aria-label="Account">N</span><button class="btn neutral" data-action="logout">${e(t('logout'))}</button>`}</div></header>
- <div class="nexa-context-bar" id="nexaContextBar" aria-label="Workspace navigation"><span class="nexa-context-crumb">Workspace <span aria-hidden="true">›</span> <strong id="nexaContextTitle"></strong></span><div class="nexa-context-links"><button type="button" data-action="page" data-page="dashboard">Dashboard</button><button type="button" data-action="page" data-page="tasks">Tasks</button><button type="button" data-action="page" data-page="clients">Clients</button><button type="button" data-action="page" data-page="email">Email Center</button></div></div><main id="content" class="main-content"></main></div></div>`;
+ <div class="mobile-backdrop ${menuOpen?'open':''}" data-action="closeMenu"></div><div class="work"><header class="topbar"><div class="top-right"><button class="btn neutral icon-only menu-button" data-action="menu" aria-label="Menu">☰</button><div><div class="top-title">${e(({calendar:'Company Calendar',automation:'Automation Center',team:'Team & Access',documents:'Invoices & Estimates'})[page]||t(page))}</div><div class="top-detail">${e(data.settings.company)} / ${e(t('workspace'))}</div></div></div><div class="top-right"><div class="top-search">⌕ <input type="search" id="globalSearch" placeholder="${e(t('searchGlobal'))}" autocomplete="off"><div class="global-hits hide" id="globalHits"></div></div>${window.__NEXA_OFFLINE__?'':`<button class="btn neutral" data-action="logout">${e(t('logout'))}</button>`}</div></header>
+ <main id="content" class="main-content"></main></div></div>`;
  renderContent();installNexaShortcuts();
 }
 function header(title,desc,buttons=''){return `<div class="page-head"><div><h2>${e(title)}</h2><p>${e(desc)}</p></div><div class="head-actions">${buttons}</div></div>`;}
@@ -1156,31 +1184,49 @@ function opsStock(){
 
 
 function nexaDashboardCharts(){
- const stages=['new','qualified','proposal','negotiation','won','lost'],deals=data.deals||[],tasks=data.tasks||[],jobs=data.jobs||[],clients=data.clients||[];
- const stageCounts=stages.map(label=>({label,count:deals.filter(d=>d.stage===label).length}));
- const max=Math.max(1,...stageCounts.map(v=>v.count)),openTasks=tasks.filter(x=>x.status!=='done').length,doneTasks=tasks.length-openTasks;
- const taskPercent=tasks.length?Math.round(doneTasks/tasks.length*100):0;
- const jobStates=['new','scheduled','dispatched','in_progress','completed','cancelled'];
- const jobCounts=jobStates.map(label=>({label,count:jobs.filter(j=>j.status===label).length})).filter(v=>v.count>0);
- const industries=Object.entries(clients.reduce((acc,c)=>{const k=c.industry||'Other';acc[k]=(acc[k]||0)+1;return acc;},{})).sort((a,b)=>b[1]-a[1]).slice(0,5);
- const bars=stageCounts.map((v,i)=>'<div class="nexa-chart-row"><span>'+e(v.label.replaceAll('_',' '))+'</span><div class="nexa-chart-track"><div class="nexa-chart-fill" style="width:'+Math.max(0,v.count/max*100)+'%;--chart-hue:'+([196,185,217,253,151,5][i])+'"></div></div><b>'+fmt(v.count)+'</b></div>').join('');
- const jobBars=jobCounts.map((v,i)=>'<div class="nexa-chart-row"><span>'+e(v.label.replaceAll('_',' '))+'</span><div class="nexa-chart-track"><div class="nexa-chart-fill" style="width:'+(v.count/Math.max(1,jobs.length)*100)+'%;--chart-hue:'+([195,208,230,255,159,5][i])+'"></div></div><b>'+fmt(v.count)+'</b></div>').join('');
- const industryBars=industries.map(([label,count],i)=>'<div class="nexa-chart-row"><span title="'+e(label)+'">'+e(label)+'</span><div class="nexa-chart-track"><div class="nexa-chart-fill" style="width:'+(count/Math.max(1,clients.length)*100)+'%;--chart-hue:'+([200,170,250,32,300][i])+'"></div></div><b>'+fmt(count)+'</b></div>').join('');
- return '<div class="nexa-dash-charts"><section class="nexa-chart-card"><div class="nexa-chart-title"><div><span class="nexa-chart-icon">◈</span><strong>Sales pipeline</strong></div><small>'+fmt(deals.length)+' opportunities</small></div><div class="nexa-chart-bars">'+bars+'</div></section>'+
- '<section class="nexa-chart-card"><div class="nexa-chart-title"><div><span class="nexa-chart-icon">✓</span><strong>Task completion</strong></div><small>'+fmt(tasks.length)+' tasks</small></div><div class="nexa-donut-wrap"><div class="nexa-donut" role="img" aria-label="'+taskPercent+' percent tasks completed" style="--progress:'+taskPercent+'"><div><strong>'+taskPercent+'%</strong><span>Completed</span></div></div><div class="nexa-donut-legend"><span><i class="nexa-dot done"></i>Done <b>'+fmt(doneTasks)+'</b></span><span><i class="nexa-dot open"></i>Open <b>'+fmt(openTasks)+'</b></span></div></div></section>'+
- '<section class="nexa-chart-card"><div class="nexa-chart-title"><div><span class="nexa-chart-icon">⇄</span><strong>Dispatch & jobs</strong></div><small>'+fmt(jobs.length)+' jobs</small></div><div class="nexa-chart-bars">'+(jobBars||'<p class="nexa-chart-empty">No jobs yet</p>')+'</div></section>'+
- '<section class="nexa-chart-card"><div class="nexa-chart-title"><div><span class="nexa-chart-icon">▣</span><strong>Client industries</strong></div><small>'+fmt(clients.length)+' clients</small></div><div class="nexa-chart-bars">'+(industryBars||'<p class="nexa-chart-empty">No clients yet</p>')+'</div></section></div>';
+ const stages=['new','qualified','proposal','negotiation','won','lost'];
+ const deals=data.deals||[],tasks=data.tasks||[],jobs=data.jobs||[],clients=data.clients||[];
+ const cards=[];
+ if(deals.length){
+  const counts=stages.map(label=>({label,count:deals.filter(d=>d.stage===label).length}));
+  const max=Math.max(1,...counts.map(v=>v.count));
+  const bars=counts.map(v=>'<div class="nexa-chart-row"><span>'+e(v.label)+'</span><div class="nexa-chart-track"><div class="nexa-chart-fill" style="width:'+(v.count/max*100)+'%;--chart-hue:250"></div></div><b>'+fmt(v.count)+'</b></div>').join('');
+  cards.push('<section class="nexa-chart-card"><div class="nexa-chart-title"><div><span class="nexa-chart-icon">◈</span><strong>Sales pipeline</strong></div><small>'+fmt(deals.length)+' opportunities</small></div><div class="nexa-chart-bars">'+bars+'</div></section>');
+ }
+ if(tasks.length){
+  const done=tasks.filter(x=>x.status==='done').length,open=tasks.length-done,pct=Math.round(done/tasks.length*100);
+  cards.push('<section class="nexa-chart-card"><div class="nexa-chart-title"><div><span class="nexa-chart-icon">✓</span><strong>Task completion</strong></div><small>'+fmt(tasks.length)+' tasks</small></div><div class="nexa-donut-wrap"><div class="nexa-donut" role="img" aria-label="'+pct+' percent tasks completed" style="--progress:'+pct+'"><div><strong>'+pct+'%</strong><span>Completed</span></div></div><div class="nexa-donut-legend"><span><i class="nexa-dot done"></i>Done <b>'+fmt(done)+'</b></span><span><i class="nexa-dot open"></i>Open <b>'+fmt(open)+'</b></span></div></div></section>');
+ }
+ if(jobs.length){
+  const counts=['new','scheduled','dispatched','in_progress','completed','cancelled'].map(label=>({label,count:jobs.filter(j=>j.status===label).length})).filter(v=>v.count>0);
+  const bars=counts.map(v=>'<div class="nexa-chart-row"><span>'+e(v.label.replaceAll('_',' '))+'</span><div class="nexa-chart-track"><div class="nexa-chart-fill" style="width:'+(v.count/jobs.length*100)+'%;--chart-hue:240"></div></div><b>'+fmt(v.count)+'</b></div>').join('');
+  cards.push('<section class="nexa-chart-card"><div class="nexa-chart-title"><div><span class="nexa-chart-icon">⇄</span><strong>Dispatch & jobs</strong></div><small>'+fmt(jobs.length)+' jobs</small></div><div class="nexa-chart-bars">'+bars+'</div></section>');
+ }
+ if(clients.length){
+  const industries=Object.entries(clients.reduce((acc,c)=>{const k=c.industry||'Other';acc[k]=(acc[k]||0)+1;return acc;},{})).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const bars=industries.map(([label,count])=>'<div class="nexa-chart-row"><span>'+e(label)+'</span><div class="nexa-chart-track"><div class="nexa-chart-fill" style="width:'+(count/clients.length*100)+'%;--chart-hue:220"></div></div><b>'+fmt(count)+'</b></div>').join('');
+  cards.push('<section class="nexa-chart-card"><div class="nexa-chart-title"><div><span class="nexa-chart-icon">▣</span><strong>Client industries</strong></div><small>'+fmt(clients.length)+' clients</small></div><div class="nexa-chart-bars">'+bars+'</div></section>');
+ }
+ return cards.length?'<div class="nexa-dash-charts">'+cards.join('')+'</div>':'';
 }
 function internalDash(){
- const date=new Date().toISOString().slice(0,10),leads=data.leads||[],tasks=data.tasks||[],deals=data.deals||[],docs=data.documents||[],events=data.calendar||[],notes=data.notifications||[];
- const due=docs.filter(x=>x.docType==='invoice'&&!['paid','void'].includes(x.status)).reduce((sum,x)=>sum+docBalance(x),0);
+ const date=new Date().toISOString().slice(0,10);
+ const leads=data.leads||[],clients=data.clients||[],tasks=data.tasks||[],deals=data.deals||[],jobs=data.jobs||[],docs=data.documents||[],events=data.calendar||[],notes=data.notifications||[];
  const follow=tasks.filter(x=>x.status!=='done'&&x.dueDate&&x.dueDate<=date);
- return '<div class="nexa-dash-hero"><div><span class="nexa-dash-overline">✦ NEXABRIDGE · OPERATIONS INTELLIGENCE</span><h2>Business at a glance<span class="nexa-hero-star"> ✧</span></h2><p>Customer support, service dispatch and business performance — in one clear view.</p></div><div class="nexa-hero-actions">'+wzBtn('New lead','leads')+wzBtn('New client','clients')+'</div><div class="nexa-hero-orb" aria-hidden="true"></div></div>'+
- '<div class="wz-kpis nexa-dash-kpis">'+[['Active leads',leads.filter(x=>!['closed','converted'].includes(x.status)).length,'Sales opportunities'],['Active clients',data.clients.length,'Customer relationships'],['Open deals',deals.filter(x=>!['won','lost'].includes(x.stage)).length,'Sales pipeline'],['Tasks due',follow.length,'Needs attention']].map(([title,value,note])=>'<div class="wz-kpi"><span class="nexa-kpi-top"><small>'+title+'</small><span class="nexa-kpi-spark">✧</span></span><strong>'+value+'</strong><em>'+note+'</em></div>').join('')+'</div>'+nexaDashboardCharts()+
- '<div class="wz-grid">'+wzBox('Upcoming meetings',events.filter(x=>x.startAt>=new Date().toISOString()).sort((a,b)=>a.startAt.localeCompare(b.startAt)).slice(0,6).map(x=>'<div class="wz-item"><div class="wz-body"><b>'+e(x.title)+'</b><small>'+wzWhen(x.startAt)+'</small></div><span class="wz-pill">'+e(x.eventType)+'</span></div>').join('')||'<div class="wz-empty">No upcoming meetings</div>')+
- wzBox('Follow-ups & reminders',notes.filter(x=>!x.read_at).slice(0,6).map(x=>'<div class="wz-item"><div class="wz-body"><b>'+e(x.title)+'</b><small>'+e(x.message)+'</small></div><button class="wz-ref" data-action="markNotice" data-id="'+e(x.id)+'">Mark read</button></div>').join('')||'<div class="wz-empty">No unread reminders</div>')+'</div>'+
- '<div class="wz-grid">'+wzBox('Recent leads',leads.slice(0,6).map(x=>'<div class="wz-item"><b>'+e(x.name)+'</b><small>'+e(x.company)+'</small>'+wzTag(x.status)+'</div>').join('')||'<div class="wz-empty">No leads yet</div>')+
- wzBox('Revenue overview',(['owner','admin'].includes(user.role)?'<div class="wz-kpi"><small>Outstanding invoices</small><strong>'+money(due)+'</strong><em>Based on recorded invoice balance, not bank reconciliation</em></div>':'<div class="wz-empty">Financial information is restricted</div>'))+'</div>';
+ const due=docs.filter(x=>x.docType==='invoice'&&!['paid','void'].includes(x.status)).reduce((sum,x)=>sum+docBalance(x),0);
+ const kpis=[['Active leads',leads.filter(x=>!['closed','converted'].includes(x.status)).length],['Clients',clients.length],['Open deals',deals.filter(x=>!['won','lost'].includes(x.stage)).length],['Tasks due',follow.length]];
+ const hero='<div class="nexa-dash-hero"><div><h2>Dashboard</h2><p>Clients, opportunities and work — at a glance.</p></div><div class="nexa-hero-actions">'+wzBtn('New lead','leads')+wzBtn('New client','clients')+'</div></div>';
+ const summary='<div class="wz-kpis nexa-dash-kpis">'+kpis.map(([title,value])=>'<div class="wz-kpi"><small>'+title+'</small><strong>'+fmt(value)+'</strong></div>').join('')+'</div>';
+ const nextEvents=events.filter(x=>x.startAt&&x.startAt>=new Date().toISOString()).sort((a,b)=>a.startAt.localeCompare(b.startAt)).slice(0,5);
+ const unread=notes.filter(x=>!x.read_at).slice(0,5);
+ const panels=[];
+ if(nextEvents.length)panels.push(wzBox('Upcoming meetings',nextEvents.map(x=>'<div class="wz-item"><div class="wz-body"><b>'+e(x.title)+'</b><small>'+wzWhen(x.startAt)+'</small></div></div>').join('')));
+ if(unread.length)panels.push(wzBox('Reminders',unread.map(x=>'<div class="wz-item"><div class="wz-body"><b>'+e(x.title)+'</b><small>'+e(x.message)+'</small></div><button class="wz-ref" data-action="markNotice" data-id="'+e(x.id)+'">Mark read</button></div>').join('')));
+ if(leads.length)panels.push(wzBox('Recent leads',leads.slice(0,5).map(x=>'<div class="wz-item"><b>'+e(x.name)+'</b><small>'+e(x.company||'')+'</small>'+wzTag(x.status)+'</div>').join('')));
+ if(docs.length&&['owner','admin'].includes(user.role))panels.push(wzBox('Outstanding invoices','<div class="wz-kpi"><strong>'+money(due)+'</strong></div>'));
+ const count=leads.length+clients.length+tasks.length+deals.length+jobs.length+docs.length+events.length+notes.length;
+ const emptyState=count===0?'<section class="nexa-dashboard-empty"><strong>Your workspace is ready</strong><p>Add your first lead or client to start tracking activity. Charts will appear when there is real data.</p></section>':'';
+ return hero+summary+emptyState+nexaDashboardCharts()+(panels.length?'<div class="wz-grid nexa-dash-activity">'+panels.join('')+'</div>':'');
 }
 function internalCalendar(){
  const events=(data.calendar||[]).slice().sort((a,b)=>String(a.startAt).localeCompare(String(b.startAt)));
