@@ -553,6 +553,43 @@ body:has(#authForm) #root>.auth-page>.auth-aside{display:flex!important;flex:0 0
 body:has(#authForm) #root>.auth-page>.auth-form-panel{display:flex!important;flex:1 1 45%!important;width:45%!important;max-width:45%!important;min-width:0!important;height:100dvh!important;min-height:100dvh!important;margin:0!important;grid-area:auto!important;align-self:stretch!important;background:#0e283d!important;padding:clamp(20px,3vw,48px)!important}
 }
 @media(max-width:800px){body:has(#authForm) #root>.auth-page{display:flex!important;flex-direction:column!important;gap:0!important}body:has(#authForm) #root>.auth-page>.auth-aside,body:has(#authForm) #root>.auth-page>.auth-form-panel{width:100%!important;max-width:100%!important;flex:none!important}}
+</style><style id="nexa-centered-login-v13">
+/* NexaBridge single-column centered sign-in — login only; other CRM pages untouched. */
+body:has(#authForm){background:#080a19!important;color:#f7f7ff!important}
+body:has(#authForm) #root>.auth-page{
+display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;
+width:100%!important;max-width:100%!important;min-height:100dvh!important;height:auto!important;
+padding:32px 18px!important;overflow:visible!important;
+background:radial-gradient(ellipse 46% 45% at 0% 52%,#4923a15e,transparent 72%),
+radial-gradient(ellipse 38% 48% at 100% 70%,#5030a451,transparent 70%),
+linear-gradient(145deg,#0d1027 0%,#070a17 57%,#080b1a 100%)!important}
+body:has(#authForm) #root>.auth-page>.auth-aside{display:none!important}
+body:has(#authForm) #root>.auth-page>.auth-form-panel{
+display:flex!important;flex:0 1 auto!important;align-items:center!important;justify-content:center!important;
+grid-area:auto!important;position:relative!important;width:100%!important;max-width:720px!important;
+min-width:0!important;min-height:0!important;height:auto!important;max-height:none!important;
+margin:auto!important;padding:0!important;background:transparent!important;border:0!important;
+overflow:visible!important}
+body:has(#authForm) #root>.auth-page>.auth-form-panel>.auth-box{
+display:block!important;position:relative!important;width:100%!important;max-width:640px!important;
+height:auto!important;margin:0 auto!important;padding:clamp(28px,5vw,55px)!important;
+background:linear-gradient(160deg,#121527ed,#090c1aeF)!important;
+border:1px solid #343550!important;border-radius:30px!important;
+box-shadow:0 28px 95px #03051070!important;color:#f9f9ff!important;text-align:left!important;
+backdrop-filter:blur(16px)!important}
+body:has(#authForm) .auth-box .auth-top{justify-content:flex-end!important;margin:0 0 12px!important}
+body:has(#authForm) .auth-box .nexa-login-welcome-badge{display:none!important}
+body:has(#authForm) .auth-box .nexa-login-crest{display:flex!important;align-items:center!important;justify-content:center!important;margin:8px auto 18px!important;width:72px!important;height:72px!important;border:0!important;background:linear-gradient(135deg,#8965ff,#4e2fd9)!important;border-radius:20px!important;color:#fff!important;font-size:35px!important;box-shadow:0 12px 34px #663de23a!important}
+body:has(#authForm) .auth-box h2{text-align:center!important;color:#f7f7ff!important;font-weight:800!important;font-size:clamp(24px,3vw,32px)!important;letter-spacing:-.8px!important;line-height:1.2!important;margin:12px 0 12px!important}
+body:has(#authForm) .auth-box .lead{text-align:center!important;color:#aeb0c5!important;font-size:15px!important;margin:0 0 35px!important}
+body:has(#authForm) .auth-box .field{margin:0 0 20px!important}
+body:has(#authForm) .auth-box .field label{color:#c8c9db!important;font-size:13px!important;margin-bottom:8px!important}
+body:has(#authForm) .auth-box input{width:100%!important;min-height:58px!important;padding:14px 18px!important;border-radius:15px!important;background:#161a30!important;border:1px solid #343754!important;color:#fff!important;font-size:15px!important;box-shadow:none!important}
+body:has(#authForm) .auth-box input:focus{border-color:#8366ff!important;box-shadow:0 0 0 3px #7455e936!important}
+body:has(#authForm) .auth-box button[type=submit]{width:100%!important;min-height:60px!important;border-radius:15px!important;background:linear-gradient(100deg,#7654ff,#5230df)!important;border:1px solid #896cff!important;color:#fff!important;font-size:16px!important;font-weight:750!important;box-shadow:0 12px 30px #4f30db35!important}
+body:has(#authForm) .auth-box .auth-foot{border-color:#292b45!important;color:#888da7!important;text-align:center!important}
+body:has(#authForm) .auth-box a{color:#a99cff!important}
+@media(max-width:600px){body:has(#authForm) #root>.auth-page{padding:18px 12px!important}body:has(#authForm) #root>.auth-page>.auth-form-panel>.auth-box{padding:28px 22px!important;border-radius:22px!important}body:has(#authForm) .auth-box .lead{font-size:13px!important;margin-bottom:24px!important}body:has(#authForm) .auth-box input{min-height:52px!important}}
 </style></head><body>
 <div id="root"><div class="startup">NexaBridge CRM — Secure Workspace</div></div><div aria-live="polite" class="toast-host" id="toast" role="status"></div>
 <script>
@@ -713,7 +750,7 @@ const nativeFetch=window.fetch.bind(window);window.fetch=(input,init)=>{
 (() => {
 const I18N = {
 en: {
-  language:'English',login:'Sign in to CRM',loginSub:'Sign in to manage your customer relationships.',setup:'Initial setup',setupSub:'Create the primary administrator account.',
+  language:'English',login:'Sign in to NexaBridge CRM',loginSub:'Access your workspace, clients, and projects.',setup:'Initial setup',setupSub:'Create the primary administrator account.',
   username:'Email address',password:'Password',fullName:'Full name',confirmPassword:'Confirm password',passwordHint:'At least 12 characters',submitLogin:'Sign in',submitSetup:'Create administrator',
   welcomeTitle:'Every business relationship, in one place.',welcomeText:'Manage clients, leads, sales opportunities, and follow-ups for NexaBridge Solutions.',privateWorkspace:'Your company’s private workspace',
   dashboard:'Dashboard',leads:'Leads',clients:'Clients',deals:'Sales opportunities',tasks:'Tasks & follow-ups',reports:'Reports',settings:'Settings',users:'Team users',navigation:'WORKSPACE',
