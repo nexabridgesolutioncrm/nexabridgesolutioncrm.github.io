@@ -966,7 +966,7 @@ async function invoiceSendGmail(id){
  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to))throw Error('A valid customer email is required.');
  const type=d.docType==='estimate'?'Estimate':'Invoice',name=d.billToName||client?.name||'Customer';
  if(!confirm('Send '+type+' '+d.number+' as a PDF attachment to '+to+' via Gmail?'))return;
- const result=await gmailCall('send',{to,subject:type+' '+d.number+' - NexaBridge Solutions',body:'Dear '+name+',\n\nPlease find your '+type.toLowerCase()+' '+d.number+' attached as a PDF.\n\nKind regards,\nNexaBridge Solutions',pdfBase64:invoicePdfBase64(d),filename:type+'-'+String(d.number||'document').replace(/[^a-zA-Z0-9_-]/g,'_')+'.pdf'});
+ const result=await gmailCall('send',{to,subject:type+' '+d.number+' - NexaBridge Solutions',body:'Dear '+name+',\n\nPlease find your '+type.toLowerCase()+' '+d.number+' attached as a PDF.\n\nKind regards,\nNexaBridge Solutions',pdfBase64:invoicePdfBase64(d),requestId:crypto.randomUUID(),filename:type+'-'+String(d.number||'document').replace(/[^a-zA-Z0-9_-]/g,'_')+'.pdf'});
  if(!result.sent)throw Error('Gmail did not confirm the send request.');notify(type+' submitted to Gmail for delivery.');
 }
 function invoiceEmailHandoff(id){
@@ -998,7 +998,7 @@ async function gmailShowInbox(){
 async function gmailSendExistingDraft(id){
  const d=(data.email_queue||[]).find(x=>x.id===id);if(!d)throw Error('Draft not found.');
  if(!confirm('Send this email to '+d.recipientEmail+' using NexaBridge Gmail?'))return;
- const result=await gmailCall('send',{to:d.recipientEmail,subject:d.subject,body:d.body});
+ const result=await gmailCall('send',{to:d.recipientEmail,subject:d.subject,body:d.body,requestId:d.id});
  if(!result.sent)throw Error('Gmail did not confirm sending.');
  notify('Gmail accepted the message. Message ID: '+result.id);
 }
@@ -1065,7 +1065,7 @@ async function handleAction(action,el){const kind=el.dataset.kind,id=el.dataset.
  if(action==='closeMenu'){menuOpen=false;render();return;}
  if(action==='gmailStatus'){const result=await gmailCall('status');notify(result.message||'Gmail status checked',!result.configured);return;}
  if(action==='gmailInbox'){await gmailShowInbox();return;}
- if(action==='gmailReply'){const body=prompt('Reply message (will be sent through Gmail after confirmation):');if(!body||!body.trim())return;if(!confirm('Send this reply now?'))return;const result=await gmailCall('reply',{id,body:body.trim()});if(result.sent){closeModal();notify('Gmail accepted the reply.');}return;}
+ if(action==='gmailReply'){const body=prompt('Reply message (will be sent through Gmail after confirmation):');if(!body||!body.trim())return;if(!confirm('Send this reply now?'))return;const result=await gmailCall('reply',{id,body:body.trim(),requestId:crypto.randomUUID()});if(result.sent){closeModal();notify('Gmail accepted the reply.');}return;}
  
  if(action==='gmailSendDraft'){await gmailSendExistingDraft(id);return;}
  if(action==='emailDraftEdit'){emailEditor('email_queue',id);return;}
