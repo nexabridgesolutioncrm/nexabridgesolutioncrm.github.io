@@ -43,6 +43,14 @@ function doPost(e) {
         return {id:m.getId(),threadId:t.getId(),from:m.getFrom(),subject:m.getSubject(),date:m.getDate().toISOString(),snippet:m.getPlainBody().slice(0,400)};
       })});
     }
+    if(action==="reply"){
+      const id=String(b.id||""),body=String(b.body||"").trim();
+      if(!/^[0-9a-f]{12,32}$/i.test(id)||!body||body.length>20000)return respond_({ok:false,error:"Invalid reply"});
+      const message=GmailApp.getMessageById(id);
+      if(!message)return respond_({ok:false,error:"Message not found"});
+      message.reply(body,{name:"NexaBridge Solutions"});
+      return respond_({ok:true,sent:true});
+    }
     if(action==="send"){
       const to=String(b.to||"").trim(),subject=String(b.subject||"").trim(),body=String(b.body||"");
       if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)||!subject||subject.length>200||!body||body.length>20000)return respond_({ok:false,error:"Invalid email"});
