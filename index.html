@@ -532,6 +532,20 @@ body:has(#authForm) #root{display:block!important;width:100%!important;max-width
 #root>.auth-page .auth-box button[type=submit]{display:block!important;width:100%!important;min-height:44px!important;background:#0aa79f!important;border:1px solid #0aa79f!important;color:#fff!important;border-radius:8px!important;font-weight:700!important}
 #root>.auth-page .auth-box .auth-foot{font-size:10px!important;color:#91a0ad!important;margin-top:25px!important}
 @media(max-width:800px){#root>.auth-page{display:flex!important;flex-direction:column!important}#root>.auth-page>.auth-aside{min-height:0!important;padding:22px!important}#root>.auth-page>.auth-aside .nb-login-intro h1{font-size:27px!important}#root>.auth-page>.auth-aside .nb-ops-preview,#root>.auth-page>.auth-aside .nexa-login-aside-footer{display:none!important}#root>.auth-page>.auth-form-panel{min-height:0!important;flex:1!important;padding:22px!important}#root>.auth-page>.auth-form-panel>.auth-box{padding:25px!important}}
+</style><style id="nexa-login-one-screen-v11">
+/* One cohesive, one-screen desktop sign-in layout. */
+body:has(#authForm),body:has(#authForm) #root{margin:0!important;min-height:100dvh!important;overflow-x:hidden!important}
+#root>.auth-page{display:grid!important;grid-template-columns:minmax(0,56%) minmax(0,44%)!important;min-height:100dvh!important;max-width:100%!important;overflow:hidden!important;background:linear-gradient(108deg,#08182b 0%,#10334a 57%,#0b263a 100%)!important}
+#root>.auth-page>.auth-aside{min-height:100dvh!important;height:100dvh!important;max-height:100dvh!important;overflow:hidden!important;background:radial-gradient(ellipse at 70% 75%,#0b877c25,transparent 48%),transparent!important;padding:clamp(20px,2.7vh,34px) clamp(28px,4vw,64px)!important}
+#root>.auth-page>.auth-form-panel{min-height:100dvh!important;height:100dvh!important;max-height:100dvh!important;background:transparent!important;box-shadow:none!important;border:0!important;padding:clamp(18px,3vw,40px)!important}
+#root>.auth-page>.auth-form-panel>.auth-box{width:100%!important;max-width:400px!important;box-shadow:0 16px 54px #00000030!important}
+#root>.auth-page>.auth-aside .nb-login-content{gap:clamp(13px,2.5vh,24px)!important}
+#root>.auth-page>.auth-aside .nb-login-intro h1{font-size:clamp(27px,3vw,44px)!important;line-height:1.1!important;margin-bottom:10px!important}
+#root>.auth-page>.auth-aside .nb-login-intro p{font-size:12px!important;line-height:1.55!important}
+#root>.auth-page>.auth-aside .nb-ops-preview{max-width:570px!important;padding:13px!important}
+#root>.auth-page>.auth-aside .nexa-login-aside-footer{margin-top:9px!important}
+@media(max-height:740px) and (min-width:801px){#root>.auth-page>.auth-aside .nb-ops-preview{display:none!important}#root>.auth-page>.auth-aside .nb-login-content{gap:18px!important}}
+@media(max-width:800px){#root>.auth-page{display:flex!important;flex-direction:column!important;min-height:100dvh!important;overflow:visible!important}#root>.auth-page>.auth-aside{height:auto!important;max-height:none!important;min-height:0!important;padding:18px 22px!important}#root>.auth-page>.auth-aside .nb-login-intro h1{font-size:25px!important}#root>.auth-page>.auth-form-panel{min-height:0!important;height:auto!important;max-height:none!important;flex:1!important;padding:18px 22px 25px!important}#root>.auth-page>.auth-form-panel>.auth-box{max-width:420px!important}}
 </style></head><body>
 <div id="root"><div class="startup">NexaBridge CRM — Secure Workspace</div></div><div aria-live="polite" class="toast-host" id="toast" role="status"></div>
 <script>
