@@ -503,6 +503,111 @@ body:has(#authForm) .auth-box form{margin-top:12px!important}
 .main-content .nexa-dashboard-empty strong{font-size:16px}
 .main-content .nexa-dashboard-empty p{margin:6px 0 0;color:#6b7280;font-size:12px}
 @media(max-width:850px){.main-content .nexa-dash-hero{align-items:flex-start!important;flex-direction:column!important}.main-content .nexa-dash-charts,.main-content .nexa-dash-activity{grid-template-columns:1fr!important}}
+</style><style id="nexa-compact-centered-signin-v19">
+/* Compact, centered sign-in only. Existing authentication and CRM remain unchanged. */
+body:has(#authForm) #root>.auth-page{
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:center!important;
+  justify-content:center!important;
+  width:100%!important;
+  min-height:100dvh!important;
+  padding:24px 16px!important;
+}
+body:has(#authForm) #root>.auth-page>.auth-form-panel{
+  transform:none!important;
+  border:0!important;
+  box-shadow:none!important;
+  background:transparent!important;
+  width:100%!important;
+  max-width:460px!important;
+  margin:0 auto!important;
+  min-height:0!important;
+  padding:0!important;
+  flex:0 1 auto!important;
+  grid-area:auto!important;
+}
+body:has(#authForm) #root>.auth-page>.auth-form-panel>.auth-box{
+  width:100%!important;
+  max-width:440px!important;
+  padding:32px 36px!important;
+  border:1px solid #343652!important;
+  border-radius:22px!important;
+  background:linear-gradient(145deg,#121428f5,#0b0d1df2)!important;
+  margin:0 auto!important;
+}
+body:has(#authForm) .auth-box .nexa-login-brand{
+  gap:12px!important;
+  margin:0 0 25px!important;
+}
+body:has(#authForm) .auth-box .nexa-login-monogram{
+  font-size:46px!important;
+  padding-right:9px!important;
+  letter-spacing:-8px!important;
+}
+body:has(#authForm) .auth-box .nexa-login-brandword{
+  font-size:19px!important;
+}
+body:has(#authForm) .auth-box .nexa-login-brandword strong{
+  font-size:22px!important;
+}
+body:has(#authForm) .auth-box h2{
+  font-size:22px!important;
+  letter-spacing:-.45px!important;
+  margin:0 0 7px!important;
+}
+body:has(#authForm) .auth-box .lead{
+  font-size:12px!important;
+  margin:0 0 24px!important;
+}
+body:has(#authForm) .auth-box .field{
+  margin-bottom:14px!important;
+}
+body:has(#authForm) .auth-box .field input:not([type=checkbox]){
+  height:48px!important;
+  min-height:48px!important;
+  padding-top:10px!important;
+  padding-bottom:10px!important;
+  border-radius:11px!important;
+  background:#171a30!important;
+  color:#f5f4ff!important;
+  -webkit-text-fill-color:#f5f4ff!important;
+  border:1px solid #373957!important;
+  font-size:13px!important;
+}
+body:has(#authForm) .auth-box .nexa-has-icon>input{
+  padding-left:44px!important;
+}
+body:has(#authForm) .auth-box .nexa-input-icon{
+  left:14px!important;
+  bottom:14px!important;
+}
+body:has(#authForm) .auth-box .nexa-input-icon svg{
+  width:19px!important;
+  height:19px!important;
+}
+body:has(#authForm) .auth-box .nexa-password-visibility{
+  bottom:4px!important;
+  right:8px!important;
+}
+body:has(#authForm) .auth-box button[type=submit]{
+  height:48px!important;
+  min-height:48px!important;
+  border-radius:11px!important;
+  margin-top:6px!important;
+  font-size:14px!important;
+  color:#fff!important;
+  -webkit-text-fill-color:#fff!important;
+}
+@media(max-width:540px){
+  body:has(#authForm) #root>.auth-page{padding:16px 12px!important}
+  body:has(#authForm) #root>.auth-page>.auth-form-panel{max-width:100%!important}
+  body:has(#authForm) #root>.auth-page>.auth-form-panel>.auth-box{
+    max-width:420px!important;
+    padding:28px 22px!important;
+    border-radius:18px!important;
+  }
+}
 </style></head><body>
 <div id="root"><div class="startup">NexaBridge CRM — Secure Workspace</div></div><div aria-live="polite" class="toast-host" id="toast" role="status"></div>
 <script>
