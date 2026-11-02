@@ -968,7 +968,7 @@ function emailCenterPage(){
  '<section class="mail-section"><div class="mail-section-title"><h3>Email Templates</h3><span>'+templates.length+' templates</span></div><div class="mail-grid">'+templateCards+'</div></section>';
 }
 async function gmailCall(action,body){
- return secured('/functions/v1/nexabridge-gmail?action='+encodeURIComponent(action),body?{method:'POST',body}:{method:'GET'});
+ return secured('/functions/v1/nexabridge-gmail-appsscript?action='+encodeURIComponent(action),body?{method:'POST',body}:{method:'GET'});
 }
 async function gmailShowInbox(){
  const info=await gmailCall('inbox'),items=info.messages||[];
@@ -1043,7 +1043,7 @@ async function handleAction(action,el){const kind=el.dataset.kind,id=el.dataset.
  if(action==='myPassword'){if(window.__NEXA_OFFLINE__){notify(t('offlineNotice'));return;}openMyPassword();return;}
  if(action==='menu'){menuOpen=!menuOpen;render();return;}
  if(action==='closeMenu'){menuOpen=false;render();return;}
- if(action==='gmailStatus'){const result=await gmailCall('status');notify(result.message||'Gmail status checked',!result.connected);return;}
+ if(action==='gmailStatus'){const result=await gmailCall('status');notify(result.message||'Gmail status checked',!result.configured);return;}
  if(action==='gmailInbox'){await gmailShowInbox();return;}
  if(action==='gmailSendDraft'){await gmailSendExistingDraft(id);return;}
  if(action==='emailDraftEdit'){emailEditor('email_queue',id);return;}
