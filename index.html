@@ -546,6 +546,13 @@ body:has(#authForm),body:has(#authForm) #root{margin:0!important;min-height:100d
 #root>.auth-page>.auth-aside .nexa-login-aside-footer{margin-top:9px!important}
 @media(max-height:740px) and (min-width:801px){#root>.auth-page>.auth-aside .nb-ops-preview{display:none!important}#root>.auth-page>.auth-aside .nb-login-content{gap:18px!important}}
 @media(max-width:800px){#root>.auth-page{display:flex!important;flex-direction:column!important;min-height:100dvh!important;overflow:visible!important}#root>.auth-page>.auth-aside{height:auto!important;max-height:none!important;min-height:0!important;padding:18px 22px!important}#root>.auth-page>.auth-aside .nb-login-intro h1{font-size:25px!important}#root>.auth-page>.auth-form-panel{min-height:0!important;height:auto!important;max-height:none!important;flex:1!important;padding:18px 22px 25px!important}#root>.auth-page>.auth-form-panel>.auth-box{max-width:420px!important}}
+</style><style id="nexa-login-seamless-v12">
+@media(min-width:801px){
+body:has(#authForm) #root>.auth-page{display:flex!important;flex-direction:row!important;align-items:stretch!important;justify-content:stretch!important;gap:0!important;width:100%!important;max-width:100%!important;min-height:100dvh!important;height:100dvh!important;overflow:hidden!important;background:#0a2437!important}
+body:has(#authForm) #root>.auth-page>.auth-aside{display:flex!important;flex:0 0 55%!important;width:55%!important;max-width:55%!important;min-width:0!important;height:100dvh!important;min-height:100dvh!important;margin:0!important;grid-area:auto!important;align-self:stretch!important;background:radial-gradient(ellipse at 74% 80%,#164d6b55,transparent 55%),linear-gradient(120deg,#071728,#10324a)!important}
+body:has(#authForm) #root>.auth-page>.auth-form-panel{display:flex!important;flex:1 1 45%!important;width:45%!important;max-width:45%!important;min-width:0!important;height:100dvh!important;min-height:100dvh!important;margin:0!important;grid-area:auto!important;align-self:stretch!important;background:#0e283d!important;padding:clamp(20px,3vw,48px)!important}
+}
+@media(max-width:800px){body:has(#authForm) #root>.auth-page{display:flex!important;flex-direction:column!important;gap:0!important}body:has(#authForm) #root>.auth-page>.auth-aside,body:has(#authForm) #root>.auth-page>.auth-form-panel{width:100%!important;max-width:100%!important;flex:none!important}}
 </style></head><body>
 <div id="root"><div class="startup">NexaBridge CRM — Secure Workspace</div></div><div aria-live="polite" class="toast-host" id="toast" role="status"></div>
 <script>
