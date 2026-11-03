@@ -157,3 +157,9 @@ body.dark #grid .gridcell.range-anchor{outline-color:#c0abff!important}
 .sheet-rowpager{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--stroke);border-radius:11px;margin-top:10px;padding:10px 15px}
 .sheet-rowpager>span{font-size:12px;font-weight:730;color:var(--muted);font-variant-numeric:tabular-nums}
 .sheet-rowpager .btn{min-height:35px}
+
+/* Collaborative cell presence with peer badges and interruption-aware editing */
+.studio-peer-status{display:inline-flex;align-items:center;gap:5px;padding:7px 10px;border-radius:25px;border:1px solid #c8e9de;background:#effbf6;color:#24866d;font-size:11px;font-weight:800;white-space:nowrap}
+.sheet-grid td.peer-active:not(.selected){background:#e7f5ef!important;outline:2px solid #42ba91;outline-offset:-2px}
+body.dark .studio-peer-status{background:#203b37;border-color:#3f7168;color:#a1e9d2}
+body.dark .sheet-grid td.peer-active:not(.selected){background:#254a44!important;outline-color:#55c3a2}
