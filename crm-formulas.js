@@ -26,7 +26,7 @@
    const entry=this.cells.get(key),raw=typeof entry==='object'&&entry!==null?entry.raw_value:entry;
    if(raw==null||raw==='')return '';
    if(typeof raw!=='string')return raw;
-   if(raw[0]!=='=')return raw;
+   if(raw[0]!=='='){const text=raw.trim();return /^-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+\-]?\d+)?$/.test(text)?Number(text):raw;}
    stack.add(key);let result;
    try{result=this.evaluate(raw.slice(1),stack)}catch(e){result=/^#[A-Z0-9\/?!]+$/.test(e.message)?e.message:ERR.parse}
    stack.delete(key);this.cache.set(key,result);return result;
