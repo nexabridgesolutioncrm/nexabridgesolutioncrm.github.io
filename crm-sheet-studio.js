@@ -5,7 +5,7 @@
  const F=global.NexaFormula;
  const esc=v=>String(v??'').replace(/[&<>"']/g,x=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[x]));
  const uid=()=>Math.random().toString(36).slice(2,10);
- const state={root:null,api:null,user:null,list:[],active:null,cells:new Map(),selected:'A1',editing:null,rowStart:0,
+ const state={root:null,api:null,user:null,list:[],active:null,cells:new Map(),selected:'A1',anchor:'A1',range:false,editing:null,rowStart:0,
   channel:null,client:null,timer:null,serial:0,busy:false,pending:[],realtime:false,presence:[],status:'',lastRemote:null,modal:null};
  const validAddress=v=>/^[A-Z]{1,3}[1-9][0-9]{0,4}$/.test(v);
  const display=v=>typeof v==='boolean'?(v?'TRUE':'FALSE'):v==null?'':String(v);
@@ -49,13 +49,13 @@
    '<tr><th class="sheet-grid-row-head">'+(state.rowStart+r+1)+'</th>'+
    Array.from({length:cols},(_,c)=>{const address=F.address(state.rowStart+r,c),entry=dataCell(address),value=cellText(address,calc);
     return '<td data-sheet-address="'+address+'" tabindex="0" class="sheet-studio-cell'+
-     (address===selected?' selected':'')+(state.presence.some(p=>p.cell===address&&p.id!==state.user?.id)?' peer-active':'')+(entry.raw_value.startsWith('=')?' formula':'')+'">'+
+     (address===selected?' selected':'')+(rangeIncludes(address)?' range-selected':'')+(state.presence.some(p=>p.cell===address&&p.id!==state.user?.id)?' peer-active':'')+(entry.raw_value.startsWith('=')?' formula':'')+'">'+
      '<span>'+esc(value).slice(0,800)+'</span></td>';
    }).join('')+'</tr>'
   ).join('')+'</tbody>';
   return header()+'<section class="sheet-studio-toolbar">'+
    '<div class="sheet-studio-title"><strong>▦ '+esc(name)+'</strong><small>'+state.cells.size+' saved cells</small></div>'+
-   '<div class="actions"><button class="btn" data-sheet-action="refresh">↻ Refresh</button>'+
+   '<div class="actions"><button class="btn" data-sheet-action="refresh">↻ Refresh</button><button class="btn" data-sheet-action="copyCells">Copy range</button><button class="btn" data-sheet-action="pasteCells">Paste cells</button>'+
    '<button class="btn" data-sheet-action="chart">＋ New chart</button>'+
    '<button class="btn" data-sheet-action="export">↓ Export CSV</button>'+
    '<button class="btn" data-sheet-action="import">↑ Import XLSX</button></div></section>'+
@@ -139,11 +139,11 @@
  async function openSheet(id){
   removeRemote();
   const data=await api('sheets/'+encodeURIComponent(id));
-  state.active=data.sheet;state.selected='A1';state.rowStart=0;setCells(data.cells);
+  state.active=data.sheet;state.selected='A1';state.anchor='A1';state.range=false;state.rowStart=0;setCells(data.cells);
   paint();await connect();
  }
  async function back(){
-  removeRemote();state.active=null;state.cells.clear();state.selected='A1';state.rowStart=0;
+  removeRemote();state.active=null;state.cells.clear();state.selected='A1';state.anchor='A1';state.range=false;state.rowStart=0;
   await listRefresh();
  }
  async function saveCell(address,value){
@@ -167,10 +167,21 @@
    const next=state.pending.shift();if(next&&state.active)Promise.resolve().then(()=>saveCell(next.address,next.value));
   }
  }
- function selectCell(address){
+ 
+ function rangeLimits(){
+  const a=F.coordinates(state.anchor),b=F.coordinates(state.selected);
+  return a&&b?{top:Math.min(a.row,b.row),bottom:Math.max(a.row,b.row),left:Math.min(a.col,b.col),right:Math.max(a.col,b.col)}:null;
+ }
+ function rangeIncludes(address){
+  if(!state.range)return false;const c=F.coordinates(address),r=rangeLimits();
+  return !!(c&&r&&c.row>=r.top&&c.row<=r.bottom&&c.col>=r.left&&c.col<=r.right);
+ }
+ function selectCell(address,extend=false){
   if(!validAddress(address))return;
+  if(!extend){state.anchor=address;state.range=false}else state.range=true;
   state.selected=address;
-  state.root.querySelectorAll('.sheet-studio-cell.selected').forEach(el=>el.classList.remove('selected'));
+  state.root.querySelectorAll('.sheet-studio-cell.selected,.sheet-studio-cell.range-selected').forEach(el=>el.classList.remove('selected','range-selected'));
+  if(state.range){const r=rangeLimits();if(r)state.root.querySelectorAll('[data-sheet-address]').forEach(el=>{const p=F.coordinates(el.dataset.sheetAddress);if(p&&p.row>=r.top&&p.row<=r.bottom&&p.col>=r.left&&p.col<=r.right)el.classList.add('range-selected')})}
   const cell=state.root.querySelector('[data-sheet-address="'+address+'"]');cell?.classList.add('selected');
   const box=state.root.querySelector('#studioNameBox'),input=state.root.querySelector('#studioFormulaBar');
   if(box)box.textContent=address;if(input)input.value=dataCell(address).raw_value;
@@ -341,6 +352,58 @@
    try{await refreshSheet(true)}catch(_){}
   },15000);
  }
+
+ function copiedRange(){
+  const p=F.coordinates(state.selected),bounds=state.range?rangeLimits():{top:p.row,bottom:p.row,left:p.col,right:p.col};
+  if(!bounds)throw Error('Choose a cell first');
+  if((bounds.bottom-bounds.top+1)*(bounds.right-bounds.left+1)>3000)throw Error('Copy is limited to 3,000 cells');
+  const calc=engine(),result=[];
+  for(let row=bounds.top;row<=bounds.bottom;row++){
+   const line=[];for(let col=bounds.left;col<=bounds.right;col++)line.push(String(cellText(F.address(row,col),calc)).replaceAll('\t',' ').replaceAll('\n',' '));
+   result.push(line.join('\t'));
+  }
+  return result.join('\n');
+ }
+ async function copyCells(){
+  if(!navigator.clipboard?.writeText)throw Error('Clipboard needs HTTPS browser permission');
+  await navigator.clipboard.writeText(copiedRange());notice('Spreadsheet range copied');
+ }
+ function pasteCellsDialog(){
+  showModal('<h2>Paste cells</h2><p>Paste tab-separated values from Excel or Google Sheets, preserving conflict checks for existing cells.</p>'+
+   '<label class="studio-input-label">Start cell</label><input id="studioPasteStart" class="select" value="'+esc(state.selected)+'">'+
+   '<label class="studio-input-label">Values</label><textarea id="studioPasteData" class="select studio-paste-area" rows="8" placeholder="Paste TSV values here"></textarea>'+
+   '<div class="studio-modal-foot"><button class="btn" data-sheet-action="dismiss">Cancel</button><button class="btn primary" data-sheet-action="pasteSave">Save cells</button></div>');
+ }
+ async function pasteCellsSave(){
+  const start=F.coordinates(state.root.querySelector('#studioPasteStart')?.value?.toUpperCase()),text=state.root.querySelector('#studioPasteData')?.value||'';
+  if(!start||!text.trim())throw Error('Enter a valid start address and data');
+  const entries=[];
+  for(const [i,line] of text.trimEnd().replaceAll('\r\n','\n').split('\n').entries()){
+   if(i>=100)throw Error('Maximum 100 rows per paste');
+   for(const [j,value] of line.split('\t').entries()){
+    if(j>=26)throw Error('Maximum 26 columns');
+    if(start.row+i<10000&&start.col+j<26)entries.push({address:F.address(start.row+i,start.col+j),value});
+   }
+  }
+  if(entries.length>500)throw Error('Limit 500 cells per paste');
+  if(entries.length>1&&!global.confirm('Update '+entries.length+' spreadsheet cells?'))return;
+  if(state.busy)throw Error('Save in progress, retry after completion');
+  state.busy=true;let saved=0,errors=[];
+  try{
+   for(const x of entries){
+    const previous=dataCell(x.address);
+    if(x.value===previous.raw_value)continue;
+    try{
+     const row=await api('sheets/'+state.active.id+'/cell',{method:'POST',body:{address:x.address,value:x.value,revision:previous.revision||0}});
+     state.cells.set(x.address,row);saved++;
+    }catch(e){errors.push(x.address+': '+e.message)}
+   }
+  }finally{state.busy=false}
+  state.root.querySelector('.studio-modal-layer')?.remove();paint();
+  notice('Saved '+saved+' cells'+(errors.length?', '+errors.length+' conflicts/errors':''),errors.length>0);
+  if(errors.length)global.alert('Some cells were not saved:\n'+errors.slice(0,10).join('\n'));
+ }
+
  function showScriptInfo(){
   showModal('<h2>Google Apps Script integration</h2><p>Apps Script executes in Google Workspace, not inside a web page. It requires an authorized Google account and a separately deployed script.</p>'+
    '<div class="notice"><strong>Integration starter available</strong><p>Use the reviewed bridge template in the CRM repository, configure its Script Properties privately, then deploy in your Google account. Never paste credentials into this CRM or a public repository.</p></div>'+
@@ -355,6 +418,9 @@
     else if(action==='new')await createSheet();
     else if(action==='back')await back();
     else if(action==='refresh')await refreshSheet();
+    else if(action==='copyCells')await copyCells();
+    else if(action==='pasteCells')pasteCellsDialog();
+    else if(action==='pasteSave')await pasteCellsSave();
     else if(action==='rowPrev'){state.rowStart=Math.max(0,state.rowStart-50);state.selected=F.address(state.rowStart,0);paint()}
     else if(action==='rowNext'){state.rowStart=Math.min(9950,state.rowStart+50);state.selected=F.address(state.rowStart,0);paint()}
     else if(action==='save')await saveCell(state.selected,state.root.querySelector('#studioFormulaBar').value);
@@ -377,10 +443,11 @@
    return;
   }
   const cell=ev.target.closest('[data-sheet-address]');
-  if(cell&&state.active)selectCell(cell.dataset.sheetAddress);
+  if(cell&&state.active)selectCell(cell.dataset.sheetAddress,ev.shiftKey);
  }
  function onDouble(ev){const cell=ev.target.closest('[data-sheet-address]');if(cell)editCell(cell.dataset.sheetAddress)}
  function onKey(ev){
+  if((ev.ctrlKey||ev.metaKey)&&ev.key.toLowerCase()==='c'&&ev.target?.matches('.sheet-studio-cell')){ev.preventDefault();copyCells().catch(e=>notice(e.message,true));return}
   if(ev.target?.id==='studioFormulaBar'&&ev.key==='Enter'){ev.preventDefault();saveCell(state.selected,ev.target.value);return}
   if(ev.target?.matches?.('.sheet-studio-cell')&&ev.key==='Enter'){ev.preventDefault();editCell(ev.target.dataset.sheetAddress)}
  }
