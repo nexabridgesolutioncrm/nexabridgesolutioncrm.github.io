@@ -11,7 +11,7 @@ const state={
  leads:[{id:'l1',org_id:'o1',name:'Sample Lead',company:'Example Co',phone:'1234567',email:'lead@example.test',status:'new',owner:'Demo',source:'website',interest:'Support',notes:'',followup:null,created_at:'2026-11-03T00:00:00Z'}],
  clients:[],deals:[],tasks:[],jobs:[],documents:[],calendar_events:[],activities:[],payments:[],notifications:[],members:[],other:[]
 };
-let calls=[];
+let calls=[],copiedText='',downloadBlob=null;
 function json(data,status=200){return new Response(JSON.stringify(data),{status,headers:{'Content-Type':'application/json'}})}
 async function mockFetch(input,options={}){
  const url=new URL(typeof input==='string'?input:input.url,'https://crm.test');
@@ -56,10 +56,13 @@ const dom=new JSDOM(html,{
   win.Headers=Headers;
   win.Request=Request;
   win.scrollTo=()=>{};
+  win.TextEncoder=TextEncoder;
+  win.URL.createObjectURL=blob=>{downloadBlob=blob;return 'blob:mock'};
+  win.URL.revokeObjectURL=()=>{};
   win.confirm=()=>true;
   win.HTMLDialogElement.prototype.showModal=function(){this.open=true};
   win.HTMLDialogElement.prototype.close=function(){this.open=false;this.dispatchEvent(new win.Event('close'))};
-  Object.defineProperty(win.navigator,'clipboard',{value:{writeText:async()=>{}}});
+  Object.defineProperty(win.navigator,'clipboard',{value:{writeText:async text=>{copiedText=text}}});
  }
 });
 const document=dom.window.document;
@@ -138,7 +141,66 @@ const wait=async(condition,step)=>{for(let n=0;n<150;n++){if(condition())return;
  await wait(()=>document.querySelector('#grid')?.textContent.includes('Updated Co'),'replacement rendered');
  await new Promise(resolve=>setTimeout(resolve,150));
 
+
+ // Google Sheets-style filter and saved view workflow.
+ assert.ok(document.querySelector('.sheet-calculations'),'Spreadsheet summary is rendered');
+ document.querySelector('[data-action="filterModal"]').click();
+ await wait(()=>document.querySelector('#advField'),'advanced filter editor');
+ document.querySelector('#advField').value='company';
+ document.querySelector('#advOp').value='contains';
+ document.querySelector('#advValue').value='Updated';
+ document.querySelector('[data-action="filterApply"]').click();
+ await wait(()=>document.querySelectorAll('#grid tbody tr').length===1&&!document.querySelector('#grid tbody .empty'),'filter applied');
+ assert.match(document.querySelector('#grid').textContent,/Updated Co/);
+ assert.ok(document.querySelector('.sheet-filter-chip'),'Active filter chip appears');
+ document.querySelector('[data-action="saveViewModal"]').click();
+ await wait(()=>document.querySelector('#viewName'),'save view modal');
+ document.querySelector('#viewName').value='Updated companies';
+ document.querySelector('[data-action="viewSave"]').click();
+ await wait(()=>[...document.querySelectorAll('#savedSheetView option')].some(x=>x.value==='Updated companies'),'saved view available');
+ document.querySelector('[data-action="filterClear"]').click();
+ await wait(()=>document.querySelectorAll('#grid tbody tr').length===3,'cleared filter');
+ const saved=document.querySelector('#savedSheetView');
+ saved.value='Updated companies';
+ saved.dispatchEvent(new dom.window.Event('change',{bubbles:true}));
+ await wait(()=>document.querySelectorAll('#grid tbody tr').length===1,'saved view restored');
+
+ // Range selection and TSV cell copying.
+ const rangeFirst=document.querySelector('.gridcell[data-field="name"]');
+ const rangeLast=document.querySelector('.gridcell[data-field="email"]');
+ rangeFirst.click();
+ rangeLast.dispatchEvent(new dom.window.MouseEvent('click',{bubbles:true,shiftKey:true}));
+ assert.ok(document.querySelectorAll('.gridcell.range-selected').length>=4,'Shift-click highlights cell range');
+ document.querySelector('[data-action="copyCells"]').click();
+ await wait(()=>copiedText.includes('Updated Co'),'multi-cell TSV copied');
+ assert.match(copiedText,/Sample Lead/);
+
+ // Read-only grouping report and real Office Open XML export.
+ document.querySelector('[data-action="pivotModal"]').click();
+ await wait(()=>document.querySelector('#pivotGroup'),'pivot grouping dialog');
+ document.querySelector('#pivotGroup').value='company';
+ document.querySelector('[data-action="pivotRun"]').click();
+ assert.equal(document.querySelectorAll('#pivotResult .pivot-row').length,1,'pivot summary groups filtered data');
+ document.querySelector('[data-action="close"]').click();
+ document.querySelector('[data-action="exportXLSX"]').click();
+ await wait(()=>downloadBlob!==null,'Excel file generated');
+ const binary=await new Promise((resolve,reject)=>{
+  const reader=new dom.window.FileReader();
+  reader.onload=()=>resolve(Buffer.from(reader.result));
+  reader.onerror=()=>reject(reader.error);
+  reader.readAsArrayBuffer(downloadBlob);
+ });
+ assert.equal(binary.readUInt32LE(0),0x04034b50,'XLSX has ZIP local file signature');
+ assert.ok(binary.includes(Buffer.from('xl/worksheets/sheet1.xml')),'XLSX includes real worksheet');
+ assert.ok(binary.includes(Buffer.from('Updated Co')),'XLSX contains filtered record');
+
+ // Undo and redo persist through authenticated backend, even with a filter selected.
+ document.querySelector('[data-action="undo"]').click();
+ await wait(()=>state.leads[0].company==='Changed Co','undo replacement');
+ document.querySelector('[data-action="redo"]').click();
+ await wait(()=>state.leads[0].company==='Updated Co','redo replacement');
+
  assert.equal(errors.length,0,'No browser runtime errors: '+errors.join('\n'));
- console.log('PASS — Login, lead details and back, inline edit, undo, create, TSV import/paste, global search, find and replace');
+ console.log('PASS — CRM core, cell edits, undo/redo, CSV/TSV import, filters, saved views, range copy, pivot and XLSX export');
  dom.window.close();
 })().catch(error=>{console.error(error);if(errors.length)console.error('Browser errors:',errors);dom.window.close();process.exitCode=1});
