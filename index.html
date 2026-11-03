@@ -1753,6 +1753,10 @@ const root = $('#root');
 const lang = 'en';
 let setupTokenRequired=false, importMode='replace';
 let user = null, csrf = null, data = null, page = 'dashboard', query = '', filter = 'all', modal = null, menuOpen = false, nexaActiveLeadId = null;
+let nexaTheme='light', nexaLeadsView='list', nexaDraggedRecord=null;
+try{nexaTheme=localStorage.getItem('nexabridge-theme')==='dark'?'dark':'light';nexaLeadsView=localStorage.getItem('nexabridge-leads-view')==='board'?'board':'list';}catch(_){}
+document.documentElement.dataset.nexaTheme=nexaTheme;
+
 const nav = [['dashboard','▦'],['clients','♙'],['leads','♧'],['deals','◈'],['jobs','▤'],['dispatch','⇄'],['schedule','▦'],['calendar','▤'],['tasks','☑'],['documents','▣'],['projects','▤'],['contracts','▣'],['expenses','＄'],['email','✉'],['reports','▥'],['catalog','◈'],['technicians','♙'],['equipment','▣'],['service_plans','↻'],['checklists','☑'],['time_entries','◷'],['automation','⚡'],['team','♙']];
 const STATUS = {leads:['new','contacted','qualified','converted','closed'],deals:['new','qualified','proposal','negotiation','won','lost'],tasks:['open','done']};
 const SOURCES = [['website','sourceWebsite'],['google','sourceGoogle'],['social','sourceSocial'],['referral','sourceReferral'],['direct','sourceDirect'],['event','sourceEvent'],['other','sourceOther']];
@@ -1831,14 +1835,53 @@ function installNexaShortcuts(){if(nexaShortcutsInstalled)return;nexaShortcutsIn
  if(event.key==='Escape'){const popup=$('#modalLayer');if(popup){event.preventDefault();closeModal();return;}const hits=$('#globalHits');if(hits&&!hits.classList.contains('hide')){hits.classList.add('hide');return;}}
  if(!editing&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&event.key==='/'){const search=$('#globalSearch');if(search){event.preventDefault();search.focus();}}
 });}
+
+
+function nexaTaskCelebration(){
+ if(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+ const el=document.createElement('div');
+ el.className='nexa-task-celebration';
+ el.setAttribute('aria-hidden','true');
+ el.innerHTML='<span class="nexa-task-celebration-check">✓</span><span>✦</span><span>✦</span><span>✦</span><span>✦</span>';
+ document.body.appendChild(el);
+ setTimeout(()=>el.remove(),1000);
+}
+function nexaOutlineIcon(id){
+ const outlines={
+ dashboard:'<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+ clients:'<circle cx="9" cy="8" r="3"/><path d="M3 20v-1a6 6 0 0 1 12 0v1"/><path d="M16 5a3 3 0 0 1 0 6m2 4a5 5 0 0 1 3 5"/>',
+ leads:'<circle cx="12" cy="9" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/><path d="M18 2v5m-2.5-2.5h5"/>',
+ deals:'<rect x="3" y="7" width="18" height="14" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 12h18"/>',
+ jobs:'<path d="M4 7h16v14H4zM8 7V4h8v3M8 13h8m-8 4h5"/>',
+ dispatch:'<path d="M3 7h13v10H3zM16 11h3l3 3v3h-6M7 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm12 0a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"/>',
+ schedule:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4m10-4v4M3 10h18m-12 4h2m3 0h2"/>',
+ calendar:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4m10-4v4M3 10h18M7 14h3v3H7z"/>',
+ tasks:'<rect x="4" y="4" width="16" height="16" rx="3"/><path d="m8 12 3 3 5-6"/>',
+ documents:'<path d="M6 3h8l5 5v13H6zM14 3v5h5M9 13h7m-7 4h7"/>',
+ projects:'<path d="M3 7h18M6 4v16m6-16v16m6-16v16M3 20h18"/>',
+ contracts:'<path d="M5 3h14v18H5zM9 8h6m-6 4h6m-6 4h4"/>',
+ expenses:'<circle cx="12" cy="12" r="9"/><path d="M14.5 8.5c-2-1.5-6-1-6 1.5 0 3 7 1 7 4s-5 3.5-7 1.5M12 5v14"/>',
+ email:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 7 9-7"/>',
+ reports:'<path d="M4 20V10h4v10M10 20V4h4v16M16 20v-7h4v7M3 20h18"/>',
+ catalog:'<path d="m12 3 9 5-9 5-9-5 9-5ZM3 12l9 5 9-5M3 16l9 5 9-5"/>',
+ technicians:'<circle cx="12" cy="8" r="4"/><path d="M5 21v-1a7 7 0 0 1 14 0v1M9 15l3 3 3-3"/>',
+ equipment:'<rect x="4" y="5" width="16" height="14" rx="2"/><circle cx="12" cy="12" r="3"/><path d="M8 5V3m8 2V3M8 19v2m8-2v2"/>',
+ service_plans:'<path d="M20 11a8 8 0 1 0-2 6M20 5v6h-6"/>',
+ checklists:'<path d="M9 5h11M9 12h11M9 19h11M3 5l1 1 2-2M3 12l1 1 2-2M3 19l1 1 2-2"/>',
+ time_entries:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l4 2"/>',
+ automation:'<path d="m13 2-9 12h7l-1 8 10-13h-7V2Z"/>',
+ team:'<circle cx="8" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M2 20a6 6 0 0 1 12 0M14 15a5 5 0 0 1 8 5"/>'
+ };
+ return '<span class="nav-icon nexa-nav-svg" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">'+(outlines[id]||outlines.dashboard)+'</svg></span>';
+}
 function render(){if(!user||!data){renderAuth(false);return;}if(['settings','users','messenger'].includes(page))page='dashboard';
- const navItems=items=>items.filter(n=>(!['documents','reports','automation','team'].includes(n[0])||['owner','admin'].includes(user.role))&&(n[0]!=='email'||user.role!=='viewer')).map(([id,ic])=>`<button class="nav-item ${page===id?'active':''}" data-action="page" data-page="${id}"><span class="nav-icon">${ic}</span><span>${e(({calendar:'Company Calendar',automation:'Automation Center',team:'Team & Access',documents:'Invoices & Estimates',email:'Email Center',schedule:'Schedule',dispatch:'Dispatch Board',jobs:'Jobs',catalog:'Services Catalog',technicians:'Technicians',equipment:'Equipment',service_plans:'Service Plans',checklists:'Checklists',time_entries:'Time Tracking'})[id]||t(id))}</span>${id==='tasks'&&overdueTasks().length?`<span class="nav-count">${fmt(overdueTasks().length)}</span>`:''}</button>`).join('');
+ const navItems=items=>items.filter(n=>(!['documents','reports','automation','team'].includes(n[0])||['owner','admin'].includes(user.role))&&(n[0]!=='email'||user.role!=='viewer')).map(([id,ic])=>`<button class="nav-item ${page===id?'active':''}" data-action="page" data-page="${id}">${nexaOutlineIcon(id)}<span>${e(({calendar:'Company Calendar',automation:'Automation Center',team:'Team & Access',documents:'Invoices & Estimates',email:'Email Center',schedule:'Schedule',dispatch:'Dispatch Board',jobs:'Jobs',catalog:'Services Catalog',technicians:'Technicians',equipment:'Equipment',service_plans:'Service Plans',checklists:'Checklists',time_entries:'Time Tracking'})[id]||t(id))}</span>${id==='tasks'&&overdueTasks().length?`<span class="nav-count">${fmt(overdueTasks().length)}</span>`:''}</button>`).join('');
  const CORE_NAV=['dashboard','clients','leads','deals','jobs','dispatch','schedule','tasks','documents','email'];
  const extraNavHtml=navItems(nav.filter(n=>!CORE_NAV.includes(n[0])));
  const navHtml=navItems(nav.filter(n=>CORE_NAV.includes(n[0])))+
  (extraNavHtml?`<details class="nexa-more-tools" ${!CORE_NAV.includes(page)?'open':''}><summary>More tools</summary><div class="nexa-more-inner">${extraNavHtml}</div></details>`:'');
  root.innerHTML=`<div class="shell"><aside class="sidebar ${menuOpen?'open':''}" id="sidebar">${brand(true)}<div class="nav-caption">${e(t('navigation'))}</div><nav class="nav-list" aria-label="${e(t('navigation'))}">${navHtml}</nav><div class="side-bottom"><strong><span class="online-dot"></span>${e(data.settings.company)}</strong><small>${e(window.__NEXA_OFFLINE__?'Stored on this device':t('siteLocal'))}</small></div></aside>
- <div class="mobile-backdrop ${menuOpen?'open':''}" data-action="closeMenu"></div><div class="work"><header class="topbar"><div class="top-right"><button class="btn neutral icon-only menu-button" data-action="menu" aria-label="Menu">☰</button><div><div class="top-title">${e(({calendar:'Company Calendar',automation:'Automation Center',team:'Team & Access',documents:'Invoices & Estimates'})[page]||t(page))}</div><div class="top-detail">${e(data.settings.company)} / ${e(t('workspace'))}</div></div></div><div class="top-right"><div class="top-search">⌕ <input type="search" id="globalSearch" placeholder="${e(t('searchGlobal'))}" autocomplete="off"><div class="global-hits hide" id="globalHits"></div></div>${window.__NEXA_OFFLINE__?'':`<button class="btn neutral" data-action="logout">${e(t('logout'))}</button>`}</div></header>
+ <div class="mobile-backdrop ${menuOpen?'open':''}" data-action="closeMenu"></div><div class="work"><header class="topbar"><div class="top-right"><button class="btn neutral icon-only menu-button" data-action="menu" aria-label="Menu">☰</button><div><div class="top-title">${e(({calendar:'Company Calendar',automation:'Automation Center',team:'Team & Access',documents:'Invoices & Estimates'})[page]||t(page))}</div><div class="top-detail">${e(data.settings.company)} / ${e(t('workspace'))}</div></div></div><div class="top-right"><button type="button" class="nexa-theme-toggle" data-action="themeToggle" aria-label="Switch to ${nexaTheme===\'light\'?\'dark\':\'light\'} mode" title="Change appearance"><span aria-hidden="true">${nexaTheme===\'dark\'?\'☀\':\'☾\'}</span><span class="nexa-theme-label">${nexaTheme===\'dark\'?\'Light\':\'Dark\'}</span></button><div class="top-search">⌕ <input type="search" id="globalSearch" placeholder="${e(t('searchGlobal'))}" autocomplete="off"><div class="global-hits hide" id="globalHits"></div></div>${window.__NEXA_OFFLINE__?'':`<button class="btn neutral" data-action="logout">${e(t('logout'))}</button>`}</div></header>
  <main id="content" class="main-content"></main></div></div>`;
  renderContent();installNexaShortcuts();
 }
@@ -1896,6 +1939,26 @@ function nexaLeadContactField(label,value,href){
   (href?'<a href="'+e(href)+'"'+(href.startsWith('http')?' target="_blank" rel="noopener noreferrer"':'')+'>'+e(display)+'</a>':
   '<strong>'+e(display||'Not provided')+'</strong>')+'</div>';
 }
+
+function nexaLeadBoard(){
+ const rows=filtered('leads');
+ return '<div class="nexa-board-hint">Drag a lead to change its status. To convert a lead into a client, use Convert to client in its details.</div>'+
+ '<div class="nexa-lead-kanban">'+STATUS.leads.map(st=>{
+  const items=rows.filter(x=>(x.status||'new')===st);
+  return '<section class="nexa-lead-stage nexa-kanban-lane '+(st==='converted'?'nexa-readonly-stage':'')+'" data-drop-kind="leads" data-stage="'+e(st)+'">'+
+   '<div class="nexa-stage-head"><span>'+e(t(st))+'</span><b>'+fmt(items.length)+'</b></div><div class="nexa-stage-cards">'+
+   (items.length?items.map(lead=>{
+    const n=(data.leads||[]).findIndex(x=>String(x.id)===String(lead.id))+1;
+    return '<article class="nexa-lead-board-card nexa-draggable-card" '+(st==='converted'?'':'draggable="true" ')+'data-drag-kind="leads" data-record-id="'+e(lead.id)+'">'+
+     '<div class="nexa-lead-board-card-top"><small>#'+fmt(n)+'</small><span class="nexa-drag-handle" aria-hidden="true">⋮⋮</span></div>'+
+     '<button type="button" data-action="leadOpen" data-id="'+e(lead.id)+'" class="nexa-lead-board-title">'+e(lead.name||lead.company||'Unnamed lead')+'</button>'+
+     '<p>'+e(lead.company||'Prospective customer')+'</p>'+
+     (lead.followup?'<div class="nexa-lead-board-date">Follow-up: '+e(fmtDate(lead.followup))+'</div>':'')+
+     '<button class="nexa-board-open" data-action="leadOpen" data-id="'+e(lead.id)+'">Open details →</button></article>';
+   }).join(''):'<div class="nexa-stage-empty">'+(st==='converted'?'Converted leads appear here':'Drag leads here')+'</div>')+
+   '</div></section>';
+ }).join('')+'</div>';
+}
 function nexaLeadListPage(){
  const leads=data.leads||[],open=leads.filter(x=>!['closed','converted'].includes(x.status));
  const due=open.filter(x=>x.followup&&x.followup<=dateToday()).length;
@@ -1910,8 +1973,9 @@ function nexaLeadListPage(){
     ['Qualified',qualified,'Ready for next steps'],['Converted',converted,'Moved to clients']
   ].map(([label,value,sub])=>'<div class="nexa-lead-stat"><span>'+e(label)+'</span><strong>'+fmt(value)+'</strong><small>'+e(sub)+'</small></div>').join('')+'</div>'+
   '<div class="nexa-leads-tools"><label class="nexa-leads-search"><span aria-hidden="true">⌕</span><input id="listSearch" type="search" placeholder="Search leads, company, phone or email…" value="'+e(query)+'" aria-label="Search leads"></label>'+
+  '<div class="nexa-leads-view-switch" role="group" aria-label="Lead layout"><button type="button" data-action="leadView" data-view="list" class="'+(nexaLeadsView==='list'?'active':'')+'">List</button><button type="button" data-action="leadView" data-view="board" class="'+(nexaLeadsView==='board'?'active':'')+'">Board</button></div>'+
   '<label class="nexa-leads-filter">Status <select id="statusFilter" aria-label="Filter leads by status">'+options(filters,filter)+'</select></label></div>'+
-  recordTable('leads');
+  (nexaLeadsView==='board'?nexaLeadBoard():recordTable('leads'));
 }
 function nexaLeadDetailPage(){
  const lead=(data.leads||[]).find(x=>String(x.id)===String(nexaActiveLeadId));
@@ -1987,7 +2051,22 @@ function recordPage(kind){if(kind==='leads')return nexaLeadListPage();const desc
  <div class="tools"><label class="filter-search">⌕ <input id="listSearch" type="search" placeholder="${e(t('searchHere'))}" value="${e(query)}"></label><div class="tool-right">${filters.length?`<select id="statusFilter" class="select-simple">${options(filters,filter)}</select>`:''}</div></div>
  ${kind==='deals'?dealBoard():''}${recordTable(kind)}`;
 }
-function dealBoard(){return `<div class="kanban">${STATUS.deals.map(st=>{const items=filtered('deals').filter(x=>x.stage===st);return `<div class="lane"><div class="lane-head"><strong>${e(t(st))}</strong><span class="lane-count">${fmt(items.length)}</span></div>${items.length?items.slice(0,10).map(d=>`<div class="deal-card"><strong>${e(d.title)}</strong><small>${e(connectionName('clients',d.clientId))}</small><div class="value num">${money(d.value)}</div><div class="card-actions"><select class="inline-status" data-action="dealStage" data-id="${e(d.id)}" aria-label="${e(t('moveStage'))}">${options(STATUS.deals.map(x=>[x,t(x)]),d.stage)}</select><button class="btn tiny neutral" data-action="edit" data-kind="deals" data-id="${e(d.id)}">✎</button></div></div>`).join(''):`<div class="board-note">${e(t('noRecords'))}</div>`}</div>`}).join('')}</div>`;}
+function dealBoard(){
+ const stages=STATUS.deals;
+ return '<div class="nexa-board-hint">Drag cards between stages to update opportunities. You can also use the stage dropdown on any card.</div>'+
+ '<div class="kanban nexa-draggable-pipeline">'+stages.map(st=>{
+  const items=filtered('deals').filter(x=>x.stage===st);
+  return '<section class="lane nexa-kanban-lane" data-drop-kind="deals" data-stage="'+e(st)+'" aria-label="'+e(t(st))+' sales stage">'+
+  '<div class="lane-head"><strong>'+e(t(st))+'</strong><span class="lane-count">'+fmt(items.length)+'</span></div>'+
+  '<div class="nexa-lane-cards">'+(items.length?items.map(d=>
+   '<div class="deal-card nexa-draggable-card" draggable="true" data-drag-kind="deals" data-record-id="'+e(d.id)+'" title="Drag to another stage">'+
+   '<div class="nexa-drag-handle" aria-hidden="true">⋮⋮</div><strong>'+e(d.title)+'</strong><small>'+e(connectionName('clients',d.clientId))+'</small>'+
+   '<div class="value num">'+money(d.value)+'</div><div class="card-actions">'+
+   '<select class="inline-status" data-action="dealStage" data-id="'+e(d.id)+'" aria-label="Move opportunity to stage">'+options(stages.map(x=>[x,t(x)]),d.stage)+'</select>'+
+   '<button class="btn tiny neutral" data-action="edit" data-kind="deals" data-id="'+e(d.id)+'">Edit</button></div></div>'
+  ).join(''):'<div class="board-note">Drop an opportunity here</div>')+'</div></section>';
+ }).join('')+'</div>';
+}
 function reports(){const won=data.deals.filter(x=>x.stage==='won').reduce((s,x)=>s+(+x.value||0),0);const pipeline=openDeals().reduce((s,x)=>s+(+x.value||0),0);const conversion=data.leads.length?Math.round(data.leads.filter(x=>x.status==='converted').length/data.leads.length*100):0;const sources=[...new Set(data.leads.map(x=>x.source||'other'))].map(x=>[x,data.leads.filter(l=>(l.source||'other')===x).length]).sort((a,b)=>b[1]-a[1]);
  return `${header(t('reports'),t('reportsDesc'))}<div class="summary-grid">${stats('◆',t('revenueWon'),money(won),t('won'),'green')}${stats('◈',t('pipelineValue'),money(pipeline),t('openDeals'),'blue')}${stats('↗',t('conversion'),`${fmt(conversion)}%`,t('leads'),'amber')}</div><div class="two-col">${sectionBox(t('stageDistribution'),STATUS.deals.map(s=>{const n=data.deals.filter(x=>x.stage===s).length;return `<div class="chart-row"><span>${e(t(s))}</span><progress value="${n}" max="${Math.max(data.deals.length,1)}"></progress><strong>${fmt(n)}</strong></div>`}).join(''))}
  ${sectionBox(t('sourceDistribution'),sources.length?sources.map(([s,n])=>{const source=SOURCES.find(x=>x[0]===s);return `<div class="chart-row"><span>${e(source?t(source[1]):s)}</span><progress value="${n}" max="${Math.max(1,data.leads.length)}"></progress><strong>${fmt(n)}</strong></div>`}).join(''):empty())}</div>`;
@@ -2528,7 +2607,7 @@ function emailEditor(kind,id,initial={}){
  modalWindow((id?'Edit ':'New ')+(draft?'draft':'template'),form,'<button class="btn neutral" data-action="closeModal">Cancel</button><button class="btn primary" type="submit" form="emailDraftForm">Save</button>');
  $('#emailDraftForm').onsubmit=async ev=>{ev.preventDefault();const payload=Object.fromEntries(new FormData(ev.target).entries());if(draft)payload.state='draft';try{await api('records/'+kind+(id?'/'+encodeURIComponent(id):''),{method:id?'PUT':'POST',body:payload});closeModal();await refresh();notify('Saved');}catch(err){notify(err.message,true)}};
 }
-function renderContent(){const content=$('#content');if(!content)return;const contextTitle=$('#nexaContextTitle');if(contextTitle)contextTitle.textContent=({dashboard:'Dashboard',calendar:'Company Calendar',automation:'Automation Center',team:'Team & Access',documents:'Invoices & Estimates',email:'Email Center',projects:'Projects',contracts:'Contracts',expenses:'Expenses',clients:'Clients',leads:'Leads',deals:'Sales opportunities',tasks:'Tasks & follow-ups',reports:'Reports'})[page]||t(page);content.innerHTML=page==='leads'&&nexaActiveLeadId?nexaLeadDetailPage():page==='dashboard'?internalDash():page==='calendar'?internalCalendar():page==='email'?emailCenterPage():page==='automation'?internalAutomation():page==='team'?internalTeam():['catalog','equipment','technicians','time_entries','checklists','service_plans'].includes(page)?opsPage(page):page==='schedule'?wzSchedule():NEXA_EXTENSION_FIELDS[page]?extensionPage(page):page==='jobs'?wzRecords('jobs'):page==='documents'?wzRecords('documents'):page==='dispatch'?wzDispatch():page==='reports'?reports():page==='settings'?settingsPage():page==='users'?usersPage():recordPage(page);nexaBindLeadDetail();const listSearch=$('#listSearch');if(listSearch)listSearch.addEventListener('input',ev=>{query=ev.target.value;const newContent=page==='dashboard'?dashboard():recordPage(page);const tmp=document.createElement('div');tmp.innerHTML=newContent;const table=$('.table-scroll')?.parentElement;const fresh=tmp.querySelector('.table-scroll')?.parentElement;if(table&&fresh)table.replaceWith(fresh);if(page==='deals'){const old=$('.kanban'),board=tmp.querySelector('.kanban');if(old&&board)old.replaceWith(board);}});const filterEl=$('#statusFilter');if(filterEl)filterEl.addEventListener('change',ev=>{filter=ev.target.value;renderContent();});const gs=$('#globalSearch');if(gs)gs.addEventListener('input',ev=>showSearchHits(ev.target.value));if(page==='messenger')messengerBind();if(page==='email'){const composer=$('#emailDraftForm');if(composer){composer.querySelectorAll('input,textarea').forEach(input=>input.addEventListener('input',()=>{input.setCustomValidity('');const count=$('#nexaComposeCount');if(count)count.textContent=(composer.elements.namedItem('body')?.value.length||0)+' / 10000 characters';}));}const mailFilter=$('#nexaGmailFilter');if(mailFilter)mailFilter.addEventListener('change',ev=>{emailInboxFilter=ev.target.value;renderContent();});const mailSort=$('#nexaGmailSort');if(mailSort)mailSort.addEventListener('change',ev=>{emailInboxSort=ev.target.value;renderContent();});const inboxSearch=$('#nexaGmailSearch');if(inboxSearch)inboxSearch.addEventListener('input',ev=>{const cursor=ev.target.selectionStart;emailInboxSearch=ev.target.value;renderContent();const next=$('#nexaGmailSearch');if(next){next.focus();next.setSelectionRange(cursor,cursor);}});const form=$('#emailDraftForm');if(form)form.addEventListener('submit',async ev=>{ev.preventDefault();try{const fd=new FormData(form);await api('records/email_queue',{method:'POST',body:{recipientEmail:String(fd.get('recipientEmail')||''),subject:String(fd.get('subject')||''),body:String(fd.get('body')||'')}});await loadData();emailTab='drafts';renderContent();notify('Draft saved.');}catch(err){notify(err.message||'Unable to save draft',true);}});const search=$('#emailSearch');if(search)search.addEventListener('input',ev=>{emailSearch=ev.target.value;const rows=$('#emailResults');if(rows)rows.innerHTML=commEmailRows()})}if(page==='documents'){const inp=$('#docSearch'),sel=$('#docFilter');if(inp)inp.addEventListener('input',ev=>{docSearchQuery=ev.target.value;$('#docTableBody').innerHTML=documentTableBody()});if(sel)sel.addEventListener('change',ev=>{docTypeFilter=ev.target.value;$('#docTableBody').innerHTML=documentTableBody()})}
+function renderContent(){const content=$('#content');if(!content)return;const contextTitle=$('#nexaContextTitle');if(contextTitle)contextTitle.textContent=({dashboard:'Dashboard',calendar:'Company Calendar',automation:'Automation Center',team:'Team & Access',documents:'Invoices & Estimates',email:'Email Center',projects:'Projects',contracts:'Contracts',expenses:'Expenses',clients:'Clients',leads:'Leads',deals:'Sales opportunities',tasks:'Tasks & follow-ups',reports:'Reports'})[page]||t(page);content.innerHTML=page==='leads'&&nexaActiveLeadId?nexaLeadDetailPage():page==='dashboard'?internalDash():page==='calendar'?internalCalendar():page==='email'?emailCenterPage():page==='automation'?internalAutomation():page==='team'?internalTeam():['catalog','equipment','technicians','time_entries','checklists','service_plans'].includes(page)?opsPage(page):page==='schedule'?wzSchedule():NEXA_EXTENSION_FIELDS[page]?extensionPage(page):page==='jobs'?wzRecords('jobs'):page==='documents'?wzRecords('documents'):page==='dispatch'?wzDispatch():page==='reports'?reports():page==='settings'?settingsPage():page==='users'?usersPage():recordPage(page);nexaBindLeadDetail();const listSearch=$('#listSearch');if(listSearch)listSearch.addEventListener('input',ev=>{query=ev.target.value;if(page==='leads'&&nexaLeadsView==='board'&&!nexaActiveLeadId){const oldBoard=$('.nexa-lead-kanban');if(oldBoard)oldBoard.outerHTML=nexaLeadBoard();return;}const newContent=page==='dashboard'?dashboard():recordPage(page);const tmp=document.createElement('div');tmp.innerHTML=newContent;const table=$('.table-scroll')?.parentElement;const fresh=tmp.querySelector('.table-scroll')?.parentElement;if(table&&fresh)table.replaceWith(fresh);if(page==='deals'){const old=$('.kanban'),board=tmp.querySelector('.kanban');if(old&&board)old.replaceWith(board);}});const filterEl=$('#statusFilter');if(filterEl)filterEl.addEventListener('change',ev=>{filter=ev.target.value;renderContent();});const gs=$('#globalSearch');if(gs)gs.addEventListener('input',ev=>showSearchHits(ev.target.value));if(page==='messenger')messengerBind();if(page==='email'){const composer=$('#emailDraftForm');if(composer){composer.querySelectorAll('input,textarea').forEach(input=>input.addEventListener('input',()=>{input.setCustomValidity('');const count=$('#nexaComposeCount');if(count)count.textContent=(composer.elements.namedItem('body')?.value.length||0)+' / 10000 characters';}));}const mailFilter=$('#nexaGmailFilter');if(mailFilter)mailFilter.addEventListener('change',ev=>{emailInboxFilter=ev.target.value;renderContent();});const mailSort=$('#nexaGmailSort');if(mailSort)mailSort.addEventListener('change',ev=>{emailInboxSort=ev.target.value;renderContent();});const inboxSearch=$('#nexaGmailSearch');if(inboxSearch)inboxSearch.addEventListener('input',ev=>{const cursor=ev.target.selectionStart;emailInboxSearch=ev.target.value;renderContent();const next=$('#nexaGmailSearch');if(next){next.focus();next.setSelectionRange(cursor,cursor);}});const form=$('#emailDraftForm');if(form)form.addEventListener('submit',async ev=>{ev.preventDefault();try{const fd=new FormData(form);await api('records/email_queue',{method:'POST',body:{recipientEmail:String(fd.get('recipientEmail')||''),subject:String(fd.get('subject')||''),body:String(fd.get('body')||'')}});await loadData();emailTab='drafts';renderContent();notify('Draft saved.');}catch(err){notify(err.message||'Unable to save draft',true);}});const search=$('#emailSearch');if(search)search.addEventListener('input',ev=>{emailSearch=ev.target.value;const rows=$('#emailResults');if(rows)rows.innerHTML=commEmailRows()})}if(page==='documents'){const inp=$('#docSearch'),sel=$('#docFilter');if(inp)inp.addEventListener('input',ev=>{docSearchQuery=ev.target.value;$('#docTableBody').innerHTML=documentTableBody()});if(sel)sel.addEventListener('change',ev=>{docTypeFilter=ev.target.value;$('#docTableBody').innerHTML=documentTableBody()})}
  const settingsForm=$('#settingsForm');if(settingsForm)settingsForm.addEventListener('submit',saveSettings);const restore=$('#restoreFile');if(restore)restore.addEventListener('change',importFile);}
 function optionsByType(type){if(type==='leadStatus')return STATUS.leads.map(s=>[s,t(s)]);if(type==='dealStatus')return STATUS.deals.map(s=>[s,t(s)]);if(type==='taskStatus')return STATUS.tasks.map(s=>[s,t(s)]);if(type==='priority')return ['low','medium','high'].map(s=>[s,t(s)]);if(type==='source')return [['',t('choose')],...SOURCES.map(([v,k])=>[v,t(k)])];if(type==='client')return [['',t('selectClient')],...data.clients.map(c=>[c.id,c.name])];if(type==='lead')return [['',t('selectLead')],...data.leads.map(c=>[c.id,c.name])];if(type==='service')return [['',t('choose')],...data.settings.services.map(s=>[s,s])];if(type==='relation')return [['',t('none')],...['leads','clients','deals'].flatMap(k=>data[k].map(v=>[`${k.slice(0,-1)}|${v.id}`,`${t(k.slice(0,-1))}: ${v.name||v.title}`]))];return [];}
 function formField(key,type,required,obj){let value=key==='linkedRef'?obj?.linkedType&&obj?.linkedId?`${obj.linkedType}|${obj.linkedId}`:'':fieldVal(obj,key);if(type==='priority'&&!value)value='medium';if(type==='taskStatus'&&!value)value='open';if(type==='leadStatus'&&!value)value='new';if(type==='dealStatus'&&!value)value='new';
@@ -2567,7 +2646,19 @@ function openMyPassword(){closeModal();modal={kind:'password'};
  $('#passwordForm').addEventListener('submit',async ev=>{ev.preventDefault();const f=new FormData(ev.target);try{await api('account/password',{method:'POST',body:{current:f.get('current'),password:f.get('password')}});closeModal();user=null;csrf=null;data=null;renderAuth(false);notify(t('passwordChanged'));}catch(err){notify(err.message,true);}});
 }
 
-async function handleAction(action,el){const kind=el.dataset.kind,id=el.dataset.id;try{if(action==='leadOpen'){if(!(data.leads||[]).some(x=>String(x.id)===String(id)))throw Error('Lead not found.');page='leads';nexaActiveLeadId=id;renderContent();window.scrollTo({top:0,behavior:'smooth'});return;}
+async function handleAction(action,el){const kind=el.dataset.kind,id=el.dataset.id;try{
+ if(action==='themeToggle'){
+  nexaTheme=nexaTheme==='dark'?'light':'dark';
+  document.documentElement.dataset.nexaTheme=nexaTheme;
+  try{localStorage.setItem('nexabridge-theme',nexaTheme)}catch(_){}
+  render();return;
+ }
+ if(action==='leadView'){
+  nexaLeadsView=el.dataset.view==='board'?'board':'list';
+  try{localStorage.setItem('nexabridge-leads-view',nexaLeadsView)}catch(_){}
+  renderContent();return;
+ }
+if(action==='leadOpen'){if(!(data.leads||[]).some(x=>String(x.id)===String(id)))throw Error('Lead not found.');page='leads';nexaActiveLeadId=id;renderContent();window.scrollTo({top:0,behavior:'smooth'});return;}
  if(action==='leadBack'){nexaActiveLeadId=null;page='leads';renderContent();window.scrollTo({top:0,behavior:'smooth'});return;}
  if(action==='leadTask'){
   const lead=(data.leads||[]).find(x=>String(x.id)===String(id));if(!lead)throw Error('Lead not found.');
@@ -2642,7 +2733,7 @@ async function handleAction(action,el){const kind=el.dataset.kind,id=el.dataset.
  if(action==='deleteInvoice'){const doc=data.documents.find(d=>d.id===id);if(!doc)throw Error('Invoice or estimate not found.');if((data.payments||[]).some(p=>p.document_id===id))throw Error('This document has recorded payments and cannot be deleted.');if(!confirm('Permanently delete '+(doc.number||'this document')+'? This cannot be undone.'))return;await api('records/documents/'+encodeURIComponent(id),{method:'DELETE'});await refresh();notify('Document deleted successfully.');return;}
  if(action==='delete'){if(!['owner','admin'].includes(user.role))throw Error('Administrator access required.');if(!confirm(t('confirmDelete')))return;await api(`records/${kind}/${encodeURIComponent(id)}`,{method:'DELETE'});if(kind==='leads'&&String(nexaActiveLeadId)===String(id))nexaActiveLeadId=null;await refresh();notify(t('deleted'));return;}
  if(action==='convert'){if(!confirm(t('confirmConvert')))return;await api(`convert/${id}`,{method:'POST',body:{}});await refresh();notify(t('convertedToast'));return;}
- if(action==='toggleTask'){let obj=data.tasks.find(x=>x.id===id);await api(`records/tasks/${id}`,{method:'PUT',body:{status:obj.status==='done'?'open':'done'}});await refresh();notify(t('updated'));return;}
+ if(action==='toggleTask'){let obj=data.tasks.find(x=>x.id===id);if(!obj)throw Error('Task not found');const done=obj.status!=='done';await api(`records/tasks/${id}`,{method:'PUT',body:{status:done?'done':'open'}});await refresh();if(done)nexaTaskCelebration();notify(done?'Task completed ✓':t('updated'));return;}
  if(action==='export'){await download('export/'+kind+'.csv','NexaBridge_'+kind+'.csv');return;}
  if(action==='backup'){await download('backup','NexaBridge_CRM_backup.json');return;}
  if(action==='backupStatus'){const b=await api('system/backups');notify(`${t('backupReady')}: ${b.count} · ${t('backupAutomatic')}: ${t(b.automatic?'backupEnabled':'backupDisabled')}`+(b.latest_hours_ago===null?'':` · ${b.latest_hours_ago} ${t('backupHours')}`));return;}
@@ -2659,6 +2750,42 @@ async function handleAction(action,el){const kind=el.dataset.kind,id=el.dataset.
   }
  });
 
+
+ function nexaClearDrag(){
+  nexaDraggedRecord=null;
+  root.querySelectorAll('.nexa-dragging,.nexa-drop-target').forEach(el=>el.classList.remove('nexa-dragging','nexa-drop-target'));
+ }
+ root.addEventListener('dragstart',ev=>{
+  const card=ev.target.closest('.nexa-draggable-card[data-record-id]');
+  if(!card||!ev.dataTransfer)return;
+  nexaDraggedRecord={id:card.dataset.recordId,kind:card.dataset.dragKind};
+  ev.dataTransfer.effectAllowed='move';
+  ev.dataTransfer.setData('text/plain',nexaDraggedRecord.kind+':'+nexaDraggedRecord.id);
+  card.classList.add('nexa-dragging');
+ });
+ root.addEventListener('dragover',ev=>{
+  const lane=ev.target.closest('.nexa-kanban-lane[data-stage]');
+  if(!lane||!nexaDraggedRecord||lane.dataset.dropKind!==nexaDraggedRecord.kind)return;
+  if(lane.dataset.stage==='converted'&&nexaDraggedRecord.kind==='leads')return;
+  ev.preventDefault();ev.dataTransfer.dropEffect='move';
+  root.querySelectorAll('.nexa-drop-target').forEach(x=>{if(x!==lane)x.classList.remove('nexa-drop-target')});
+  lane.classList.add('nexa-drop-target');
+ });
+ root.addEventListener('drop',async ev=>{
+  const lane=ev.target.closest('.nexa-kanban-lane[data-stage]'),drag=nexaDraggedRecord;
+  if(!lane||!drag||lane.dataset.dropKind!==drag.kind)return;
+  if(drag.kind==='leads'&&lane.dataset.stage==='converted'){nexaClearDrag();return;}
+  ev.preventDefault();nexaClearDrag();
+  const collection=data[drag.kind]||[],record=collection.find(x=>String(x.id)===String(drag.id));
+  const field=drag.kind==='deals'?'stage':'status',newStage=lane.dataset.stage;
+  if(!record||!newStage||record[field]===newStage)return;
+  if(drag.kind==='leads'&&record.status==='converted'){notify('Converted leads cannot be moved back. Use their client record.',true);return;}
+  try{
+   await api('records/'+drag.kind+'/'+encodeURIComponent(drag.id),{method:'PUT',body:{[field]:newStage}});
+   await refresh();notify('Moved to '+newStage.replaceAll('_',' '));
+  }catch(err){notify(err.message||'Unable to move record.',true)}
+ });
+ root.addEventListener('dragend',nexaClearDrag);
  document.addEventListener('change',async ev=>{const el=ev.target;if(el.dataset.action==='dealStage'){try{await api(`records/deals/${el.dataset.id}`,{method:'PUT',body:{stage:el.value}});await refresh();notify(t('updated'));}catch(err){notify(err.message,true);}}});
  document.addEventListener('click',ev=>{if(ev.target.id==='modalLayer')closeModal();const action=ev.target.closest('#modalLayer [data-action]');if(action){ev.preventDefault();handleAction(action.dataset.action,action);}if(!ev.target.closest('.top-search'))$('#globalHits')?.classList.add('hide');});
  document.addEventListener('keydown',ev=>{if(ev.key==='Enter'&&document.activeElement?.id==='globalSearch'){const first=$('#globalHits [data-action=searchHit]');if(first){ev.preventDefault();first.click();}}});
