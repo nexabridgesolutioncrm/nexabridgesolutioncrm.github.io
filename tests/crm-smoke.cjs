@@ -173,7 +173,7 @@ const wait=async(condition,step)=>{for(let n=0;n<150;n++){if(condition())return;
  assert.ok(document.querySelectorAll('.gridcell.range-selected').length>=4,'Shift-click highlights cell range');
  document.querySelector('[data-action="copyCells"]').click();
  await wait(()=>copiedText.includes('Updated Co'),'multi-cell TSV copied');
- assert.match(copiedText,/Sample Lead/);
+ assert.match(copiedText,/Imported Lead/);
 
  // Read-only grouping report and real Office Open XML export.
  document.querySelector('[data-action="pivotModal"]').click();
