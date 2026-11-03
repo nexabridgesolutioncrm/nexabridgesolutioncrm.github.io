@@ -40,6 +40,8 @@ async function login(email,password){
 async function refresh(){if(!session?.refresh_token)throw Error('Please sign in again.');const r=await request('/auth/v1/token?grant_type=refresh_token',{method:'POST',auth:false,body:{refresh_token:session.refresh_token}});session={access_token:r.access_token,refresh_token:r.refresh_token};saveSession();return r}
 async function secured(path,options={}){try{return await request(path,options)}catch(e){if(session&&/JWT expired|invalid JWT|token is expired/i.test(e.message)){await refresh();return request(path,options)}throw e}}
 window.nexaAuthenticatedRequest=(path,options)=>secured(path,options);
+window.nexaSheetsRealtimeCredentials=()=>session?.access_token&&orgId?{url:URL_BASE,key:PUBLIC_KEY,token:session.access_token,orgId}:null;
+
 const table = kind=>COLLECTIONS[kind];
 function fromRow(kind,row){const out={...row,createdAt:row.created_at,updatedAt:row.updated_at};const f=FIELDS[kind];for(const [k,col] of Object.entries(f))out[k]=row[col]??'';
  if(kind==='tasks'){const t=row.lead_id?'lead':row.client_id?'client':row.deal_id?'deal':'';out.linkedType=t;out.linkedId=t?row[t+'_id']:'';}
@@ -98,6 +100,73 @@ async function adapter(input,init={}){
  if(path==='logout'&&method==='POST'){try{await request('/auth/v1/logout',{method:'POST'})}catch{}session=null;member=null;orgId=null;saveSession();return reply({ok:true})}
  if(!session||!orgId)return err('Please sign in.',401);
  if(path==='data'&&method==='GET')return reply(await getData());
+ // Sheets Studio: independently stored spreadsheet cells. Every row is org-scoped and RLS-protected.
+ if(path==='sheets'&&method==='GET'){
+  const sheets=await secured('/rest/v1/crm_spreadsheets?select=id,name,created_at,updated_at,charts&org_id=eq.'+encodeURIComponent(orgId)+'&order=updated_at.desc&limit=100');
+  return reply(sheets);
+ }
+ if(path==='sheets'&&method==='POST'){
+  if(!['owner','admin','agent'].includes(member?.role))return err('Read-only account',403);
+  const name=String(b.name||'').trim().slice(0,120);if(!name)return err('Sheet name is required',400);
+  const rows=await secured('/rest/v1/crm_spreadsheets?select=*&org_id=eq.'+encodeURIComponent(orgId),{method:'POST',body:{org_id:orgId,name,created_by:member.id},prefer:'return=representation'});
+  return reply(rows[0],201);
+ }
+ const sheetMatch=/^sheets\/([a-f0-9-]{36})(?:\/(cell|bulk))?$/.exec(path);
+ if(sheetMatch){
+  const id=sheetMatch[1],action=sheetMatch[2]||'',filter='&org_id=eq.'+encodeURIComponent(orgId);
+  const base='/rest/v1/crm_spreadsheets?select=*&id=eq.'+encodeURIComponent(id)+filter;
+  const sheets=await secured(base);
+  if(!sheets.length)return err('Spreadsheet not found or access denied',404);
+  if(!action&&method==='GET'){
+   const cells=await secured('/rest/v1/crm_sheet_cells?select=address,raw_value,revision,updated_by,updated_at&sheet_id=eq.'+encodeURIComponent(id)+filter+'&order=address.asc&limit=10000');
+   return reply({sheet:sheets[0],cells});
+  }
+  if(!action&&method==='PATCH'){
+   if(!['owner','admin'].includes(member?.role))return err('Only Owner/Admin may modify chart definitions',403);
+   const charts=Array.isArray(b.charts)?b.charts:[];
+   if(charts.length>30||JSON.stringify(charts).length>16000)return err('Chart configuration exceeds limits');
+   const allowed=['bar','line','pie','doughnut'];
+   const safe=charts.map(c=>({id:String(c.id||'').slice(0,45),title:String(c.title||'Chart').slice(0,80),type:allowed.includes(c.type)?c.type:'bar',category:String(c.category||'A').slice(0,3),measure:String(c.measure||'B').slice(0,3),aggregate:['sum','count','average'].includes(c.aggregate)?c.aggregate:'sum'}));
+   const rows=await secured('/rest/v1/crm_spreadsheets?select=*&id=eq.'+encodeURIComponent(id)+filter,{method:'PATCH',body:{charts:safe,updated_at:new Date().toISOString()},prefer:'return=representation'});
+   return reply(rows[0]||{ok:false});
+  }
+  if(!action&&method==='DELETE'){
+   if(!['owner','admin'].includes(member?.role))return err('Only Owner/Admin can remove sheets',403);
+   const rows=await secured('/rest/v1/crm_spreadsheets?id=eq.'+encodeURIComponent(id)+filter,{method:'DELETE',prefer:'return=representation'});
+   return reply({ok:rows.length>0});
+  }
+  if(action==='cell'&&method==='POST'){
+   if(!['owner','admin','agent'].includes(member?.role))return err('Read-only account',403);
+   const address=String(b.address||'').toUpperCase(),value=String(b.value??'');
+   const revision=Number(b.revision);
+   if(!/^[A-Z]{1,3}[1-9][0-9]{0,4}$/.test(address)||value.length>4000)return err('Invalid cell address or value length',400);
+   if(!Number.isSafeInteger(revision)||revision<0)return err('Invalid cell revision',400);
+   const row={sheet_id:id,org_id:orgId,address,raw_value:value,updated_by:member.id,updated_at:new Date().toISOString()};
+   if(revision===0){
+    try{
+     const inserted=await secured('/rest/v1/crm_sheet_cells?select=*&sheet_id=eq.'+encodeURIComponent(id)+filter,{method:'POST',body:{...row,revision:1},prefer:'return=representation'});
+     return reply(inserted[0],201);
+    }catch(e){if(/duplicate|23505|conflict|409/i.test(e.message))return err('Cell changed in another session. Reload before saving.',409);throw e}
+   }
+   const updated=await secured('/rest/v1/crm_sheet_cells?select=*&sheet_id=eq.'+encodeURIComponent(id)+'&address=eq.'+address+'&revision=eq.'+revision+filter,{method:'PATCH',body:{...row,revision:revision+1},prefer:'return=representation'});
+   if(!updated.length)return err('Cell changed in another session. Reload before saving.',409);
+   return reply(updated[0]);
+  }
+  if(action==='bulk'&&method==='POST'){
+   if(!['owner','admin','agent'].includes(member?.role))return err('Read-only account',403);
+   const entries=Array.isArray(b.cells)?b.cells:[];
+   if(!entries.length||entries.length>300)return err('Bulk import permits 1–300 cells per batch',400);
+   const unique=new Set(),rows=[];
+   for(const entry of entries){
+    const address=String(entry.address||'').toUpperCase(),value=String(entry.value??'');
+    if(!/^[A-Z]{1,3}[1-9][0-9]{0,4}$/.test(address)||value.length>4000||unique.has(address))return err('Duplicate/invalid cell or cell too long',400);
+    unique.add(address);rows.push({sheet_id:id,org_id:orgId,address,raw_value:value,revision:1,updated_by:member.id});
+   }
+   const saved=await secured('/rest/v1/crm_sheet_cells?select=address&on_conflict=sheet_id,address',{method:'POST',body:rows,prefer:'resolution=ignore-duplicates,return=representation'});
+   return reply({inserted:saved.length,attempted:rows.length},201);
+  }
+ }
+
  if(path==='stock'&&method==='POST'){const row={org_id:orgId,catalog_id:b.catalogId,job_id:b.jobId||null,delta:Number(b.delta),reason:b.reason||'adjustment',notes:b.notes||''};if(!Number.isFinite(row.delta)||!row.delta)return err('Invalid quantity',400);const r=await secured('/rest/v1/crm_stock_movements?select=*&org_id=eq.'+orgId,{method:'POST',body:row,prefer:'return=representation'});return reply(r[0],201)}
  if(path==='team'&&method==='POST')return reply(await secured('/functions/v1/nexabridge-team-admin',{method:'POST',body:b}));
  if(path.startsWith('notifications/')&&method==='PATCH'){const id=path.split('/')[1];const list=await secured('/rest/v1/crm_notifications?select=id&id=eq.'+id+'&org_id=eq.'+orgId,{method:'PATCH',body:{read_at:new Date().toISOString()},prefer:'return=representation'});return reply(list[0]||{ok:false});}
