@@ -91,3 +91,64 @@ body.dark #grid .gridcell.range-anchor{outline-color:#c0abff!important}
 .sheet-column-row input[type=checkbox]{width:16px;height:16px;accent-color:#7658dc}
 .sheet-column-row .actions{flex-wrap:nowrap}
 .sheet-column-row .btn.small{min-width:35px;padding:6px 10px;font-size:17px;line-height:1}
+
+/* NexaBridge Sheets Studio v4 — connected spreadsheet interface */
+.sheet-studio-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:18px;margin-bottom:21px}
+.studio-eyebrow{font-size:10px;letter-spacing:1.7px;color:#8771dc;font-weight:820}
+.sheet-studio-head h1{font-size:28px;letter-spacing:-.6px;font-weight:850;margin:5px 0}
+.sheet-studio-head p{font-size:13px;color:var(--muted);margin:0}
+.studio-head-actions,.sheet-action-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+#sheetStatus{font-size:12px;color:#2f9875;font-weight:690}
+#sheetStatus.bad{color:#c65363}
+.sheet-hint{color:var(--muted);font-size:12px}
+.sheet-action-row{margin:16px 0 21px}
+.sheet-studio-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px}
+.sheet-studio-tile{padding:22px;display:flex;flex-direction:column;gap:10px;min-height:215px}
+.sheet-studio-tile strong{font-size:15px;overflow-wrap:anywhere}
+.sheet-studio-tile small{font-size:12px;color:var(--muted);margin-bottom:auto}
+.studio-file-icon{display:grid;place-items:center;width:45px;height:45px;border-radius:13px;background:#ede9ff;color:#684ad8;font-size:24px}
+.sheet-studio-empty{padding:35px;text-align:center;grid-column:1/-1}
+.sheet-studio-empty p{color:var(--muted)}
+.sheet-studio-toolbar{display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between;background:var(--surface);border:1px solid var(--stroke);border-radius:15px 15px 0 0;padding:14px 17px}
+.sheet-studio-title strong{display:block;font-size:16px}
+.sheet-studio-title small{color:var(--muted);font-size:11px}
+.sheet-formula-bar{display:flex;align-items:center;gap:10px;border:1px solid var(--stroke);border-top:0;background:var(--surface);padding:10px 14px}
+#studioNameBox{display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:840;min-width:57px;min-height:40px;background:var(--surface2);border:1px solid var(--stroke);border-radius:9px}
+.sheet-fx{font-size:19px;font-weight:700;color:#8062da}
+#studioFormulaBar{border:1px solid var(--stroke);border-radius:9px;min-width:0;flex:1;height:42px;padding:10px 13px;background:var(--surface);color:var(--ink);font-family:ui-monospace,Consolas,monospace;font-size:13px}
+.sheet-grid-scroller{overflow:auto;border:1px solid var(--stroke);border-top:0;background:var(--surface);max-height:65vh;box-shadow:var(--shadow);border-radius:0 0 15px 15px;overscroll-behavior:contain}
+.sheet-grid{width:max-content;min-width:100%;border-collapse:separate;border-spacing:0;table-layout:fixed;text-align:left}
+.sheet-grid th,.sheet-grid td{border:0;border-right:1px solid var(--stroke);border-bottom:1px solid var(--stroke);height:35px;padding:0 9px;font-size:12px}
+.sheet-grid thead th{position:sticky;top:0;z-index:3;background:var(--surface2);min-width:125px;text-align:center;font-weight:790;color:var(--muted)}
+.sheet-grid thead .sheet-grid-corner,.sheet-grid tbody th{position:sticky;left:0;min-width:51px;width:51px;max-width:51px;z-index:4;background:var(--surface2);text-align:center;color:var(--muted);font-variant-numeric:tabular-nums}
+.sheet-grid thead .sheet-grid-corner{z-index:5}
+.sheet-grid td{width:125px;min-width:125px;max-width:125px;background:var(--surface);color:var(--ink);white-space:nowrap;text-overflow:ellipsis;overflow:hidden;cursor:cell}
+.sheet-grid td span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:115px}
+.sheet-grid td.formula{background:color-mix(in srgb,var(--surface) 95%,#9b81ef 5%)}
+.sheet-grid td:hover{background:var(--surface2)}
+.sheet-grid td.selected{background:color-mix(in srgb,var(--surface) 84%,#8b6af0 16%)!important;outline:2px solid #7953dd;outline-offset:-2px}
+.studio-in-cell-editor{width:100%;height:31px;border:1px solid #7852d9;background:var(--surface);color:var(--ink);padding:5px;font-size:12px;outline:none}
+.sheet-studio-instructions{font-size:12px;color:var(--muted);margin:12px 2px 24px;line-height:1.7}
+.sheet-chart-section{margin:24px 0}
+.sheet-section-title{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:13px}
+.sheet-section-title h2{font-size:19px;margin:0}
+.sheet-section-title span{color:var(--muted);font-size:12px}
+.sheet-chart-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(310px,1fr));gap:15px}
+.sheet-chart{padding:17px;min-width:0}
+.sheet-chart-header{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.sheet-chart-header strong{display:block;font-size:14px}
+.sheet-chart-header small{display:block;font-size:11px;color:var(--muted);margin-top:4px}
+.sheet-chart-svg{display:block;max-width:100%;width:100%;height:auto;color:var(--ink);min-height:210px}
+.sheet-chart-empty{padding:28px;border:1px dashed var(--stroke);border-radius:13px;background:var(--surface2);color:var(--muted);font-size:13px;grid-column:1/-1;text-align:center}
+.studio-modal-layer{position:fixed;inset:0;display:grid;place-items:center;padding:20px;background:#0d1325aa;z-index:70;overflow:auto}
+.studio-modal{width:min(580px,100%);max-height:90vh;overflow:auto;padding:27px;position:relative;background:var(--surface)}
+.studio-modal h2{font-size:21px;margin:0 0 8px}
+.studio-modal p{color:var(--muted);font-size:13px}
+.studio-close{position:absolute;right:16px;top:15px;color:var(--muted);background:transparent;border:0;font-size:20px}
+.studio-input-label{display:block;font-size:12px;font-weight:800;margin:14px 0 6px}
+.studio-modal .select{width:100%;max-width:100%}
+.studio-modal-foot{display:flex;justify-content:flex-end;gap:10px;margin-top:24px}
+.studio-chart-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}
+.studio-chart-fields label{font-size:12px;font-weight:780;display:flex;flex-direction:column;gap:7px}
+.studio-chart-fields label:first-child{grid-column:1/-1}
+@media(max-width:700px){.sheet-studio-head h1{font-size:23px}.sheet-studio-toolbar{align-items:stretch}.sheet-studio-toolbar .actions{gap:7px}.sheet-formula-bar{flex-wrap:wrap}.sheet-formula-bar #studioFormulaBar{flex-basis:55%}.sheet-grid-scroller{max-height:59vh}.sheet-chart-grid{grid-template-columns:1fr}.studio-chart-fields{grid-template-columns:1fr}.studio-chart-fields label:first-child{grid-column:1}}
