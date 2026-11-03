@@ -202,6 +202,8 @@ const wait=async(condition,step)=>{for(let n=0;n<150;n++){if(condition())return;
  await wait(()=>document.querySelector('[data-action="redo"]')?.disabled===false,'redo ready after refreshed grid');
  document.querySelector('[data-action="redo"]').click();
  await wait(()=>state.leads[0].company==='Updated Co','redo replacement');
+ await wait(()=>document.querySelector('[data-action="undo"]')?.disabled===false,'redo refresh complete');
+ await new Promise(resolve=>setTimeout(resolve,180));
 
  assert.equal(errors.length,0,'No browser runtime errors: '+errors.join('\n'));
  console.log('PASS — CRM core, cell edits, undo/redo, CSV/TSV import, filters, saved views, range copy, pivot and XLSX export');
