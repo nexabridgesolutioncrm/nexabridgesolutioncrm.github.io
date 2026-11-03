@@ -5,6 +5,10 @@ on:
     branches: [main]
     paths:
       - index.html
+      - crm-v3.js
+      - crm-v3.css
+      - crm-api.js
+      - legacy.html
       - .github/workflows/deploy.yml
   workflow_dispatch:
 
@@ -31,10 +35,13 @@ jobs:
         run: |
           set -euo pipefail
           test -s index.html
-          grep -q 'nexa-login-brand' index.html
-          grep -q 'authForm' index.html
+          grep -q 'crm-v3.js' index.html
+          grep -q 'crm-api.js' index.html
+          grep -q 'crm-v3.css' index.html
+          for asset in crm-v3.js crm-v3.css crm-api.js legacy.html; do test -s "$asset"; done
           mkdir -p _site
-          cp index.html _site/index.html
+          cp index.html crm-v3.js crm-v3.css crm-api.js legacy.html _site/
+          cp -r integrations docs _site/
           touch _site/.nojekyll
           printf 'User-agent: *\nDisallow: /\n' > _site/robots.txt
       - name: Configure GitHub Pages
