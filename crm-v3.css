@@ -69,3 +69,17 @@ body.dark #grid .gridcell.range-anchor{outline-color:#c0abff!important}
 #grid.sheet-frozen thead th:nth-child(-n+3){z-index:6;background:var(--surface2)}
 #grid.sheet-frozen tbody tr:hover td:nth-child(-n+3){background:var(--surface2)}
 @media(max-width:700px){.sheet-calculations{grid-template-columns:repeat(2,minmax(0,1fr))}.sheet-metric{padding:12px}.sheet-metric strong{font-size:18px}.sheet-filter-chip{font-size:11px}}
+
+/* Saved spreadsheet views and pivot analysis */
+.sheet-saved-views{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin:0 0 15px;padding:10px 13px;background:var(--surface);border:1px solid var(--stroke);border-radius:13px}
+.sheet-saved-label{color:var(--muted);font-size:12px;font-weight:780}
+.sheet-saved-views .select{max-width:230px;min-width:150px;width:auto;background:var(--surface2)}
+.sheet-saved-views .btn{min-height:38px;padding:8px 12px}
+.pivot-results{margin-top:14px;max-height:48vh;overflow:auto}
+.pivot-row{display:grid;grid-template-columns:minmax(95px,1fr) minmax(100px,2fr) minmax(95px,auto) 65px;align-items:center;gap:10px;padding:10px 4px;border-bottom:1px solid var(--stroke)}
+.pivot-row>span{font-size:12px;color:var(--ink);font-weight:730;overflow-wrap:anywhere}
+.pivot-row strong{font-size:13px;text-align:right}
+.pivot-row small{color:var(--muted);font-size:11px;text-align:right}
+.pivot-bar{height:10px;border-radius:999px;background:var(--surface2);overflow:hidden}
+.pivot-bar>span{display:block;height:100%;min-height:3px;border-radius:999px;background:linear-gradient(90deg,#aa9cf5,#765cdf)}
+@media(max-width:700px){.sheet-saved-views{gap:7px}.sheet-saved-views .select{min-width:120px}.pivot-row{grid-template-columns:minmax(80px,1fr) minmax(50px,1fr) 85px}.pivot-row small{display:none}}
