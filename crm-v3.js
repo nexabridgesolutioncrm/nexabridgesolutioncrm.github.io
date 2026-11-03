@@ -20,8 +20,8 @@ const C={
  expenses:{title:'Expenses',one:'Expense',desc:'Business expenditure',key:'title',status:'status',columns:['title','category','amount','expenseDate','status'],fields:[['title','Expense title','text',1],['projectId','Project','rel:projects'],['category','Category'],['expenseDate','Expense date','date'],['amount','Amount','number'],['status','Status','choice:recorded|approved|paid'],['notes','Notes','textarea']]}
 };
 const NAV=[['dashboard','Dashboard','▦'],['leads','Leads','♧'],['clients','Clients','♧'],['deals','Sales pipeline','◇'],['tasks','Tasks','☑'],['jobs','Jobs','▤'],['calendar','Calendar','▦'],['documents','Documents','▣'],['projects','Projects','▤'],['contracts','Contracts','▣'],['expenses','Expenses','＄'],['reports','Reports','▥']];
-const S={user:null,data:null,page:'dashboard',detail:null,search:'',status:'all',sort:'',descending:false,offset:0,selected:new Set(),editCell:null,hidden:{},history:[],mode:'table',loading:false,toast:null,importRows:[],importKind:null};
-try{S.theme=localStorage.getItem('nexa-v3-theme')||'light';S.mode=localStorage.getItem('nexa-v3-gridmode')||'table';S.hidden=JSON.parse(localStorage.getItem('nexa-v3-hidden')||'{}')}catch(_){S.theme='light'}
+const S={user:null,data:null,page:'dashboard',detail:null,search:'',status:'all',sort:'',descending:false,offset:0,selected:new Set(),editCell:null,hidden:{},history:[],redo:[],filters:[],range:null,density:'normal',frozen:false,mode:'table',loading:false,toast:null,importRows:[],importKind:null};
+try{S.theme=localStorage.getItem('nexa-v3-theme')||'light';S.mode=localStorage.getItem('nexa-v3-gridmode')||'table';S.hidden=JSON.parse(localStorage.getItem('nexa-v3-hidden')||'{}');S.density=localStorage.getItem('nexa-v3-density')==='compact'?'compact':'normal';S.frozen=localStorage.getItem('nexa-v3-frozen')==='true'}catch(_){S.theme='light'}
 document.body.classList.toggle('dark',S.theme==='dark');
 const API=async(path,opts={})=>{const res=await fetch('/api/'+path,{method:opts.method||'GET',credentials:'same-origin',headers:opts.body!==undefined?{'Content-Type':'application/json'}:{},body:opts.body===undefined?undefined:JSON.stringify(opts.body)});let body=await res.json().catch(()=>({}));if(!res.ok){if(res.status===401&&path!=='me'&&path!=='login'){S.user=null;S.data=null;loginPage()}throw Error(body.detail||body.message||'Request failed ('+res.status+')')}return body};
 function tip(msg,bad=false){$('#toast')?.remove();const el=document.createElement('div');el.id='toast';el.className='toast'+(bad?' error':'');el.textContent=msg;document.body.appendChild(el);setTimeout(()=>{if(el.isConnected)el.remove()},4500)}
@@ -30,7 +30,67 @@ function cols(){const c=C[S.page];return c.columns.filter(f=>!S.hidden[S.page]?.
 function label(k,f){return fieldInfo(k,f)[1]}
 function fieldValue(k,r,f){if(f==='linkedRef')return r.linkedType&&r.linkedId?(S.data[r.linkedType+'s']||[]).find(x=>x.id===r.linkedId)?.name||(S.data[r.linkedType+'s']||[]).find(x=>x.id===r.linkedId)?.title||'—':'—';if(/Id$/.test(f)&&f!=='id'){let group=f.slice(0,-2).toLowerCase();if(group==='project')group='projects';else group+='s';return S.data[group]?.find(x=>String(x.id)===String(r[f]))?.name||S.data[group]?.find(x=>String(x.id)===String(r[f]))?.title||'—'}return r[f]??''}
 function sortRows(rows){const f=S.sort;if(!f)return rows;const mod=S.descending?-1:1;return rows.sort((a,b)=>{const x=fieldValue(S.page,a,f),y=fieldValue(S.page,b,f);if(x==null||x==='')return 1;if(y==null||y==='')return -1;return mod*(typeof x==='number'&&typeof y==='number'?x-y:String(x).localeCompare(String(y),undefined,{numeric:true,sensitivity:'base'}))})}
-function filtered(){const raw=[...(S.data?.[S.page]||[])],q=S.search.toLowerCase().trim();return sortRows(raw.filter(r=>(S.status==='all'||r[C[S.page]?.status]===S.status)&&(!q||Object.values(r).some(x=>String(x??'').toLowerCase().includes(q)))))}
+function filterMatches(row,rule){
+ const original=fieldValue(S.page,row,rule.field);
+ const value=String(original??'').toLocaleLowerCase(),target=String(rule.value??'').toLocaleLowerCase();
+ switch(rule.operator){
+  case 'contains':return value.includes(target);
+  case 'notContains':return !value.includes(target);
+  case 'equals':return value===target;
+  case 'notEquals':return value!==target;
+  case 'starts':return value.startsWith(target);
+  case 'ends':return value.endsWith(target);
+  case 'gt':return value.trim()!==''&&Number.isFinite(Number(value))&&Number(value)>Number(target);
+  case 'lt':return value.trim()!==''&&Number.isFinite(Number(value))&&Number(value)<Number(target);
+  case 'empty':return original==null||String(original).trim()==='';
+  case 'notEmpty':return original!=null&&String(original).trim()!=='';
+  default:return true;
+ }
+}
+function filtered(){
+ const raw=[...(S.data?.[S.page]||[])],q=S.search.toLocaleLowerCase().trim();
+ return sortRows(raw.filter(r=>(S.status==='all'||r[C[S.page]?.status]===S.status)&&
+  (!q||Object.values(r).some(x=>String(x??'').toLocaleLowerCase().includes(q)))&&
+  S.filters.every(rule=>filterMatches(r,rule))));
+}
+function filterModal(){
+ const fields=C[S.page].fields.map(([f,name])=>[f,name]),ops=[
+  ['contains','Contains'],['notContains','Does not contain'],['equals','Equals'],['notEquals','Not equal'],
+  ['starts','Starts with'],['ends','Ends with'],['gt','Greater than (number)'],['lt','Less than (number)'],
+  ['empty','Is empty'],['notEmpty','Is not empty']
+ ];
+ modal('Advanced column filter','<p class="card-sub">Combine column conditions. Filters apply before sorting, copying and exporting.</p>'+
+  '<div class="formgrid"><div class="field"><label>Column</label><select class="select" id="advField">'+fields.map(([f,name])=>'<option value="'+E(f)+'">'+E(name)+'</option>').join('')+'</select></div>'+
+  '<div class="field"><label>Condition</label><select class="select" id="advOp">'+ops.map(([op,name])=>'<option value="'+op+'">'+name+'</option>').join('')+'</select></div>'+
+  '<div class="field span"><label>Value (leave blank for empty checks)</label><input id="advValue" class="select" maxlength="250" placeholder="Filter value"></div></div>'+
+  '<p class="formhint">All conditions must match. This changes the view only, not the saved CRM records.</p>',
+  '<button class="btn" data-action="close">Cancel</button><button class="btn primary" data-action="filterApply">Add filter</button>');
+}
+function applyFilter(){
+ const field=$('#advField')?.value,operator=$('#advOp')?.value,value=$('#advValue')?.value||'';
+ if(!C[S.page].fields.some(x=>x[0]===field))throw Error('Invalid column');
+ if(!['empty','notEmpty'].includes(operator)&&!value.trim())throw Error('Enter a filter value');
+ if(['gt','lt'].includes(operator)&&!Number.isFinite(Number(value)))throw Error('A valid number is required');
+ if(S.filters.length>=8)throw Error('You may combine up to 8 column filters');
+ S.filters.push({field,operator,value:value.trim()});S.offset=0;S.selected.clear();
+ $('#dialog').close();render();
+}
+function sheetSummary(){
+ const rows=S.selected.size?filtered().filter(x=>S.selected.has(x.id)):filtered();
+ const numeric=C[S.page].fields.filter(x=>x[2]==='number').map(x=>[x[0],x[1]]);
+ const stats=numeric.slice(0,3).map(([f,name])=>{
+  const nums=rows.map(x=>Number(x[f])).filter(x=>Number.isFinite(x));
+  const sum=nums.reduce((n,x)=>n+x,0),avg=nums.length?sum/nums.length:0;
+  return '<div class="sheet-metric"><span>'+E(name)+'</span><strong>'+dollars(sum)+'</strong><small>SUM · AVG '+dollars(avg)+' · MIN '+dollars(nums.length?Math.min(...nums):0)+' · MAX '+dollars(nums.length?Math.max(...nums):0)+'</small></div>';
+ }).join('');
+ return '<section class="sheet-calculations" aria-label="Spreadsheet calculations"><div class="sheet-metric"><span>'+(S.selected.size?'Selected':'Filtered')+' rows</span><strong>'+fmt(rows.length)+'</strong><small>COUNT of records</small></div>'+stats+'</section>';
+}
+function filterChips(){
+ if(!S.filters.length)return '';
+ return '<div class="sheet-filter-chips" aria-label="Active filters">'+S.filters.map((r,i)=>
+  '<button type="button" class="sheet-filter-chip" data-action="filterRemove" data-index="'+i+'" title="Remove this filter">'+E(label(S.page,r.field))+' · '+E(r.operator)+' '+E(r.value)+' ×</button>').join('')+
+  '<button type="button" class="btn small" data-action="filterClear">Clear filters</button></div>';
+}
 function isManager(){return ['owner','admin'].includes(S.user?.role)}
 
 function globalResults(q){
@@ -50,7 +110,7 @@ function logo(){return '<div class="brand"><div class="logo">N</div><div><strong
 function loginPage(message=''){document.getElementById('app').innerHTML='<div class="loginwrap"><div class="loginbox">'+logo()+'<h1>Sign in to your workspace</h1><p>Secure CRM for NexaBridge Solutions</p>'+(message?'<div class="notice error">'+E(message)+'</div>':'')+'<form id="loginForm"><div class="field"><label for="email">Email address</label><input id="email" name="username" type="email" autocomplete="username" required></div><div class="field"><label for="pwd">Password</label><input id="pwd" name="password" type="password" autocomplete="current-password" required></div><button type="submit" class="btn primary">Sign in</button></form></div></div>'}
 function shell(){document.getElementById('app').innerHTML='<div class="layout"><aside class="sidebar" id="sidebar">'+logo()+'<div class="sidecap">Workspace</div><nav class="nav">'+NAV.map(([k,v])=>'<button class="navbtn" data-action="page" data-page="'+k+'">'+icon(k)+'<span>'+E(v)+'</span>'+(k==='tasks'&&dueTasks()?'<span class="count">'+fmt(dueTasks())+'</span>':'')+'</button>').join('')+'</nav><div class="sidefooter"><strong><span class="dot"></span>Connected to Supabase</strong>'+E(S.user?.username||'')+'<div style="margin-top:10px"><a href="legacy.html" target="_blank" rel="noopener" style="color:#bfaaff">Advanced tools ↗</a></div></div></aside><div class="workspace"><header class="topbar"><div style="display:flex;align-items:center;gap:11px"><button class="iconbtn mobile-toggle" data-action="menu" aria-label="Open navigation">☰</button><div><h2 id="topTitle"></h2><p>NexaBridge Solutions · Secure workspace</p></div></div><div class="top-actions"><div class="top-search-wrap"><label class="top-search">⌕ <input type="search" id="globalSearch" placeholder="Search this workspace" aria-label="Search records"></label><div class="search-results hidden" id="searchHits"></div></div><button class="iconbtn" data-action="refresh" title="Refresh data" aria-label="Refresh data">↻</button><button class="iconbtn" data-action="theme" title="Toggle dark mode" aria-label="Toggle dark mode">'+(S.theme==='dark'?'☀':'☾')+'</button><button class="iconbtn signout" data-action="logout">Sign out</button></div></header><main id="main" class="main"></main></div></div>';render()}
 function render(){if(!S.user||!S.data)return loginPage();$$('.navbtn').forEach(b=>b.classList.toggle('active',b.dataset.page===S.page));const label=S.page==='dashboard'?'Dashboard':S.page==='reports'?'Reports':C[S.page]?.title||'Workspace';$('#topTitle').textContent=label;if(S.detail&&C[S.page])detailPage();else if(S.page==='dashboard')dashboard();else if(S.page==='reports')reports();else if(C[S.page]){if(S.mode==='board'&&C[S.page].statuses&&['leads','deals','tasks','jobs'].includes(S.page))boardPage();else tablePage()}else $('#main').innerHTML='<div class="notice">This module is available in Advanced tools.</div>'}
-function page(k){S.page=k;S.detail=null;S.search='';S.status='all';S.sort='';S.descending=false;S.offset=0;S.selected.clear();render();window.scrollTo({top:0,behavior:'instant'});$('#sidebar')?.classList.remove('open')}
+function page(k){S.page=k;S.detail=null;S.search='';S.status='all';S.sort='';S.descending=false;S.offset=0;S.selected.clear();S.filters=[];S.range=null;render();window.scrollTo({top:0,behavior:'instant'});$('#sidebar')?.classList.remove('open')}
 function total(k){return(S.data?.[k]||[]).length}
 function dueTasks(){return(S.data?.tasks||[]).filter(x=>x.status!=='done'&&x.dueDate&&x.dueDate<=day()).length}
 function kpi(t,v,s,tone){return '<div class="card kpi '+tone+'"><div class="title">'+t+'</div><div class="value">'+v+'</div><div class="sub">'+s+'</div></div>'}
