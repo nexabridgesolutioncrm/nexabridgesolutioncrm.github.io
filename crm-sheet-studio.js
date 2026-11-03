@@ -5,7 +5,7 @@
  const F=global.NexaFormula;
  const esc=v=>String(v??'').replace(/[&<>"']/g,x=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[x]));
  const uid=()=>Math.random().toString(36).slice(2,10);
- const state={root:null,api:null,user:null,list:[],active:null,cells:new Map(),selected:'A1',editing:null,
+ const state={root:null,api:null,user:null,list:[],active:null,cells:new Map(),selected:'A1',editing:null,rowStart:0,
   channel:null,client:null,timer:null,serial:0,busy:false,pending:[],realtime:false,status:'',lastRemote:null,modal:null};
  const validAddress=v=>/^[A-Z]{1,3}[1-9][0-9]{0,4}$/.test(v);
  const display=v=>typeof v==='boolean'?(v?'TRUE':'FALSE'):v==null?'':String(v);
@@ -42,12 +42,12 @@
    ).join(''):'<div class="card sheet-studio-empty"><h3>No spreadsheets yet</h3><p>Create your first sheet or import an Excel workbook.</p><button class="btn primary" data-sheet-action="new">Create new sheet</button></div>')+'</div>';
  }
  function grid(){
-  const rows=50,cols=16,calc=engine(),name=state.active?.name||'Spreadsheet',selected=state.selected;
+  const rows=50,cols=26,calc=engine(),name=state.active?.name||'Spreadsheet',selected=state.selected;
   const head='<thead><tr><th class="sheet-grid-corner">#</th>'+Array.from({length:cols},(_,c)=>
    '<th class="sheet-grid-column">'+F.colName(c)+'</th>').join('')+'</tr></thead>';
   const body='<tbody>'+Array.from({length:rows},(_,r)=>
-   '<tr><th class="sheet-grid-row-head">'+(r+1)+'</th>'+
-   Array.from({length:cols},(_,c)=>{const address=F.address(r,c),entry=dataCell(address),value=cellText(address,calc);
+   '<tr><th class="sheet-grid-row-head">'+(state.rowStart+r+1)+'</th>'+
+   Array.from({length:cols},(_,c)=>{const address=F.address(state.rowStart+r,c),entry=dataCell(address),value=cellText(address,calc);
     return '<td data-sheet-address="'+address+'" tabindex="0" class="sheet-studio-cell'+
      (address===selected?' selected':'')+(entry.raw_value.startsWith('=')?' formula':'')+'">'+
      '<span>'+esc(value).slice(0,800)+'</span></td>';
@@ -62,7 +62,7 @@
    '<div class="sheet-formula-bar"><span id="studioNameBox">'+esc(selected)+'</span>'+
    '<span class="sheet-fx">ƒx</span><input id="studioFormulaBar" aria-label="Cell formula or value" value="'+escapeAttr(dataCell(selected).raw_value)+'" placeholder="Enter text or =SUM(A1:A10)">'+
    '<button class="btn primary" data-sheet-action="save">Save cell</button></div>'+
-   '<div class="sheet-grid-scroller"><table id="studioGrid" class="sheet-grid">'+head+body+'</table></div>'+
+   '<div class="sheet-grid-scroller"><table id="studioGrid" class="sheet-grid">'+head+body+'</table></div>'+ '<div class="sheet-rowpager"><span>Rows '+(state.rowStart+1)+'–'+(state.rowStart+50)+' · 26 columns</span><div class="actions"><button class="btn small" data-sheet-action="rowPrev" '+(state.rowStart===0?'disabled':'')+'>← Previous 50</button><button class="btn small" data-sheet-action="rowNext" '+(state.rowStart>=9950?'disabled':'')+'>Next 50 →</button></div></div>'+
    '<p class="sheet-studio-instructions">Select any cell, then type in the formula bar or double-click it. Formulas begin with =. Updates are saved with revision checks, so conflicting edits cannot overwrite silently.</p>'+
    '<div class="sheet-chart-section"><div class="sheet-section-title"><h2>Charts</h2><span>Live calculations from the sheet</span></div>'+
    '<div class="sheet-chart-grid" id="sheetCharts">'+chartsHTML()+'</div></div>'+
@@ -73,8 +73,8 @@
   return defs.length?defs.map((d,i)=>chartCard(d,i)).join(''):'<div class="sheet-chart-empty">No charts yet. Use New chart to build a data visualization from spreadsheet columns.</div>';
  }
  function chartCard(def,index){
-  const rows=50,category=F.colIndex(def.category),value=F.colIndex(def.measure);
-  if(category<0||category>15||value<0||value>15)return '';
+  const rows=Math.min(10000,Math.max(50,...[...state.cells.keys()].map(key=>(F.coordinates(key)?.row||0)+1))),category=F.colIndex(def.category),value=F.colIndex(def.measure);
+  if(category<0||category>25||value<0||value>25)return '';
   const calc=engine(),groups=new Map();
   for(let r=1;r<rows;r++){
    const label=cellText(F.address(r,category),calc);if(!label||String(label).startsWith('#'))continue;
@@ -136,11 +136,11 @@
  async function openSheet(id){
   removeRemote();
   const data=await api('sheets/'+encodeURIComponent(id));
-  state.active=data.sheet;state.selected='A1';setCells(data.cells);
+  state.active=data.sheet;state.selected='A1';state.rowStart=0;setCells(data.cells);
   paint();await connect();
  }
  async function back(){
-  removeRemote();state.active=null;state.cells.clear();state.selected='A1';
+  removeRemote();state.active=null;state.cells.clear();state.selected='A1';state.rowStart=0;
   await listRefresh();
  }
  async function saveCell(address,value){
@@ -226,7 +226,7 @@
   const sheet=book.Sheets[name],range=global.XLSX.utils.decode_range(sheet['!ref']||'A1');
   const cells=[];
   for(let r=range.s.r;r<=range.e.r;r++)for(let c=range.s.c;c<=range.e.c;c++){
-   if(r>=10000||c>=16)continue;
+   if(r>=10000||c>=26)continue;
    const addr=global.XLSX.utils.encode_cell({r,c}),entry=sheet[addr];
    if(!entry)continue;
    const raw=entry.f?'='+entry.f:entry.v instanceof Date?entry.v.toISOString().slice(0,10):String(entry.v??'');
@@ -239,7 +239,7 @@
   const name=state.root.querySelector('#studioImportSheet')?.value;
   if(!state.importBook||!name)return;
   const cells=parseWorkbookSheet(state.importBook,name);
-  if(!cells.length)throw Error('This worksheet has no data in columns A–P.');
+  if(!cells.length)throw Error('This worksheet has no data in columns A–Z.');
   if(!global.confirm('Create a new sheet with '+cells.length+' cells from "'+name+'"?'))return;
   const saved=await api('sheets',{method:'POST',body:{name:name.slice(0,120)}});
   let n=0;
@@ -259,8 +259,8 @@
   showModal('<h2>'+((index<0)?'New chart':'Edit chart')+'</h2><p>Create a chart with grouped calculations from rows 2–50. Row 1 can hold headers.</p>'+
    '<div class="studio-chart-fields"><label>Chart name<input class="select" id="studioChartTitle" maxlength="80" value="'+esc(def.title)+'"></label>'+
    '<label>Chart type<select class="select" id="studioChartType">'+opts(['bar','line','pie','doughnut'],def.type)+'</select></label>'+
-   '<label>Category column<select class="select" id="studioChartCategory">'+opts(Array.from({length:16},(_,i)=>F.colName(i)),def.category)+'</select></label>'+
-   '<label>Value column<select class="select" id="studioChartMeasure">'+opts(Array.from({length:16},(_,i)=>F.colName(i)),def.measure)+'</select></label>'+
+   '<label>Category column<select class="select" id="studioChartCategory">'+opts(Array.from({length:26},(_,i)=>F.colName(i)),def.category)+'</select></label>'+
+   '<label>Value column<select class="select" id="studioChartMeasure">'+opts(Array.from({length:26},(_,i)=>F.colName(i)),def.measure)+'</select></label>'+
    '<label>Aggregate<select class="select" id="studioChartAggregate">'+opts(['sum','average','count'],def.aggregate)+'</select></label></div>'+
    '<div class="studio-modal-foot"><button class="btn" data-sheet-action="dismiss">Cancel</button>'+
    '<button class="btn primary" data-sheet-action="saveChart" data-index="'+index+'">Save chart</button></div>');
@@ -283,8 +283,8 @@
  }
  function exportCSV(){
   const formula=engine(),rows=[];
-  for(let r=0;r<50;r++){
-   const values=[];for(let c=0;c<16;c++)values.push(cellText(F.address(r,c),formula));
+  for(let r=0;r<Math.min(10000,Math.max(50,...[...state.cells.keys()].map(key=>(F.coordinates(key)?.row||0)+1)));r++){
+   const values=[];for(let c=0;c<26;c++)values.push(cellText(F.address(r,c),formula));
    rows.push(values.map(x=>'"'+String(x??'').replaceAll('"','""')+'"').join(','));
   }
   const blob=new Blob(['\uFEFF'+rows.join('\r\n')],{type:'text/csv;charset=utf-8'});
@@ -341,6 +341,8 @@
     else if(action==='new')await createSheet();
     else if(action==='back')await back();
     else if(action==='refresh')await refreshSheet();
+    else if(action==='rowPrev'){state.rowStart=Math.max(0,state.rowStart-50);state.selected=F.address(state.rowStart,0);paint()}
+    else if(action==='rowNext'){state.rowStart=Math.min(9950,state.rowStart+50);state.selected=F.address(state.rowStart,0);paint()}
     else if(action==='save')await saveCell(state.selected,state.root.querySelector('#studioFormulaBar').value);
     else if(action==='chart')chartEditor();
     else if(action==='editChart')chartEditor(Number(el.dataset.index));
