@@ -20,13 +20,14 @@ const C={
  expenses:{title:'Expenses',one:'Expense',desc:'Business expenditure',key:'title',status:'status',columns:['title','category','amount','expenseDate','status'],fields:[['title','Expense title','text',1],['projectId','Project','rel:projects'],['category','Category'],['expenseDate','Expense date','date'],['amount','Amount','number'],['status','Status','choice:recorded|approved|paid'],['notes','Notes','textarea']]}
 };
 const NAV=[['dashboard','Dashboard','▦'],['leads','Leads','♧'],['clients','Clients','♧'],['deals','Sales pipeline','◇'],['tasks','Tasks','☑'],['jobs','Jobs','▤'],['calendar','Calendar','▦'],['documents','Documents','▣'],['projects','Projects','▤'],['contracts','Contracts','▣'],['expenses','Expenses','＄'],['reports','Reports','▥']];
-const S={user:null,data:null,page:'dashboard',detail:null,search:'',status:'all',sort:'',descending:false,offset:0,selected:new Set(),editCell:null,hidden:{},history:[],redo:[],filters:[],savedViews:{},range:null,density:'normal',frozen:false,mode:'table',loading:false,toast:null,importRows:[],importKind:null};
-try{S.theme=localStorage.getItem('nexa-v3-theme')||'light';S.mode=localStorage.getItem('nexa-v3-gridmode')||'table';S.hidden=JSON.parse(localStorage.getItem('nexa-v3-hidden')||'{}');S.density=localStorage.getItem('nexa-v3-density')==='compact'?'compact':'normal';S.frozen=localStorage.getItem('nexa-v3-frozen')==='true';S.savedViews=JSON.parse(localStorage.getItem('nexa-v3-views')||'{}')}catch(_){S.theme='light'}
+const S={user:null,data:null,page:'dashboard',detail:null,search:'',status:'all',sort:'',descending:false,offset:0,selected:new Set(),editCell:null,hidden:{},history:[],redo:[],filters:[],savedViews:{},order:{},range:null,density:'normal',frozen:false,mode:'table',loading:false,toast:null,importRows:[],importKind:null};
+try{S.theme=localStorage.getItem('nexa-v3-theme')||'light';S.mode=localStorage.getItem('nexa-v3-gridmode')||'table';S.hidden=JSON.parse(localStorage.getItem('nexa-v3-hidden')||'{}');S.density=localStorage.getItem('nexa-v3-density')==='compact'?'compact':'normal';S.frozen=localStorage.getItem('nexa-v3-frozen')==='true';S.savedViews=JSON.parse(localStorage.getItem('nexa-v3-views')||'{}');S.order=JSON.parse(localStorage.getItem('nexa-v3-order')||'{}')}catch(_){S.theme='light'}
 document.body.classList.toggle('dark',S.theme==='dark');
 const API=async(path,opts={})=>{const res=await fetch('/api/'+path,{method:opts.method||'GET',credentials:'same-origin',headers:opts.body!==undefined?{'Content-Type':'application/json'}:{},body:opts.body===undefined?undefined:JSON.stringify(opts.body)});let body=await res.json().catch(()=>({}));if(!res.ok){if(res.status===401&&path!=='me'&&path!=='login'){S.user=null;S.data=null;loginPage()}throw Error(body.detail||body.message||'Request failed ('+res.status+')')}return body};
 function tip(msg,bad=false){$('#toast')?.remove();const el=document.createElement('div');el.id='toast';el.className='toast'+(bad?' error':'');el.textContent=msg;document.body.appendChild(el);setTimeout(()=>{if(el.isConnected)el.remove()},4500)}
 function fieldInfo(k,f){return (C[k]?.fields||[]).find(x=>x[0]===f)||[f,f.replace(/([A-Z])/g,' $1').replace(/^./,x=>x.toUpperCase()),'text']}
-function cols(){const c=C[S.page];return c.columns.filter(f=>!S.hidden[S.page]?.includes(f))}
+function orderedColumns(k){const all=C[k].columns,previous=Array.isArray(S.order[k])?S.order[k]:[];return [...previous.filter(f=>all.includes(f)),...all.filter(f=>!previous.includes(f))]}
+function cols(){return orderedColumns(S.page).filter(f=>!S.hidden[S.page]?.includes(f))}
 function label(k,f){return fieldInfo(k,f)[1]}
 function fieldValue(k,r,f){if(f==='linkedRef')return r.linkedType&&r.linkedId?(S.data[r.linkedType+'s']||[]).find(x=>x.id===r.linkedId)?.name||(S.data[r.linkedType+'s']||[]).find(x=>x.id===r.linkedId)?.title||'—':'—';if(/Id$/.test(f)&&f!=='id'){let group=f.slice(0,-2).toLowerCase();if(group==='project')group='projects';else group+='s';return S.data[group]?.find(x=>String(x.id)===String(r[f]))?.name||S.data[group]?.find(x=>String(x.id)===String(r[f]))?.title||'—'}return r[f]??''}
 function sortRows(rows){const f=S.sort;if(!f)return rows;const mod=S.descending?-1:1;return rows.sort((a,b)=>{const x=fieldValue(S.page,a,f),y=fieldValue(S.page,b,f);if(x==null||x==='')return 1;if(y==null||y==='')return -1;return mod*(typeof x==='number'&&typeof y==='number'?x-y:String(x).localeCompare(String(y),undefined,{numeric:true,sensitivity:'base'}))})}
@@ -105,7 +106,7 @@ function saveView(){
  if(!S.savedViews[S.page])S.savedViews[S.page]={};
  if(localViewNames().length>=30&&!S.savedViews[S.page][name])throw Error('Maximum 30 saved views per module');
  if(S.savedViews[S.page][name]&&!confirm('Replace the saved view "'+name+'"?'))return;
- S.savedViews[S.page][name]={search:S.search,status:S.status,filters:S.filters.map(x=>({...x})),sort:S.sort,descending:S.descending,hidden:[...(S.hidden[S.page]||[])],density:S.density,frozen:S.frozen};
+ S.savedViews[S.page][name]={search:S.search,status:S.status,filters:S.filters.map(x=>({...x})),sort:S.sort,descending:S.descending,hidden:[...(S.hidden[S.page]||[])],order:orderedColumns(S.page),density:S.density,frozen:S.frozen};
  try{localStorage.setItem('nexa-v3-views',JSON.stringify(S.savedViews))}catch(_){throw Error('Cannot save view: browser storage unavailable')}
  $('#dialog').close();tip('View "'+name+'" saved to this browser');render();
 }
@@ -115,6 +116,7 @@ function loadView(name){
  S.filters=Array.isArray(v.filters)?v.filters.filter(x=>C[S.page].fields.some(f=>f[0]===x.field)).slice(0,8):[];
  S.sort=C[S.page].columns.includes(v.sort)?v.sort:'';S.descending=!!v.descending;
  S.hidden[S.page]=Array.isArray(v.hidden)?v.hidden.filter(x=>C[S.page].columns.includes(x)):[];
+ S.order[S.page]=Array.isArray(v.order)?v.order.filter(x=>C[S.page].columns.includes(x)):[];
  S.density=v.density==='compact'?'compact':'normal';S.frozen=!!v.frozen;
  S.offset=0;S.selected.clear();S.range=null;
  render();tip('Loaded view "'+name+'"');
@@ -422,7 +424,17 @@ async function runReplace(){
  }catch(e){tip(e.message,true)}
 }
 
-function columnsModal(){const c=C[S.page];modal('Visible columns','<p class="card-sub">Choose columns for your spreadsheet table.</p><div class="formgrid">'+c.columns.map(f=>'<label style="display:flex;align-items:center;gap:9px"><input type="checkbox" class="colToggle" value="'+E(f)+'" '+(!S.hidden[S.page]?.includes(f)?'checked':'')+'>'+E(label(S.page,f))+'</label>').join('')+'</div>','<button class="btn primary" data-action="saveColumns">Apply columns</button>')}
+function columnsModal(){
+ const fields=orderedColumns(S.page);
+ modal('Customize spreadsheet columns','<p class="card-sub">Show, hide and reorder your data columns. The order is saved for this browser.</p>'+
+ '<div id="colOrderList" class="sheet-column-list">'+fields.map(field=>
+  '<div class="sheet-column-row" data-field="'+E(field)+'"><label><input type="checkbox" class="colToggle" value="'+E(field)+'" '+
+  (!S.hidden[S.page]?.includes(field)?'checked':'')+'>'+E(label(S.page,field))+'</label>'+
+  '<div class="actions"><button type="button" class="btn small" data-action="moveColumn" data-dir="up" title="Move up">↑</button>'+
+  '<button type="button" class="btn small" data-action="moveColumn" data-dir="down" title="Move down">↓</button></div></div>'
+ ).join('')+'</div>',
+ '<button class="btn" data-action="close">Cancel</button><button class="btn primary" data-action="saveColumns">Apply columns</button>');
+}
 function bulkModal(){const k=S.page,c=C[k];if(!c.status)return;modal('Change status for '+S.selected.size+' selected records','<div class="field"><label>New status / stage</label><select id="bulkStatus" class="select">'+(c.statuses||[]).map(v=>'<option value="'+E(v)+'">'+E(v)+'</option>').join('')+'</select></div><p class="formhint">This updates the selected records one by one. Converted leads cannot be reverted here.</p>','<button class="btn" data-action="close">Cancel</button><button class="btn primary" data-action="saveBulk">Apply changes</button>')}
 async function saveBulk(){const k=S.page,c=C[k],state=$('#bulkStatus').value,ids=[...S.selected];if(ids.length>200)return tip('Select at most 200 records per batch',true);if(k==='leads'&&state==='converted')return tip('Use Convert to client for lead conversion.',true);const btn=$('#dialog [data-action=saveBulk]');btn.disabled=true;let done=0,errors=[];for(const id of ids){const row=(S.data[k]||[]).find(x=>x.id===id);if(!row||row[c.status]===state)continue;if(k==='leads'&&row.status==='converted'){errors.push('Converted lead skipped');continue}try{await patch(k,id,{[c.status]:state},true);done++}catch(e){errors.push(e.message)}}$('#dialog').close();S.selected.clear();await reload();tip(done+' records updated'+(errors.length?' · '+errors.length+' skipped':''),!!errors.length)}
 async function execute(action,el){try{const k=el.dataset.kind||S.page,id=el.dataset.id;switch(action){
@@ -463,7 +475,21 @@ case 'columns':columnsModal();break;
 case 'findReplace':findReplaceModal();break;
 case 'replacePreview':previewReplace();break;
 case 'replaceRun':await runReplace();break;
-case 'saveColumns':{const checked=$$('.colToggle:checked').map(x=>x.value);if(!checked.length)return tip('Keep at least one column',true);S.hidden[S.page]=C[S.page].columns.filter(f=>!checked.includes(f));try{localStorage.setItem('nexa-v3-hidden',JSON.stringify(S.hidden))}catch(_){}$('#dialog').close();render();break}
+case 'moveColumn':{
+ const row=el.closest('.sheet-column-row'),list=$('#colOrderList');
+ if(row&&list){
+  if(el.dataset.dir==='up'&&row.previousElementSibling)list.insertBefore(row,row.previousElementSibling);
+  if(el.dataset.dir==='down'&&row.nextElementSibling)list.insertBefore(row.nextElementSibling,row);
+ }break
+}
+case 'saveColumns':{
+ const checked=$('.colToggle:checked').map(x=>x.value);
+ if(!checked.length)return tip('Keep at least one column',true);
+ S.hidden[S.page]=C[S.page].columns.filter(f=>!checked.includes(f));
+ S.order[S.page]=[...document.querySelectorAll('#colOrderList .sheet-column-row')].map(row=>row.dataset.field);
+ try{localStorage.setItem('nexa-v3-hidden',JSON.stringify(S.hidden));localStorage.setItem('nexa-v3-order',JSON.stringify(S.order))}catch(_){}
+ S.range=null;$('#dialog').close();render();break
+}
 case 'export':downloadCSV();break;
 case 'exportXLSX':exportXLSX();break;
 case 'exportSelected':if(!S.selected.size)return tip('Select rows to export',true);downloadCSV(true);break;
