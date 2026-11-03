@@ -24,6 +24,13 @@ assert.equal(new F.FormulaEngine(new Map([['A1',{raw_value:'=B1'}],['B1',{raw_va
 assert.equal(engine.evaluate('COUNTIF(A1:A2,">10")'),1);
 assert.equal(engine.evaluate('SUMIF(A1:A2,">10")'),13);
 assert.equal(engine.evaluate('VLOOKUP(7,A1:B2,2,FALSE)'),20);
+assert.equal(engine.evaluate('SUMIFS(A1:A2,A1:A2,">8")'),13,'SUMIFS evaluates criteria');
+assert.equal(engine.evaluate('COUNTIFS(A1:A2,">8")'),1,'COUNTIFS count');
+assert.equal(engine.evaluate('XLOOKUP(13,A1:A2,B1:B2)'), 'qualified','XLOOKUP exact match');
+assert.equal(engine.evaluate('INDEX(A1:A2,2)'),13,'INDEX picks rows');
+assert.equal(engine.evaluate('MATCH(13,A1:A2,0)'),2,'MATCH returns matching index');
+assert.equal(engine.evaluate('TEXTJOIN("-",TRUE,"North","South")'),'North-South');
+
 const uuid='11111111-1111-4111-8111-111111111111';
 const sheets=[],cells=new Map(),calls=[];
 const clone=x=>JSON.parse(JSON.stringify(x));
