@@ -5,8 +5,8 @@ const index=fs.readFileSync('index.html','utf8');
 const api=fs.readFileSync('crm-api.js','utf8'),app=fs.readFileSync('crm-v3.js','utf8');
 const html=index
  .replace(/<link[^>]+rel="stylesheet"[^>]*>/g,'')
- .replace(/<script src="\.\/crm-api\.js[^"]*"><\/script>/,()=>'<script>'+api+'</script>')
- .replace(/<script src="\.\/crm-v3\.js[^"]*"><\/script>/,()=>'<script>'+app+'</script>');
+ .replace(/<script(?:\s+defer)?\s+src="\.\/crm-api\.js[^"]*"><\/script>/,()=>'<script>'+api+'</script>')
+ .replace(/<script(?:\s+defer)?\s+src="\.\/crm-v3\.js[^"]*"><\/script>/,()=>'<script>'+app+'</script>');
 const state={
  leads:[{id:'l1',org_id:'o1',name:'Sample Lead',company:'Example Co',phone:'1234567',email:'lead@example.test',status:'new',owner:'Demo',source:'website',interest:'Support',notes:'',followup:null,created_at:'2026-11-03T00:00:00Z'}],
  clients:[],deals:[],tasks:[],jobs:[],documents:[],calendar_events:[],activities:[],payments:[],notifications:[],members:[],other:[]
