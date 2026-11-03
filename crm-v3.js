@@ -298,7 +298,7 @@ function sheetRangePositions(){
 }
 function paintRange(){
  const grid=$('#grid');if(!grid)return;
- const cells=$('.gridcell',grid);
+ const cells=[...grid.querySelectorAll('.gridcell')];
  cells.forEach(cell=>cell.classList.remove('range-selected','range-anchor'));
  const pos=sheetRangePositions();if(!pos)return;
  const covered=new Set();
