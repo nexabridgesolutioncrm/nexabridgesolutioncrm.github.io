@@ -98,6 +98,8 @@ const wait=async(condition,step)=>{for(let n=0;n<150;n++){if(condition())return;
  add.elements.name.value='Created Test Lead';
  add.dispatchEvent(new dom.window.Event('submit',{bubbles:true,cancelable:true}));
  await wait(()=>state.leads.length===2,'new record API create');
+ await wait(()=>document.querySelector('#grid')?.textContent.includes('Created Test Lead'),'rendered saved lead');
+ await new Promise(resolve=>setTimeout(resolve,250));
  assert.ok(calls.some(x=>x.path==='/rest/v1/crm_leads'&&x.method==='POST'));
  assert.equal(errors.length,0,'No browser runtime errors: '+errors.join('\n'));
  console.log('PASS — Login, dashboard, lead listing, detail, back, inline edit, undo and create record');
