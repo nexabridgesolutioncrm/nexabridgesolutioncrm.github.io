@@ -83,3 +83,11 @@ body.dark #grid .gridcell.range-anchor{outline-color:#c0abff!important}
 .pivot-bar{height:10px;border-radius:999px;background:var(--surface2);overflow:hidden}
 .pivot-bar>span{display:block;height:100%;min-height:3px;border-radius:999px;background:linear-gradient(90deg,#aa9cf5,#765cdf)}
 @media(max-width:700px){.sheet-saved-views{gap:7px}.sheet-saved-views .select{min-width:120px}.pivot-row{grid-template-columns:minmax(80px,1fr) minmax(50px,1fr) 85px}.pivot-row small{display:none}}
+
+/* Visual column reorder controls */
+.sheet-column-list{display:flex;flex-direction:column;gap:7px;max-height:45vh;overflow:auto;padding:4px}
+.sheet-column-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 12px;border:1px solid var(--stroke);border-radius:10px;background:var(--surface2)}
+.sheet-column-row label{display:flex;align-items:center;gap:11px;font-size:13px;font-weight:720;cursor:pointer;min-width:0}
+.sheet-column-row input[type=checkbox]{width:16px;height:16px;accent-color:#7658dc}
+.sheet-column-row .actions{flex-wrap:nowrap}
+.sheet-column-row .btn.small{min-width:35px;padding:6px 10px;font-size:17px;line-height:1}
