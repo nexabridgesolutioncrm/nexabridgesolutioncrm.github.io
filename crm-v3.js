@@ -67,7 +67,7 @@ function barList(rows,field){const group=Object.entries(rows.reduce((a,x)=>(a[x[
 function tablePage(){const c=C[S.page],rows=filtered(),shown=cols(),pageRows=rows.slice(S.offset,S.offset+50);const selectedCount=S.selected.size;const statuses=c.statuses||[...new Set((S.data[S.page]||[]).map(x=>x[c.status]).filter(Boolean))];
 $('#main').innerHTML=head(c.title,c.desc,'<button class="btn primary" data-action="new" data-kind="'+S.page+'">＋ New '+c.one+'</button><button class="btn" data-action="export">↓ Export CSV</button><button class="btn" data-action="import">↑ Import CSV</button>')+
 '<div class="toolbar"><label class="search">⌕ <input id="query" placeholder="Search all columns…" value="'+E(S.search)+'"></label>'+(c.status?'<select id="status" class="select" aria-label="Filter status"><option value="all">All statuses</option>'+statuses.map(x=>'<option value="'+E(x)+'"'+(S.status===x?' selected':'')+'>'+E(x.replaceAll('_',' '))+'</option>').join('')+'</select>':'')+
-'<button class="btn" data-action="columns">Columns</button><button class="btn" data-action="undo" '+(S.history.length?'':'disabled')+'>↶ Undo</button><button class="btn" data-action="copy">Copy rows</button><button class="btn" data-action="paste">Paste TSV</button><button class="btn" data-action="fillDown">Fill down</button>'+
+'<button class="btn" data-action="columns">Columns</button><button class="btn" data-action="findReplace">Find & replace</button><button class="btn" data-action="undo" '+(S.history.length?'':'disabled')+'>↶ Undo</button><button class="btn" data-action="copy">Copy rows</button><button class="btn" data-action="exportSelected">Export selected</button><button class="btn" data-action="paste">Paste TSV</button><button class="btn" data-action="fillDown">Fill down</button>'+
 (c.statuses&&['leads','deals','tasks','jobs'].includes(S.page)?'<button class="btn" data-action="viewBoard">Board view</button>':'')+'</div>'+
 (selectedCount?'<div class="notice" style="margin-bottom:12px;display:flex;gap:12px;align-items:center;flex-wrap:wrap"><strong>'+selectedCount+' selected</strong><button class="btn small" data-action="copy">Copy selection</button>'+(c.status?'<button class="btn small" data-action="bulk">Change status</button>':'')+'<button class="btn small" data-action="clearSelected">Clear selection</button></div>':'')+
 '<section class="card"><div class="tablewrap"><table class="table" id="grid"><thead><tr><th><input type="checkbox" id="allRows" aria-label="Select visible rows" '+(pageRows.length&&pageRows.every(x=>S.selected.has(x.id))?'checked':'')+'></th><th>No.</th>'+shown.map(f=>'<th class="sortable" data-action="sort" data-field="'+E(f)+'">'+E(label(S.page,f))+(S.sort===f?(S.descending?' ↓':' ↑'):'')+'</th>').join('')+'<th>Actions</th></tr></thead><tbody>'+
@@ -90,7 +90,7 @@ function editCell(span){if(S.editCell)return;const id=span.dataset.id,k=S.page,f
 input.className='select';input.setAttribute('aria-label','Edit '+label(k,f));span.replaceWith(input);S.editCell={input,span,k,id,f,original:value};input.focus();if(input.select)input.select();let working=false;const stop=()=>{if(S.editCell?.input===input){input.replaceWith(span);S.editCell=null}};const commit=async()=>{if(working||S.editCell?.input!==input)return;working=true;const next=input.value;if(String(next)===String(value)){stop();return}input.disabled=true;try{await patch(k,id,{[f]:type==='number'?Number(next||0):next},true);stop();render();tip('Cell updated')}catch(e){tip(e.message,true);input.disabled=false;working=false;input.focus()}};input.addEventListener('keydown',e=>{if(e.key==='Escape'){e.stopPropagation();stop()}else if(e.key==='Enter'){e.preventDefault();commit()}});input.addEventListener('blur',commit,{once:true});if(input.tagName==='SELECT')input.addEventListener('change',commit,{once:true})}
 async function patch(k,id,changes,remember=true){const row=S.data[k]?.find(x=>String(x.id)===String(id));if(!row)throw Error('Record was not found');const before={};for(const field of Object.keys(changes))before[field]=row[field]??'';await API('records/'+k+'/'+encodeURIComponent(id),{method:'PUT',body:changes});Object.assign(row,changes);if(remember){S.history.push({k,id,changes:before});if(S.history.length>30)S.history.shift()}}
 async function reload(){const data=await API('data');S.data=data;S.selected=new Set([...S.selected].filter(id=>(data[S.page]||[]).some(r=>r.id===id)));shell()}
-function downloadCSV(){const k=S.page,rows=filtered(),fields=cols(),all=[fields,...rows.map(r=>fields.map(f=>String(r[f]??'')))];const csv=all.map(row=>row.map(x=>'"'+String(x).replaceAll('"','""')+'"').join(',')).join('\r\n');fileDownload('\uFEFF'+csv,'NexaBridge_'+k+'_'+day()+'.csv','text/csv;charset=utf-8')}
+function downloadCSV(selectedOnly=false){const k=S.page,rows=selectedOnly?filtered().filter(x=>S.selected.has(x.id)):filtered(),fields=cols(),all=[fields,...rows.map(r=>fields.map(f=>String(r[f]??'')))];const csv=all.map(row=>row.map(x=>'"'+String(x).replaceAll('"','""')+'"').join(',')).join('\r\n');fileDownload('\uFEFF'+csv,'NexaBridge_'+k+'_'+day()+'.csv','text/csv;charset=utf-8')}
 function fileDownload(text,name,type){const blob=new Blob([text],{type}),url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1200)}
 function copyRows(){const rows=filtered();const chosen=S.selected.size?rows.filter(x=>S.selected.has(x.id)):rows.slice(S.offset,S.offset+50);const fields=cols(),v=[fields,...chosen.map(r=>fields.map(f=>String(r[f]??'').replace(/\t/g,' ').replace(/\r?\n/g,' ')))].map(row=>row.join('\t')).join('\n');if(!navigator.clipboard?.writeText)return tip('Clipboard requires a secure connection',true);navigator.clipboard.writeText(v).then(()=>tip('Copied '+chosen.length+' rows')).catch(()=>tip('Clipboard unavailable',true))}
 function parseDelimited(text,delimiter){const rows=[];let row=[],cell='',quote=false;for(let i=0;i<text.length;i++){const ch=text[i];if(ch==='"'){if(quote&&text[i+1]==='"'){cell+='"';i++}else quote=!quote}else if(ch===delimiter&&!quote){row.push(cell);cell=''}else if((ch==='\n'||ch==='\r')&&!quote){if(ch==='\r'&&text[i+1]==='\n')i++;row.push(cell);if(row.some(x=>x.trim()))rows.push(row);row=[];cell=''}else cell+=ch}row.push(cell);if(row.some(x=>x.trim()))rows.push(row);return rows}
@@ -144,6 +144,48 @@ function previewImport(text,delimiter){const raw=parseDelimited(text.replace(/^\
 async function runImport(){const rows=S.importRows,k=S.importKind;if(k!==S.page||!rows.length)return;const btn=$('#dialog [data-action=runImport]');btn.disabled=true;let success=0;const failures=[];for(const [index,payload]of rows.entries()){try{if(k==='deals'&&'value'in payload)payload.value=Number(payload.value||0);for(const[f,,type]of C[k].fields)if(type==='datetime-local'&&payload[f])payload[f]=utcDateTime(payload[f]);if(k==='tasks'&&payload.linkedRef){const[linkedType,linkedId]=payload.linkedRef.split('|');payload.linkedType=linkedType;payload.linkedId=linkedId;delete payload.linkedRef}await API('records/'+k,{method:'POST',body:payload});success++}catch(e){failures.push('Row '+(index+2)+': '+e.message)}btn.textContent='Imported '+success+' / '+rows.length}
 S.importRows=[];$('#dialog').close();await reload();tip(success+' imported; '+failures.length+' failed',!!failures.length);if(failures.length)fileDownload(failures.join('\n'),'NexaBridge_import_errors.txt','text/plain')}
 async function undo(){const last=S.history.pop();if(!last)return;try{await patch(last.k,last.id,last.changes,false);await reload();tip('Last edit undone')}catch(e){S.history.push(last);tip(e.message,true)}}
+
+function replacementFields(){
+ return C[S.page].fields.filter(([f,,type='text'])=>['text','tel','email','textarea'].includes(type)&&!['linkedRef','clientId','leadId'].includes(f)).map(([f])=>f);
+}
+function findReplaceModal(){
+ const fields=replacementFields();
+ modal('Find & replace','<p class="card-sub">Replace text in CRM fields. Each edited record is recorded in Undo history.</p>'+
+ '<div class="formgrid"><div class="field span"><label>Find text</label><input id="replaceFind" required placeholder="Search text"></div>'+
+ '<div class="field span"><label>Replace with</label><input id="replaceWith" placeholder="Replacement text"></div>'+
+ '<div class="field"><label>Column</label><select id="replaceField"><option value="">All text columns</option>'+fields.map(f=>'<option value="'+E(f)+'">'+E(label(S.page,f))+'</option>').join('')+'</select></div>'+
+ '<div class="field"><label>Scope</label><select id="replaceScope"><option value="filtered">Filtered rows</option>'+(S.selected.size?'<option value="selected">Selected rows</option>':'')+'</select></div></div>'+
+ '<label style="display:flex;gap:8px;align-items:center;margin-top:15px;font-size:12px"><input type="checkbox" id="replaceCase"> Case-sensitive search</label>'+
+ '<div id="replacePreview" class="notice" style="margin-top:14px">Preview matches before replacing.</div>',
+ '<button class="btn" data-action="close">Cancel</button><button class="btn" data-action="replacePreview">Preview</button><button class="btn primary" data-action="replaceRun">Replace matches</button>');
+}
+function replacementPlan(){
+ const find=$('#replaceFind')?.value||'';if(!find)throw Error('Enter text to find.');
+ const withText=$('#replaceWith')?.value||'',field=$('#replaceField')?.value||'',scope=$('#replaceScope')?.value||'filtered',sensitive=!!$('#replaceCase')?.checked;
+ const rows=scope==='selected'?filtered().filter(r=>S.selected.has(r.id)):filtered(),fields=field?[field]:replacementFields();
+ const plan=[];
+ for(const r of rows){const updates={};for(const f of fields){
+  const value=String(r[f]||''),needle=sensitive?find:find.toLowerCase(),source=sensitive?value:value.toLowerCase();
+  if(!source.includes(needle))continue;
+  let at=0,out='',idx;while((idx=source.indexOf(needle,at))!==-1){out+=value.slice(at,idx)+withText;at=idx+find.length}out+=value.slice(at);
+  if(f===C[S.page].key&&!out.trim())throw Error('Replacement cannot erase a required name.');
+  updates[f]=out;
+ }
+ if(Object.keys(updates).length)plan.push({id:r.id,changes:updates});
+ }
+ return plan;
+}
+function previewReplace(){try{const matches=replacementPlan();$('#replacePreview').textContent=matches.length+' matching record(s). '+(matches.length>100?'Limit to 100 records per operation.':'Review before applying.')}catch(e){tip(e.message,true)}}
+async function runReplace(){
+ try{const plan=replacementPlan();if(!plan.length)return tip('No matches found.');
+ if(plan.length>100)return tip('Limit to 100 matching records per operation.',true);
+ if(!confirm('Replace text in '+plan.length+' CRM records?'))return;
+ const button=$('#dialog [data-action=replaceRun]');button.disabled=true;let saved=0,failed=0;
+ for(const item of plan){try{await patch(S.page,item.id,item.changes,true);saved++}catch(e){failed++}}
+ $('#dialog').close();await reload();tip(saved+' records updated'+(failed?' · '+failed+' failed':''),failed>0);
+ }catch(e){tip(e.message,true)}
+}
+
 function columnsModal(){const c=C[S.page];modal('Visible columns','<p class="card-sub">Choose columns for your spreadsheet table.</p><div class="formgrid">'+c.columns.map(f=>'<label style="display:flex;align-items:center;gap:9px"><input type="checkbox" class="colToggle" value="'+E(f)+'" '+(!S.hidden[S.page]?.includes(f)?'checked':'')+'>'+E(label(S.page,f))+'</label>').join('')+'</div>','<button class="btn primary" data-action="saveColumns">Apply columns</button>')}
 function bulkModal(){const k=S.page,c=C[k];if(!c.status)return;modal('Change status for '+S.selected.size+' selected records','<div class="field"><label>New status / stage</label><select id="bulkStatus" class="select">'+(c.statuses||[]).map(v=>'<option value="'+E(v)+'">'+E(v)+'</option>').join('')+'</select></div><p class="formhint">This updates the selected records one by one. Converted leads cannot be reverted here.</p>','<button class="btn" data-action="close">Cancel</button><button class="btn primary" data-action="saveBulk">Apply changes</button>')}
 async function saveBulk(){const k=S.page,c=C[k],state=$('#bulkStatus').value,ids=[...S.selected];if(ids.length>200)return tip('Select at most 200 records per batch',true);if(k==='leads'&&state==='converted')return tip('Use Convert to client for lead conversion.',true);const btn=$('#dialog [data-action=saveBulk]');btn.disabled=true;let done=0,errors=[];for(const id of ids){const row=(S.data[k]||[]).find(x=>x.id===id);if(!row||row[c.status]===state)continue;if(k==='leads'&&row.status==='converted'){errors.push('Converted lead skipped');continue}try{await patch(k,id,{[c.status]:state},true);done++}catch(e){errors.push(e.message)}}$('#dialog').close();S.selected.clear();await reload();tip(done+' records updated'+(errors.length?' · '+errors.length+' skipped':''),!!errors.length)}
@@ -157,6 +199,7 @@ case 'new':{let defaults={};if(k==='tasks'&&el.dataset.ref&&id){const group=el.d
 case 'open':S.page=k;S.detail=id;render();scrollTo({top:0,behavior:'instant'});break;
 case 'back':S.detail=null;render();break;
 case 'edit':formModal(k,id);break;
+case 'duplicate':{const source=(S.data[k]||[]).find(x=>String(x.id)===String(id));if(!source)return tip('Record not found',true);const vals={...source};delete vals.id;vals[C[k].key]=String(vals[C[k].key]||'')+' (copy)';formModal(k,null,vals);break}
 case 'close':$('#dialog').close();break;
 case 'sort':S.descending=S.sort===el.dataset.field?!S.descending:false;S.sort=el.dataset.field;S.offset=0;render();break;
 case 'prev':S.offset=Math.max(0,S.offset-50);render();break;
@@ -164,8 +207,12 @@ case 'next':S.offset+=50;render();break;
 case 'clearSelected':S.selected.clear();render();break;
 case 'undo':await undo();break;
 case 'columns':columnsModal();break;
+case 'findReplace':findReplaceModal();break;
+case 'replacePreview':previewReplace();break;
+case 'replaceRun':await runReplace();break;
 case 'saveColumns':{const checked=$$('.colToggle:checked').map(x=>x.value);if(!checked.length)return tip('Keep at least one column',true);S.hidden[S.page]=C[S.page].columns.filter(f=>!checked.includes(f));try{localStorage.setItem('nexa-v3-hidden',JSON.stringify(S.hidden))}catch(_){}$('#dialog').close();render();break}
 case 'export':downloadCSV();break;
+case 'exportSelected':if(!S.selected.size)return tip('Select rows to export',true);downloadCSV(true);break;
 case 'copy':copyRows();break;
 case 'paste':pasteModal();break;
 case 'fillDown':await fillSelectedDown();break;
