@@ -1,0 +1,30 @@
+name: CRM Core Smoke Test
+on:
+  push:
+    branches: [main]
+    paths:
+      - index.html
+      - crm-v3.js
+      - crm-api.js
+      - tests/crm-smoke.cjs
+      - .github/workflows/crm-smoke.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check JavaScript syntax
+        run: |
+          node --check crm-api.js
+          node --check crm-v3.js
+      - name: Install pinned DOM test dependency
+        run: npm install --no-save --ignore-scripts --no-audit --no-fund --no-package-lock jsdom@26.1.0
+      - name: Test CRM workflow against simulated Supabase
+        run: node tests/crm-smoke.cjs
