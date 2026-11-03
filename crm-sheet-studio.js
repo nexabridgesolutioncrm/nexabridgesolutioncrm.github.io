@@ -338,7 +338,7 @@
       const old=dataCell(row.address);
       if(old.revision>=row.revision)return;
       state.cells.set(row.address,row);state.lastRemote=row.updated_by;
-      if(state.editing===row.address){notice('This cell changed in another session. Save may require reload.',true);return}
+      if(state.editing===row.address||state.busy||state.root?.querySelector('.studio-modal-layer')){notice('Remote change received; reload after finishing your edit.',true);return}
       state.status='Live update received';
       paint();
      });
@@ -348,7 +348,7 @@
    }catch(e){notice('Live connection unavailable; fallback sync active',true)}
   }
   state.timer=setInterval(async()=>{
-   if(!state.active||state.editing||state.busy||document.hidden||document.activeElement?.id==='studioFormulaBar')return;
+   if(!state.active||state.editing||state.busy||document.hidden||state.root?.querySelector('.studio-modal-layer')||document.activeElement?.id==='studioFormulaBar')return;
    try{await refreshSheet(true)}catch(_){}
   },15000);
  }
