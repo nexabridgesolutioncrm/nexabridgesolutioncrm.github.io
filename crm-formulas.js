@@ -127,6 +127,63 @@
      const test=args[0]?.values||[args[0]],values=args[2]?.values||test;
      return test.reduce((acc,v,i)=>acc+(crit(v,args[1])?(numeric(values[i])||0):0),0);
     }
+    case 'COUNTIFS':{
+     if(args.length%2!==0)return ERR.value;
+     const ranges=[];for(let j=0;j<args.length;j+=2)ranges.push({values:args[j]?.values||[args[j]],condition:args[j+1]});
+     const size=ranges[0]?.values.length||0;
+     if(ranges.some(x=>x.values.length!==size))return ERR.value;
+     let count=0;for(let i=0;i<size;i++)if(ranges.every(x=>crit(x.values[i],x.condition)))count++;
+     return count;
+    }
+    case 'SUMIFS':{
+     const values=args[0]?.values||[args[0]],ranges=[];
+     if((args.length-1)%2!==0)return ERR.value;
+     for(let j=1;j<args.length;j+=2)ranges.push({values:args[j]?.values||[args[j]],condition:args[j+1]});
+     if(ranges.some(x=>x.values.length!==values.length))return ERR.value;
+     return values.reduce((total,v,i)=>total+(ranges.every(x=>crit(x.values[i],x.condition))?(numeric(v)||0):0),0);
+    }
+    case 'INDEX':{
+     const rows=args[0]?.matrix||[[args[0]]],row=Math.floor(num(1)),col=Math.floor(num(2)||1);
+     return rows[row-1]?.[col-1]??ERR.ref;
+    }
+    case 'MATCH':{
+     const values=args[1]?.values||[args[1]];
+     const target=String(args[0]).toLowerCase();
+     const found=values.findIndex(v=>String(v).toLowerCase()===target);
+     return found<0?'#N/A':found+1;
+    }
+    case 'XLOOKUP':{
+     const look=args[1]?.values||[args[1]],ret=args[2]?.values||[args[2]];
+     const match=look.findIndex(v=>String(v).toLowerCase()===String(args[0]).toLowerCase());
+     return match<0?(args[3]??'#N/A'):(ret[match]??'#N/A');
+    }
+    case 'TEXTJOIN':{
+     const delimiter=str(0),ignore=Boolean(args[1]);
+     return flatten(args.slice(2).map(v=>v&&v.matrix?v.values:v)).filter(v=>!ignore||v!=='').join(delimiter);
+    }
+    case 'SUBSTITUTE':{
+     const original=str(0),search=str(1),replacement=str(2);if(!search)return original;
+     if(args.length>3){const nth=Math.floor(num(3));if(nth<=0)return original;let i=0,count=0;
+      return original.replaceAll(search,match=>++count===nth?replacement:match)}
+     return original.split(search).join(replacement);
+    }
+    case 'ISBLANK':return args[0]===''||args[0]==null;
+    case 'ISNUMBER':return typeof args[0]==='number'&&Number.isFinite(args[0]);
+    case 'ISTEXT':return typeof args[0]==='string';
+    case 'VALUE':{const n=Number(str(0));return Number.isFinite(n)?n:ERR.value}
+    case 'INT':return Math.floor(num(0));
+    case 'MOD':return num(1)===0?ERR.div:((num(0)%num(1))+num(1))%num(1);
+    case 'CEILING':{const step=num(1)||1;return Math.ceil(num(0)/step)*step}
+    case 'FLOOR':{const step=num(1)||1;return Math.floor(num(0)/step)*step}
+    case 'DATE':{
+     const d=new Date(Date.UTC(num(0),num(1)-1,num(2)));
+     return Number.isFinite(d.getTime())?d.toISOString().slice(0,10):ERR.value;
+    }
+    case 'YEAR':{const d=new Date(str(0));return Number.isFinite(d.getTime())?d.getUTCFullYear():ERR.value}
+    case 'MONTH':{const d=new Date(str(0));return Number.isFinite(d.getTime())?d.getUTCMonth()+1:ERR.value}
+    case 'DAY':{const d=new Date(str(0));return Number.isFinite(d.getTime())?d.getUTCDate():ERR.value}
+    case 'NOW':return new Date().toISOString();
+    case 'IFNA':return args[0]==='#N/A'?(args[1]??''):args[0];
     case 'VLOOKUP':{
      const range=args[1]?.matrix;if(!range||!range.length)return ERR.ref;
      const col=Math.floor(num(2));if(!col||col<1||col>range[0].length)return ERR.ref;
@@ -138,5 +195,5 @@
    }
   }
  }
- global.NexaFormula={FormulaEngine,colIndex,colName,address,coordinates,supported:['SUM','AVERAGE','COUNT','COUNTA','MIN','MAX','IF','IFERROR','COUNTIF','SUMIF','VLOOKUP','ROUND','ABS','SQRT','CONCAT','CONCATENATE','LEFT','RIGHT','MID','AND','OR','NOT','TODAY','PRODUCT','POWER','UPPER','LOWER','TRIM']};
+ global.NexaFormula={FormulaEngine,colIndex,colName,address,coordinates,supported:['SUM','AVERAGE','COUNT','COUNTA','MIN','MAX','IF','IFERROR','COUNTIF','SUMIF','VLOOKUP','ROUND','ABS','SQRT','CONCAT','CONCATENATE','LEFT','RIGHT','MID','AND','OR','NOT','TODAY','PRODUCT','POWER','UPPER','LOWER','TRIM','COUNTIFS','SUMIFS','INDEX','MATCH','XLOOKUP','TEXTJOIN','SUBSTITUTE','ISBLANK','ISNUMBER','ISTEXT','VALUE','INT','MOD','CEILING','FLOOR','DATE','YEAR','MONTH','DAY','NOW','IFNA']};
 })(typeof window!=='undefined'?window:globalThis);
