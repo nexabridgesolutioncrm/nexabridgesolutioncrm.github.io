@@ -152,3 +152,8 @@ body.dark #grid .gridcell.range-anchor{outline-color:#c0abff!important}
 .studio-chart-fields label{font-size:12px;font-weight:780;display:flex;flex-direction:column;gap:7px}
 .studio-chart-fields label:first-child{grid-column:1/-1}
 @media(max-width:700px){.sheet-studio-head h1{font-size:23px}.sheet-studio-toolbar{align-items:stretch}.sheet-studio-toolbar .actions{gap:7px}.sheet-formula-bar{flex-wrap:wrap}.sheet-formula-bar #studioFormulaBar{flex-basis:55%}.sheet-grid-scroller{max-height:59vh}.sheet-chart-grid{grid-template-columns:1fr}.studio-chart-fields{grid-template-columns:1fr}.studio-chart-fields label:first-child{grid-column:1}}
+
+/* Rows are paged in Sheets Studio to keep large workbooks responsive. */
+.sheet-rowpager{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--stroke);border-radius:11px;margin-top:10px;padding:10px 15px}
+.sheet-rowpager>span{font-size:12px;font-weight:730;color:var(--muted);font-variant-numeric:tabular-nums}
+.sheet-rowpager .btn{min-height:35px}
