@@ -118,7 +118,11 @@ async function adapter(input,init={}){
   const sheets=await secured(base);
   if(!sheets.length)return err('Spreadsheet not found or access denied',404);
   if(!action&&method==='GET'){
-   const cells=await secured('/rest/v1/crm_sheet_cells?select=address,raw_value,revision,updated_by,updated_at&sheet_id=eq.'+encodeURIComponent(id)+filter+'&order=address.asc&limit=10000');
+   const cells=[];
+   for(let offset=0;offset<10000;offset+=500){
+    const batch=await secured('/rest/v1/crm_sheet_cells?select=address,raw_value,revision,updated_by,updated_at&sheet_id=eq.'+encodeURIComponent(id)+filter+'&order=address.asc&offset='+offset+'&limit=500');
+    cells.push(...batch);if(batch.length<500)break;
+   }
    return reply({sheet:sheets[0],cells});
   }
   if(!action&&method==='PATCH'){
