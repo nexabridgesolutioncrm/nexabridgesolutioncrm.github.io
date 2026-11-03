@@ -1550,6 +1550,487 @@ body:has(#authForm) #authForm input::placeholder{
  }
  #root .shell .main-content .nexa-lead-number-col{min-width:65px!important;width:65px!important}
 }
+</style><style id="nexa-modern-experience-v24">
+/* NexaBridge CRM 2026: self-contained visual system, confined to authenticated workspace. */
+#root .shell{
+ --nexa-bg:#f5f6fb;--nexa-surface:#ffffff;--nexa-surface-raised:#ffffff;
+ --nexa-text:#1c2440;--nexa-subtle:#69758e;--nexa-border:#e2e6f1;
+ --nexa-violet:#7453df;--nexa-hover:#f1edfe;--nexa-shadow:0 9px 32px rgba(25,35,67,.055);
+ background:var(--nexa-bg)!important;
+ color:var(--nexa-text)!important;
+ font-family:Inter,"Segoe UI",Tahoma,system-ui,sans-serif!important;
+}
+#root .shell .work,
+#root .shell .main-content{background:var(--nexa-bg)!important;color:var(--nexa-text)!important}
+#root .shell .main-content{max-width:1600px!important;padding:30px 34px 48px!important}
+#root .shell .main-content .wz-grid,
+#root .shell .main-content .wz-kpis,
+#root .shell .main-content .nexa-dash-charts{gap:18px!important}
+#root .shell .main-content .panel,
+#root .shell .main-content .wz-panel,
+#root .shell .main-content .card,
+#root .shell .main-content .record-card,
+#root .shell .main-content .nexa-chart-card,
+#root .shell .main-content .nexa-gmail-shell,
+#root .shell .main-content .nexa-mail-panel,
+#root .shell .main-content .nexa-lead-stat,
+#root .shell .main-content .nexa-lead-profile-card{
+ background:var(--nexa-surface)!important;
+ color:var(--nexa-text)!important;
+ border:1px solid var(--nexa-border)!important;
+ border-radius:17px!important;
+ box-shadow:var(--nexa-shadow)!important;
+}
+#root .shell .main-content .wz-kpi{
+ background:var(--nexa-surface)!important;
+ border:1px solid var(--nexa-border)!important;
+ color:var(--nexa-text)!important;
+ border-radius:16px!important;
+ box-shadow:var(--nexa-shadow)!important;
+ padding:21px!important;
+ min-height:106px!important;
+}
+#root .shell .main-content .wz-kpi strong{
+ color:var(--nexa-text)!important;
+ font-size:30px!important;
+ font-weight:810!important;
+}
+#root .shell .main-content .wz-kpi small,
+#root .shell .main-content .wz-kpi em{
+ color:var(--nexa-subtle)!important;
+ font-size:12.5px!important;
+}
+#root .shell .main-content .nexa-dash-hero{
+ border-radius:18px!important;
+ background:radial-gradient(ellipse at 88% 14%,rgba(143,104,251,.23),transparent 50%),linear-gradient(120deg,#191a38,#2f2764)!important;
+ min-height:110px!important;
+ padding:27px 29px!important;
+ box-shadow:0 14px 30px rgba(35,24,84,.13)!important;
+ border:1px solid #474071!important;
+}
+#root .shell .main-content .nexa-dash-hero h2{font-size:25px!important}
+#root .shell .main-content .nexa-dash-hero p{font-size:13px!important;color:#d8d5f2!important}
+#root .shell .main-content .wz-panel{padding:24px!important}
+#root .shell .main-content .wz-panel h3,
+#root .shell .main-content .nexa-chart-title strong{font-size:16px!important;letter-spacing:-.2px!important;color:var(--nexa-text)!important}
+#root .shell .main-content .nexa-chart-card{min-height:210px!important;padding:21px!important}
+#root .shell .main-content .nexa-chart-title{margin-bottom:15px!important}
+#root .shell .main-content .nexa-chart-track{
+ height:11px!important;border-radius:999px!important;
+ background:#eeeefa!important;overflow:hidden!important;
+}
+#root .shell .main-content .nexa-chart-fill{
+ border-radius:999px!important;
+ background:linear-gradient(90deg,#9ba6ff,#7460e9)!important;
+ box-shadow:inset 0 -1px 0 #5d4ab528!important;
+ transition:width .3s ease!important;
+}
+#root .shell .main-content .nexa-chart-row{gap:12px!important;padding:6px 0!important}
+#root .shell .main-content .nexa-chart-row span{font-size:12.5px!important;color:var(--nexa-subtle)!important}
+#root .shell .main-content .nexa-chart-row b{color:var(--nexa-text)!important}
+#root .shell .main-content .nexa-donut{
+ background:conic-gradient(#8373ed calc(var(--progress)*1%),#eeeefa 0)!important;
+ box-shadow:none!important;
+}
+#root .shell .main-content .nexa-donut>div{background:var(--nexa-surface)!important;color:var(--nexa-text)!important}
+#root .shell .main-content .nexa-donut strong{color:var(--nexa-text)!important}
+#root .shell .main-content .nexa-dashboard-empty{background:var(--nexa-surface)!important;color:var(--nexa-text)!important;border-color:var(--nexa-border)!important;border-radius:16px!important}
+#root .shell .main-content .nexa-dashboard-empty strong{color:var(--nexa-text)!important}
+#root .shell .main-content .nexa-dashboard-empty p{color:var(--nexa-subtle)!important}
+#root .shell .sidebar{background:#161a2a!important;border-right:1px solid #2a3043!important}
+#root .shell .sidebar .nav-list{padding-bottom:18px!important}
+#root .shell .sidebar .nav-item{
+ display:flex!important;align-items:center!important;gap:11px!important;
+ color:#b5bfd2!important;
+ font-family:inherit!important;
+ min-height:45px!important;font-weight:650!important;
+ transition:background .16s ease,color .16s ease,transform .16s ease!important;
+}
+#root .shell .sidebar .nav-item:hover{background:#ffffff12!important;color:#fff!important;transform:translateX(2px)}
+#root .shell .sidebar .nav-item.active{
+ background:linear-gradient(90deg,#6b52c740,#5c47bf12)!important;
+ border:1px solid #8073c04a!important;
+ box-shadow:inset 3px 0 #a393ff!important;color:#f6f4ff!important;
+}
+#root .shell .sidebar .nexa-nav-svg{
+ display:flex!important;align-items:center;justify-content:center;
+ width:21px!important;min-width:21px!important;height:21px!important;
+ color:inherit!important;
+}
+#root .shell .sidebar .nexa-nav-svg svg{stroke:currentColor;display:block}
+#root .shell .sidebar .nexa-more-tools>summary{color:#aab2c9!important}
+#root .shell .topbar{
+ background:var(--nexa-surface)!important;
+ border-bottom:1px solid var(--nexa-border)!important;
+ min-height:68px!important;
+ padding:12px 24px!important;
+}
+#root .shell .topbar .top-title{color:var(--nexa-text)!important;font-size:16px!important;font-weight:780!important}
+#root .shell .topbar .top-detail{color:var(--nexa-subtle)!important;font-size:12px!important}
+#root .shell .topbar .top-search{background:var(--nexa-bg)!important;border:1px solid var(--nexa-border)!important;color:var(--nexa-subtle)!important;border-radius:12px!important}
+#root .shell .topbar input{background:transparent!important;color:var(--nexa-text)!important;-webkit-text-fill-color:var(--nexa-text)!important}
+#root .shell .nexa-theme-toggle{
+ display:inline-flex;align-items:center;justify-content:center;gap:8px;
+ flex:none;min-height:42px;padding:8px 14px;
+ background:var(--nexa-bg);color:var(--nexa-text);
+ border:1px solid var(--nexa-border);border-radius:11px;
+ font-size:13px;font-weight:760;line-height:1.2;
+ box-shadow:0 2px 8px rgba(23,28,60,.035);
+ cursor:pointer;
+}
+#root .shell .nexa-theme-toggle:hover{background:var(--nexa-hover);border-color:#bcb0e6}
+#root .shell .nexa-theme-toggle>span:first-child{font-size:20px;line-height:1}
+#root .shell .main-content .btn:not(.danger),
+#root .shell .main-content .wz-action,
+#root .shell .main-content .mail-btn{
+ transition:transform .17s ease,box-shadow .17s ease,background-color .17s ease!important;
+}
+#root .shell .main-content .btn:not(.danger):hover,
+#root .shell .main-content .wz-action:hover{transform:translateY(-1px)}
+#root .shell .main-content .btn:active,
+#root .shell .main-content .wz-action:active{transform:translateY(0) scale(.985)!important}
+#root .shell .main-content .wz-tablewrap,
+#root .shell .main-content .table-scroll{background:var(--nexa-surface)!important;border-color:var(--nexa-border)!important}
+#root .shell .main-content table th{
+ background:var(--nexa-bg)!important;color:var(--nexa-subtle)!important;
+ border-color:var(--nexa-border)!important;
+}
+#root .shell .main-content table td{
+ background:transparent!important;color:var(--nexa-text)!important;
+ border-color:var(--nexa-border)!important;
+}
+#root .shell .main-content table tbody tr:hover{background:var(--nexa-hover)!important}
+#root .shell .main-content .pill,
+#root .shell .main-content .wz-pill{
+ border-radius:999px!important;line-height:1.4!important;
+ padding:6px 11px!important;font-size:12px!important;font-weight:740!important;
+}
+#root .shell .main-content .pill.green,
+#root .shell .main-content .wz-pill.won,
+#root .shell .main-content .wz-pill.completed{
+ color:#177a5b!important;background:#d9f8e9!important;border-color:#afeccc!important;
+}
+#root .shell .main-content .pill.blue,
+#root .shell .main-content .wz-pill.new,
+#root .shell .main-content .wz-pill.qualified{
+ color:#3d62a3!important;background:#e3edff!important;border-color:#cfddff!important;
+}
+#root .shell .main-content .pill.amber,
+#root .shell .main-content .wz-pill.contacted,
+#root .shell .main-content .wz-pill.in_progress{
+ color:#98631e!important;background:#fff1d5!important;border-color:#f9dfaa!important;
+}
+#root .shell .main-content .pill.red,
+#root .shell .main-content .wz-pill.overdue{
+ color:#af4b62!important;background:#ffe7eb!important;border-color:#ffcfd8!important;
+}
+#root .shell .main-content .pill.gray,
+#root .shell .main-content .wz-pill.closed{
+ color:#667388!important;background:#ebeff5!important;border-color:#d8dfe9!important;
+}
+/* Calm, pastel, genuinely usable Kanban columns */
+#root .shell .main-content .nexa-board-hint{
+ color:var(--nexa-subtle);font-size:12.5px;margin:12px 0 14px;
+}
+#root .shell .main-content .nexa-draggable-pipeline,
+#root .shell .main-content .nexa-lead-kanban{
+ display:grid!important;
+ grid-auto-flow:column!important;grid-auto-columns:minmax(235px,1fr)!important;
+ gap:15px!important;
+ overflow-x:auto!important;
+ overscroll-behavior-x:contain;
+ padding:7px 2px 18px!important;
+ scroll-snap-type:x proximity;
+}
+#root .shell .main-content .nexa-kanban-lane{
+ min-width:0;min-height:210px;
+ padding:13px;
+ border:1px solid #dfe6f2!important;
+ border-radius:15px!important;
+ background:#eef2ff!important;
+ box-shadow:0 3px 10px #121b4f09!important;
+ scroll-snap-align:start;
+ transition:background-color .18s,border-color .18s,box-shadow .18s;
+}
+#root .shell .main-content .nexa-kanban-lane:nth-child(5n+2){background:#ebf8f5!important}
+#root .shell .main-content .nexa-kanban-lane:nth-child(5n+3){background:#f2ecff!important}
+#root .shell .main-content .nexa-kanban-lane:nth-child(5n+4){background:#fff3e4!important}
+#root .shell .main-content .nexa-kanban-lane:nth-child(5n+5){background:#f4f2f6!important}
+#root .shell .main-content .nexa-kanban-lane.nexa-drop-target{
+ background:#e9e3ff!important;border:2px dashed #8266df!important;
+ box-shadow:0 0 0 4px #8e6bde16!important;
+}
+#root .shell .main-content .nexa-kanban-lane.nexa-readonly-stage{
+ border-style:dashed!important;
+}
+#root .shell .main-content .nexa-stage-head,
+#root .shell .main-content .nexa-kanban-lane .lane-head{
+ display:flex!important;justify-content:space-between!important;align-items:center!important;
+ gap:8px!important;margin:0 0 15px!important;
+ color:#303b58!important;
+ border:0!important;background:transparent!important;
+}
+#root .shell .main-content .nexa-stage-head>span,
+#root .shell .main-content .lane-head>strong{
+ font-size:13px!important;font-weight:790!important;color:#303b58!important;
+ text-transform:capitalize;
+}
+#root .shell .main-content .nexa-stage-head>b,
+#root .shell .main-content .lane-count{
+ display:inline-flex;align-items:center;justify-content:center;min-width:28px;
+ padding:4px 7px!important;
+ font-size:11px!important;
+ color:#6552a9!important;
+ background:#ffffffc9!important;border-radius:999px!important;
+}
+#root .shell .main-content .nexa-lane-cards,
+#root .shell .main-content .nexa-stage-cards{display:flex;flex-direction:column;gap:10px}
+#root .shell .main-content .nexa-lead-board-card,
+#root .shell .main-content .nexa-draggable-pipeline .deal-card{
+ position:relative;
+ background:#fff!important;
+ color:#25304b!important;
+ border:1px solid #e0e6f0!important;
+ border-radius:13px!important;
+ padding:15px!important;
+ box-shadow:0 5px 16px rgba(25,38,74,.06)!important;
+ transition:transform .16s,box-shadow .16s!important;
+ cursor:grab;
+}
+#root .shell .main-content .nexa-lead-board-card:hover,
+#root .shell .main-content .nexa-draggable-pipeline .deal-card:hover{
+ transform:translateY(-2px)!important;
+ box-shadow:0 9px 21px rgba(25,38,74,.11)!important;
+}
+#root .shell .main-content .nexa-draggable-card.nexa-dragging{opacity:.45!important;cursor:grabbing!important}
+#root .shell .main-content .nexa-lead-board-card-top{
+ display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;
+}
+#root .shell .main-content .nexa-drag-handle{color:#9ea8bd;font-size:16px;letter-spacing:1px;user-select:none}
+#root .shell .main-content .nexa-lead-board-card-top small{font-weight:800;color:#7463b4}
+#root .shell .main-content .nexa-lead-board-title{
+ display:block;border:0;background:transparent;
+ font-size:14px;font-weight:800;line-height:1.4;
+ color:#263356;text-align:left;cursor:pointer;padding:0;
+ overflow-wrap:anywhere;
+}
+#root .shell .main-content .nexa-lead-board-title:hover{text-decoration:underline;color:#6142cc}
+#root .shell .main-content .nexa-lead-board-card p{
+ color:#748096;font-size:12px;line-height:1.4;margin:5px 0 11px;
+ overflow-wrap:anywhere;
+}
+#root .shell .main-content .nexa-lead-board-date{
+ font-size:11px;color:#64728a;padding:9px 0;border-top:1px solid #edf0f6;
+}
+#root .shell .main-content .nexa-board-open{
+ border:0;background:none;cursor:pointer;color:#6b4edc;
+ font-size:12px;font-weight:800;padding:8px 0 0;
+}
+#root .shell .main-content .nexa-stage-empty,
+#root .shell .main-content .nexa-kanban-lane .board-note{
+ border:1px dashed #cbd4e9!important;
+ border-radius:11px!important;
+ color:#8691a6!important;
+ background:#ffffff68!important;
+ font-size:12px!important;
+ text-align:center!important;
+ padding:25px 12px!important;
+}
+#root .shell .main-content .nexa-draggable-pipeline .deal-card strong,
+#root .shell .main-content .nexa-draggable-pipeline .deal-card .value{color:#263356!important}
+#root .shell .main-content .nexa-draggable-pipeline .deal-card small{color:#79879e!important}
+#root .shell .main-content .nexa-draggable-pipeline .deal-card .card-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+#root .shell .main-content .nexa-leads-view-switch{
+ display:inline-flex;gap:3px;padding:4px;
+ border:1px solid var(--nexa-border);background:var(--nexa-surface);
+ border-radius:12px;
+}
+#root .shell .main-content .nexa-leads-view-switch button{
+ border:0;background:transparent;color:var(--nexa-subtle);
+ min-height:40px;min-width:66px;padding:8px 13px;
+ font-size:13px;font-weight:770;border-radius:9px;
+}
+#root .shell .main-content .nexa-leads-view-switch button.active{
+ background:#eee9ff;color:#6140d0;box-shadow:0 2px 7px #5b46bc18;
+}
+#root .shell .main-content .nexa-leads-view-switch button:hover:not(.active){background:var(--nexa-hover)}
+#root .shell .main-content .nexa-lead-info{background:#f8f9fd!important;border-color:#edf0f5!important}
+#root .shell .main-content .nexa-lead-info>strong{color:var(--nexa-text)!important}
+#root .shell .main-content .nexa-lead-task-row{background:#fafbff!important;border-color:var(--nexa-border)!important}
+#root .shell .main-content .nexa-lead-task-row strong{color:var(--nexa-text)!important}
+#root .shell .main-content .nexa-leads-search,
+#root .shell .main-content .nexa-leads-filter select,
+#root .shell .main-content input,
+#root .shell .main-content select,
+#root .shell .main-content textarea{
+ color:var(--nexa-text)!important;background:var(--nexa-surface)!important;
+ border-color:var(--nexa-border)!important;
+}
+#root .shell .main-content .nexa-lead-stat strong{color:var(--nexa-text)!important}
+#root .shell .main-content .nexa-lead-stat span,
+#root .shell .main-content .nexa-lead-stat small{color:var(--nexa-subtle)!important}
+/* Workload completion: a subtle, reduced-motion-safe success flourish. */
+.nexa-task-celebration{
+ position:fixed;z-index:9000;top:24%;left:50%;transform:translateX(-50%);
+ width:96px;height:96px;pointer-events:none;
+ display:grid;place-items:center;
+}
+.nexa-task-celebration-check{
+ display:grid;place-items:center;width:55px;height:55px;border-radius:50%;
+ color:#fff;background:#24a77d;font-size:30px;font-weight:850;
+ box-shadow:0 8px 23px #24a77d55;
+ animation:nexa-check-pop .65s ease-out both;
+}
+.nexa-task-celebration>span:not(:first-child){
+ position:absolute;color:#a17df8;font-size:19px;
+ animation:nexa-spark-rise .8s ease-out both;
+}
+.nexa-task-celebration>span:nth-child(2){--tx:-55px;--ty:-32px}
+.nexa-task-celebration>span:nth-child(3){--tx:53px;--ty:-29px}
+.nexa-task-celebration>span:nth-child(4){--tx:-35px;--ty:43px}
+.nexa-task-celebration>span:nth-child(5){--tx:40px;--ty:36px}
+@keyframes nexa-check-pop{0%{opacity:0;transform:scale(.6)}40%{opacity:1;transform:scale(1.12)}100%{transform:scale(1)}}
+@keyframes nexa-spark-rise{0%{opacity:0;transform:translate(0,0) scale(.3)}40%{opacity:1}100%{opacity:0;transform:translate(var(--tx),var(--ty)) scale(.8)}}
+/* Accessible dark mode: surface-specific overrides of old hardcoded light rules. */
+html[data-nexa-theme="dark"] #root .shell{
+ color-scheme:dark;
+ --nexa-bg:#111624;
+ --nexa-surface:#1a2133;
+ --nexa-surface-raised:#20293d;
+ --nexa-text:#f0f3fa;
+ --nexa-subtle:#a7b2c7;
+ --nexa-border:#354056;
+ --nexa-hover:#292e49;
+ --nexa-shadow:0 11px 30px rgba(0,0,0,.16);
+}
+html[data-nexa-theme="dark"] #root .shell .main-content .page-head h2,
+html[data-nexa-theme="dark"] #root .shell .main-content .wz-head h1,
+html[data-nexa-theme="dark"] #root .shell .main-content h1,
+html[data-nexa-theme="dark"] #root .shell .main-content h2,
+html[data-nexa-theme="dark"] #root .shell .main-content h3,
+html[data-nexa-theme="dark"] #root .shell .main-content .nexa-chart-title strong,
+html[data-nexa-theme="dark"] #root .shell .main-content .nexa-lead-profile-card h3,
+html[data-nexa-theme="dark"] #root .shell .main-content .doc-page-head h1{
+ color:var(--nexa-text)!important;
+}
+html[data-nexa-theme="dark"] #root .shell .main-content .page-head p,
+html[data-nexa-theme="dark"] #root .shell .main-content .wz-head p,
+html[data-nexa-theme="dark"] #root .shell .main-content small,
+html[data-nexa-theme="dark"] #root .shell .main-content .td-secondary,
+html[data-nexa-theme="dark"] #root .shell .main-content .data-sub,
+html[data-nexa-theme="dark"] #root .shell .main-content .wz-panel .wz-item small{
+ color:var(--nexa-subtle)!important;
+}
+html[data-nexa-theme="dark"] #root .shell .main-content .nexa-lead-info,
+html[data-nexa-theme="dark"] #root .shell .main-content .nexa-lead-task-row,
+html[data-nexa-theme="dark"] #root .shell .main-content .nexa-leads-search{
+ background:var(--nexa-surface-raised)!important;
+ border-color:var(--nexa-border)!important;
+}
+html[data-nexa-theme="dark"] #root .shell .main-content .nexa-lead-info>a,
+html[data-nexa-theme="dark"] #root .shell .main-content .nexa-lead-info>strong,
+html[data-nexa-theme="dark"] #root .shell .main-content .nexa-lead-task-row strong{
+ color:var(--nexa-text)!important;
+}
+html[data-nexa-theme="dark"] #root .shell .main-content .nexa-lead-info>a{color:#b6a1ff!important}
+html[data-nexa-theme="dark"] #root .shell .main-content .nexa-lead-number{background:#40365d!important;color:#d6c7ff!important;border-color:#5d4a85!important}
+html[data-nexa-theme="dark"] #root .shell .main-content .nexa-lead-detail .nexa-lead-breadcrumb{color:#aab5ca!important}
+html[data-nexa-theme="dark"] #root .shell .main-content .nexa-lead-stat strong{color:var(--nexa-text)!important}
+html[data-nexa-theme="dark"] #root .shell .main-content .nexa-lead-form-grid input,
+html[data-nexa-theme="dark"] #root .shell .main-content .nexa-lead-form-grid select,
+html[data-nexa-theme="dark"] #root .shell .main-content .nexa-lead-form-grid textarea,
+html[data-nexa-theme="dark"] #root .shell .main-content input,
+html[data-nexa-theme="dark"] #root .shell .main-content textarea,
+html[data-nexa-theme="dark"] #root .shell .main-content select{
+ color:var(--nexa-text)!important;
+ background:var(--nexa-surface-raised)!important;
+ border-color:var(--nexa-border)!important;
+ -webkit-text-fill-color:var(--nexa-text)!important;
+}
+html[data-nexa-theme="dark"] #root .shell .main-content input::placeholder,
+html[data-nexa-theme="dark"] #root .shell .main-content textarea::placeholder{color:#9eabc3!important;opacity:1!important}
+html[data-nexa-theme="dark"] #root .shell .main-content .btn.neutral,
+html[data-nexa-theme="dark"] #root .shell .main-content .wz-lite,
+html[data-nexa-theme="dark"] #root .shell .topbar .btn.neutral{
+ color:var(--nexa-text)!important;-webkit-text-fill-color:var(--nexa-text)!important;
+ background:var(--nexa-surface-raised)!important;
+ border-color:var(--nexa-border)!important;
+}
+html[data-nexa-theme="dark"] #root .shell .main-content .btn.neutral:hover,
+html[data-nexa-theme="dark"] #root .shell .main-content .wz-lite:hover{background:var(--nexa-hover)!important}
+html[data-nexa-theme="dark"] #root .shell .main-content .nexa-lead-contact-btn{
+ color:#d0bfff!important;-webkit-text-fill-color:#d0bfff!important;
+ background:#30284b!important;border-color:#4b3b72!important;
+}
+html[data-nexa-theme="dark"] #root .shell .main-content .wz-panel .wz-item,
+html[data-nexa-theme="dark"] #root .shell .main-content .wz-tablewrap,
+html[data-nexa-theme="dark"] #root .shell .main-content .table-scroll{
+ background:var(--nexa-surface)!important;color:var(--nexa-text)!important;border-color:var(--nexa-border)!important;
+}
+html[data-nexa-theme="dark"] #root .shell .main-content .nexa-chart-track{background:#30394f!important}
+html[data-nexa-theme="dark"] #root .shell .main-content .nexa-donut{background:conic-gradient(#a594ff calc(var(--progress)*1%),#354058 0)!important}
+html[data-nexa-theme="dark"] #root .shell .main-content .nexa-kanban-lane{
+ background:#232c43!important;border-color:#414c65!important;
+}
+html[data-nexa-theme="dark"] #root .shell .main-content .nexa-kanban-lane:nth-child(5n+2){background:#1d393b!important}
+html[data-nexa-theme="dark"] #root .shell .main-content .nexa-kanban-lane:nth-child(5n+3){background:#322c4c!important}
+html[data-nexa-theme="dark"] #root .shell .main-content .nexa-kanban-lane:nth-child(5n+4){background:#3c3030!important}
+html[data-nexa-theme="dark"] #root .shell .main-content .nexa-kanban-lane:nth-child(5n+5){background:#292d3b!important}
+html[data-nexa-theme="dark"] #root .shell .main-content .nexa-kanban-lane.nexa-drop-target{background:#433664!important;border-color:#aa93ff!important}
+html[data-nexa-theme="dark"] #root .shell .main-content .nexa-stage-head,
+html[data-nexa-theme="dark"] #root .shell .main-content .nexa-stage-head span,
+html[data-nexa-theme="dark"] #root .shell .main-content .lane-head>strong{color:#eef0ff!important}
+html[data-nexa-theme="dark"] #root .shell .main-content .nexa-lead-board-card,
+html[data-nexa-theme="dark"] #root .shell .main-content .nexa-draggable-pipeline .deal-card{
+ background:var(--nexa-surface)!important;color:var(--nexa-text)!important;
+ border-color:var(--nexa-border)!important;box-shadow:0 6px 14px #0002!important;
+}
+html[data-nexa-theme="dark"] #root .shell .main-content .nexa-lead-board-title,
+html[data-nexa-theme="dark"] #root .shell .main-content .nexa-draggable-pipeline .deal-card strong,
+html[data-nexa-theme="dark"] #root .shell .main-content .nexa-draggable-pipeline .deal-card .value{color:var(--nexa-text)!important}
+html[data-nexa-theme="dark"] #root .shell .main-content .nexa-lead-board-card p,
+html[data-nexa-theme="dark"] #root .shell .main-content .nexa-lead-board-date{color:var(--nexa-subtle)!important}
+html[data-nexa-theme="dark"] #root .shell .main-content .nexa-stage-empty,
+html[data-nexa-theme="dark"] #root .shell .main-content .board-note{
+ color:#bdc5d8!important;background:#ffffff05!important;border-color:#5d6682!important;
+}
+html[data-nexa-theme="dark"] #root .shell .main-content .nexa-leads-view-switch button.active{
+ color:#e2d6ff!important;background:#493a78!important;
+}
+html[data-nexa-theme="dark"] #root .shell .main-content .pill.green{color:#b2f5d8!important;background:#1c4d41!important;border-color:#2a7360!important}
+html[data-nexa-theme="dark"] #root .shell .main-content .pill.blue{color:#c2d6ff!important;background:#283b5d!important;border-color:#385785!important}
+html[data-nexa-theme="dark"] #root .shell .main-content .pill.amber{color:#ffe0ab!important;background:#59452d!important;border-color:#886c45!important}
+html[data-nexa-theme="dark"] #root .shell .main-content .pill.red{color:#ffc7d2!important;background:#583243!important;border-color:#834758!important}
+html[data-nexa-theme="dark"] #root .shell .main-content .pill.gray{color:#ced5e4!important;background:#333e50!important;border-color:#47556d!important}
+/* Allow keyboard users and small screens to navigate the boards. */
+#root .shell .main-content .nexa-kanban-lane:focus-within{outline:2px solid #9f8bfc;outline-offset:2px}
+#root .shell .main-content .nexa-lead-board-card button:focus-visible,
+#root .shell .main-content .nexa-leads-view-switch button:focus-visible,
+#root .shell .nexa-theme-toggle:focus-visible{outline:3px solid #9f8bfc;outline-offset:2px}
+@media(max-width:1100px){
+ #root .shell .main-content{padding:19px 16px 32px!important}
+ #root .shell .main-content .nexa-draggable-pipeline,
+ #root .shell .main-content .nexa-lead-kanban{grid-auto-columns:260px!important}
+}
+@media(max-width:600px){
+ #root .shell .main-content{padding:15px 12px 26px!important}
+ #root .shell .topbar{padding:10px 11px!important;gap:10px!important}
+ #root .shell .nexa-theme-label{display:none}
+ #root .shell .nexa-theme-toggle{min-height:39px;padding:8px 11px}
+ #root .shell .main-content .wz-grid,
+ #root .shell .main-content .wz-kpis,
+ #root .shell .main-content .nexa-dash-charts{gap:12px!important}
+ #root .shell .main-content .nexa-dash-hero{padding:20px!important}
+ #root .shell .main-content .nexa-lead-stat-grid{gap:10px!important}
+ #root .shell .main-content .nexa-draggable-pipeline,
+ #root .shell .main-content .nexa-lead-kanban{grid-auto-columns:240px!important}
+}
+@media(prefers-reduced-motion:reduce){
+ #root .shell *,#root .shell *::before,#root .shell *::after{
+  transition-duration:.01ms!important;animation-duration:.01ms!important;
+ }
+ .nexa-task-celebration{display:none!important}
+}
 </style></head><body>
 <div id="root"><div class="startup">NexaBridge CRM — Secure Workspace</div></div><div aria-live="polite" class="toast-host" id="toast" role="status"></div>
 <script>
