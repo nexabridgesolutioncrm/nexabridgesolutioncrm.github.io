@@ -405,9 +405,13 @@
  }
 
  function showScriptInfo(){
-  showModal('<h2>Google Apps Script integration</h2><p>Apps Script executes in Google Workspace, not inside a web page. It requires an authorized Google account and a separately deployed script.</p>'+
-   '<div class="notice"><strong>Integration starter available</strong><p>Use the reviewed bridge template in the CRM repository, configure its Script Properties privately, then deploy in your Google account. Never paste credentials into this CRM or a public repository.</p></div>'+
-   '<p><a href="https://script.google.com/home/projects/create" target="_blank" rel="noopener noreferrer">Open Google Apps Script editor ↗</a></p>'+
+  showModal('<h2>Google Apps Script connector</h2>'+
+   '<p>The OAuth-secured server connector is deployed. To activate it for your Google account, install the linked script in a Google Sheet and approve its requested access.</p>'+
+   '<div class="notice"><strong>Ready for Google authorization — not yet connected to your account</strong>'+
+   '<p>The connector verifies the Google account email against an authorized NexaBridge CRM member. It stores no shared secret in this public site.</p></div>'+
+   '<p><a href="https://github.com/nexabridgesolutioncrm/nexabridgesolutioncrm.github.io/blob/main/integrations/SheetsStudioAppsScript.gs" target="_blank" rel="noopener noreferrer">View installation-ready Apps Script code ↗</a></p>'+
+   '<p><a href="https://github.com/nexabridgesolutioncrm/nexabridgesolutioncrm.github.io/blob/main/integrations/SheetsStudioAppsScript.appsscript.json" target="_blank" rel="noopener noreferrer">View required OAuth manifest ↗</a></p>'+
+   '<p>Installation: open a Google Sheet → Extensions → Apps Script → paste the connector and manifest → authorize → NexaBridge CRM menu → Connect → Pull / Push.</p>'+
    '<div class="studio-modal-foot"><button class="btn primary" data-sheet-action="dismiss">Close</button></div>');
  }
  async function onClick(ev){
