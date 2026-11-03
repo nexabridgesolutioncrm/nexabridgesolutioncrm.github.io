@@ -25,3 +25,23 @@ dialog{width:min(690px,calc(100% - 28px));border:1px solid var(--stroke);padding
 @media(max-width:1200px){.kpis{grid-template-columns:repeat(2,1fr)}.detailgrid,.two{grid-template-columns:1fr}.main{padding:24px 22px 42px}.topbar{padding:0 20px}.board{grid-template-columns:repeat(6,240px)}}
 @media(max-width:760px){.layout{grid-template-columns:1fr}.sidebar{position:fixed!important;left:0;transform:translateX(-105%);width:242px;transition:transform .2s}.sidebar.open{transform:translateX(0)}.mobile-toggle{display:inline-flex}.topbar{height:64px;padding:0 12px}.top-search{max-width:190px;min-width:90px;width:28vw}.topbar h2{font-size:13px}.main{padding:19px 13px 40px}.heading h1{font-size:23px}.kpis{gap:10px}.kpi{min-height:100px;padding:16px}.kpi .value{font-size:25px}.hero{padding:21px}.facts{grid-template-columns:1fr}.formgrid{grid-template-columns:1fr}.field.span{grid-column:auto}.toolbar{align-items:stretch}.search{min-width:100%;max-width:100%}.board{grid-template-columns:repeat(6,230px)}.detailhero h1{font-size:22px}.actions{gap:7px}.btn{padding:9px 13px}.top-actions .signout{display:none}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+
+/* Spreadsheet workflow and global command search */
+.top-search-wrap{position:relative;width:26vw;max-width:320px;min-width:170px}
+.top-search-wrap .top-search{width:100%;max-width:none;min-width:0}
+.search-results{position:absolute;top:calc(100% + 9px);right:0;width:min(430px,92vw);max-height:390px;overflow:auto;background:var(--surface);border:1px solid var(--stroke);box-shadow:0 16px 45px #1b234233;border-radius:13px;z-index:50;padding:7px}
+.search-results button{width:100%;text-align:left;padding:11px 13px;border:0;background:transparent;border-radius:9px;display:block;color:var(--ink)}
+.search-results button:hover,.search-results button:focus-visible{background:var(--surface2)}
+.search-results strong{display:block;font-size:13px;font-weight:780;overflow-wrap:anywhere}
+.search-results small{font-size:11px;display:block;color:var(--muted);margin-top:4px}
+.search-none{color:var(--muted);padding:18px;text-align:center;font-size:13px}
+.table .gridcell{display:block;min-height:24px;max-width:250px;min-width:55px;cursor:cell;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-radius:5px;padding:2px}
+.table .gridcell:hover{background:#8171d516;outline:1px solid #d3c8fa}
+.table .gridcell:focus-visible{background:#8171d51c;outline:2px solid #8064de;outline-offset:-1px}
+.table td:has(.gridcell){min-width:110px}
+.table td:has(.gridcell .name){min-width:170px}
+.table td:has(>input.select),.table td:has(>select.select){padding:5px 9px!important}
+.table td .select{max-width:230px;min-width:100px;background:var(--surface);color:var(--ink)}
+.table-footer{gap:14px;flex-wrap:wrap}
+body.dark .table .gridcell:hover,body.dark .table .gridcell:focus-visible{background:#6951c530}
+@media(max-width:760px){.top-search-wrap{max-width:180px;min-width:92px;width:30vw}.search-results{right:-100px}.top-actions{gap:5px}.top-actions>.iconbtn{min-width:36px;padding:0 7px}.table .gridcell{max-width:220px}}
