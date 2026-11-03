@@ -72,7 +72,7 @@ const wait=async(fn,description)=>{for(let i=0;i<180;i++){if(fn())return;await n
  root.querySelector('#studioChartTitle').value='Revenue by region';
  root.querySelector('[data-sheet-action=saveChart]').click();
  await wait(()=>sheets[0].charts.length===1,'chart saved to Supabase mock');
- assert.match(root.querySelector('#sheetCharts').textContent,/Revenue by region/);
+ await wait(()=>root.querySelector('#sheetCharts')?.textContent.includes('Revenue by region'),'chart visible after async save');
  root.querySelector('[data-sheet-action=back]').click();
  await wait(()=>root.querySelector('[data-sheet-action=new]'),'return to sheet library');
  assert.ok(root.textContent.includes('Team Revenue Sheet'),'saved workbook in library');
