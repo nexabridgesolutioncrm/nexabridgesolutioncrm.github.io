@@ -1055,7 +1055,7 @@ const $ = s => document.querySelector(s);
 const root = $('#root');
 const lang = 'en';
 let setupTokenRequired=false, importMode='replace';
-let user = null, csrf = null, data = null, page = 'dashboard', query = '', filter = 'all', modal = null, menuOpen = false;
+let user = null, csrf = null, data = null, page = 'dashboard', query = '', filter = 'all', modal = null, menuOpen = false, nexaActiveLeadId = null;
 const nav = [['dashboard','▦'],['clients','♙'],['leads','♧'],['deals','◈'],['jobs','▤'],['dispatch','⇄'],['schedule','▦'],['calendar','▤'],['tasks','☑'],['documents','▣'],['projects','▤'],['contracts','▣'],['expenses','＄'],['email','✉'],['reports','▥'],['catalog','◈'],['technicians','♙'],['equipment','▣'],['service_plans','↻'],['checklists','☑'],['time_entries','◷'],['automation','⚡'],['team','♙']];
 const STATUS = {leads:['new','contacted','qualified','converted','closed'],deals:['new','qualified','proposal','negotiation','won','lost'],tasks:['open','done']};
 const SOURCES = [['website','sourceWebsite'],['google','sourceGoogle'],['social','sourceSocial'],['referral','sourceReferral'],['direct','sourceDirect'],['event','sourceEvent'],['other','sourceOther']];
@@ -1164,11 +1164,125 @@ function dashboard(){const upcoming=[...data.tasks].filter(x=>x.status!=='done')
 }
 function options(items,selected){return items.map(([val,label])=>`<option value="${e(val)}" ${String(val)===String(selected)?'selected':''}>${e(label)}</option>`).join('');}
 function textCol(key,obj){if(key==='clientId')return e(connectionName('clients',obj.clientId));if(key==='leadId')return e(connectionName('leads',obj.leadId));if(key==='linkedRef')return e(relatedName(obj));if(key==='value')return `<strong class="num">${money(obj.value)}</strong>`;if(key==='stage'||key==='status'||key==='priority')return pill(obj[key]);if(key==='followup'||key==='dueDate'||key==='closeDate')return e(fmtDate(obj[key]));if(key==='source'){const item=SOURCES.find(x=>x[0]===obj.source);return e(item?t(item[1]):obj.source||'—');}return e(obj[key]||'—');}
-function recordTable(kind){const items=filtered(kind);const fieldCols=COLS[kind];const cell=(x,fields)=>`<td>${fields.map((f,i)=>`<${i===0?'div':'span'} class="${i===0?'td-title':'td-secondary'}">${textCol(f,x)}</${i===0?'div':'span'}>`).join('')}</td>`;
- return `<div class="panel"><div class="table-scroll"><table class="table"><thead><tr>${fieldCols.map(([f])=>`<th>${e(t(f==='title'&&kind==='tasks'?'taskTitle':f==='title'?'dealTitle':f))}</th>`).join('')}<th>${e(t('actions'))}</th></tr></thead><tbody>${items.length?items.map(x=>`<tr>${fieldCols.map(c=>cell(x,c)).join('')}<td><div class="row-actions">${kind==='tasks'?button(x.status==='done'?t('taskReopen'):t('taskDone'),'toggleTask','','soft').replace('data-action','data-id="'+e(x.id)+'" data-action'):''}${kind==='leads'&&x.status!=='converted'?`<button class="btn tiny soft" data-action="convert" data-id="${e(x.id)}">${e(t('convert'))}</button>`:''}<button class="btn tiny neutral" data-action="edit" data-kind="${kind}" data-id="${e(x.id)}">${e(t('edit'))}</button>${['owner','admin'].includes(user.role)?`<button class="btn tiny danger" data-action="delete" data-kind="${kind}" data-id="${e(x.id)}">${e(t('delete'))}</button>`:''}</div></td></tr>`).join(''):`<tr><td class="empty-td" colspan="${fieldCols.length+1}">${e(query||filter!=='all'?t('noResults'):t('noRecords'))}</td></tr>`}</tbody></table></div><div class="table-footer">${fmt(items.length)} ${e(t('recordCount'))}</div></div>`;
+function recordTable(kind){
+ const items=filtered(kind),fieldCols=COLS[kind];
+ const cell=(x,fields)=>'<td>'+fields.map((f,i)=>{
+  const value=kind==='leads'&&f==='name'
+   ?'<button type="button" class="nexa-lead-row-link" data-action="leadOpen" data-id="'+e(x.id)+'">'+e(x.name||x.company||'Untitled lead')+'</button>'
+   :textCol(f,x);
+  return '<'+(i===0?'div':'span')+' class="'+(i===0?'td-title':'td-secondary')+'">'+value+'</'+(i===0?'div':'span')+'>';
+ }).join('')+'</td>';
+ return '<div class="panel nexa-record-table"><div class="table-scroll"><table class="table"><thead><tr>'+
+  fieldCols.map(([f])=>'<th>'+e(t(f==='title'&&kind==='tasks'?'taskTitle':f==='title'?'dealTitle':f))+'</th>').join('')+
+  '<th>'+e(t('actions'))+'</th></tr></thead><tbody>'+
+  (items.length?items.map(x=>{
+   const rowOpen=kind==='leads'?' class="nexa-clickable-lead" data-action="leadOpen" data-id="'+e(x.id)+'" tabindex="0" aria-label="Open lead '+e(x.name||x.company||'record')+'"':'';
+   const actions=(kind==='tasks'?button(x.status==='done'?t('taskReopen'):t('taskDone'),'toggleTask','','soft').replace('data-action','data-id="'+e(x.id)+'" data-action'):'')+
+    (kind==='leads'?'<button type="button" class="btn tiny nexa-view-lead" data-action="leadOpen" data-id="'+e(x.id)+'">View details</button>':'')+
+    (kind==='leads'&&x.status!=='converted'?'<button class="btn tiny soft" data-action="convert" data-id="'+e(x.id)+'">'+e(t('convert'))+'</button>':'')+
+    '<button class="btn tiny neutral" data-action="edit" data-kind="'+e(kind)+'" data-id="'+e(x.id)+'">'+e(t('edit'))+'</button>'+
+    (['owner','admin'].includes(user.role)?'<button class="btn tiny danger" data-action="delete" data-kind="'+e(kind)+'" data-id="'+e(x.id)+'">'+e(t('delete'))+'</button>':'');
+   return '<tr'+rowOpen+'>'+fieldCols.map(c=>cell(x,c)).join('')+'<td><div class="row-actions">'+actions+'</div></td></tr>';
+  }).join(''):'<tr><td class="empty-td" colspan="'+(fieldCols.length+1)+'">'+e(query||filter!=='all'?t('noResults'):t('noRecords'))+'</td></tr>')+
+  '</tbody></table></div><div class="table-footer">'+fmt(items.length)+' '+e(t('recordCount'))+'</div></div>';
 }
+
+/* Dedicated lead workspace. Uses the existing Supabase-backed CRM API. */
+function nexaLeadUrl(value){
+ try{const url=new URL(String(value||'').trim());return url.protocol==='https:'||url.protocol==='http:'?url.href:'';}catch(_){return '';}
+}
+function nexaLeadContactField(label,value,href){
+ const display=String(value||'').trim();
+ return '<div class="nexa-lead-info"><span>'+e(label)+'</span>'+
+  (href?'<a href="'+e(href)+'"'+(href.startsWith('http')?' target="_blank" rel="noopener noreferrer"':'')+'>'+e(display)+'</a>':
+  '<strong>'+e(display||'Not provided')+'</strong>')+'</div>';
+}
+function nexaLeadListPage(){
+ const leads=data.leads||[],open=leads.filter(x=>!['closed','converted'].includes(x.status));
+ const due=open.filter(x=>x.followup&&x.followup<=dateToday()).length;
+ const qualified=open.filter(x=>x.status==='qualified').length;
+ const converted=leads.filter(x=>x.status==='converted').length;
+ const filters=[['all',t('allStatuses')],...STATUS.leads.map(x=>[x,t(x)])];
+ return '<div class="nexa-leads-hero"><div><div class="nexa-leads-eyebrow">NEXABRIDGE / SALES WORKSPACE</div><h1>Leads & prospects</h1><p>Open a lead to manage contact details, follow-ups, notes and opportunities.</p></div>'+
+  '<div class="nexa-leads-hero-actions">'+button('New lead','add','leads')+
+  '<button class="btn neutral" data-action="export" data-kind="leads">Export CSV ↓</button></div></div>'+
+  '<div class="nexa-lead-stat-grid">'+[
+    ['Total leads',leads.length,'All saved records'],['Need follow-up',due,'Due today or earlier'],
+    ['Qualified',qualified,'Ready for next steps'],['Converted',converted,'Moved to clients']
+  ].map(([label,value,sub])=>'<div class="nexa-lead-stat"><span>'+e(label)+'</span><strong>'+fmt(value)+'</strong><small>'+e(sub)+'</small></div>').join('')+'</div>'+
+  '<div class="nexa-leads-tools"><label class="nexa-leads-search"><span aria-hidden="true">⌕</span><input id="listSearch" type="search" placeholder="Search leads, company, phone or email…" value="'+e(query)+'" aria-label="Search leads"></label>'+
+  '<label class="nexa-leads-filter">Status <select id="statusFilter" aria-label="Filter leads by status">'+options(filters,filter)+'</select></label></div>'+
+  recordTable('leads');
+}
+function nexaLeadDetailPage(){
+ const lead=(data.leads||[]).find(x=>String(x.id)===String(nexaActiveLeadId));
+ if(!lead)return '<section class="nexa-lead-not-found"><h2>Lead unavailable</h2><p>This lead may have been removed.</p><button class="btn primary" data-action="leadBack">Back to leads</button></section>';
+ const rawName=String(lead.name||'').trim();
+ const website=nexaLeadUrl(rawName)||nexaLeadUrl(lead.company);
+ const title=website&&nexaLeadUrl(rawName)?String(lead.company||rawName):String(rawName||lead.company||'Unnamed lead');
+ const initial=title.trim().charAt(0).toUpperCase()||'L';
+ const email=String(lead.email||'').trim();
+ const mail=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)?'mailto:'+encodeURIComponent(email):'';
+ const phone=String(lead.phone||'').trim();
+ const cleanPhone=phone.replace(/[^\d+]/g,'');
+ const dial=cleanPhone.replace(/\D/g,'').length>=5?'tel:'+cleanPhone:'';
+ const source=SOURCES.find(x=>x[0]===lead.source);
+ const linkedTasks=(data.tasks||[]).filter(task=>task.linkedType==='lead'&&String(task.linkedId)===String(lead.id));
+ const doneTasks=linkedTasks.filter(task=>task.status==='done').length;
+ const statusButtons=['owner','admin'].includes(user.role);
+ const action='<div class="nexa-lead-hero-buttons">'+
+  '<button class="btn primary" data-action="edit" data-kind="leads" data-id="'+e(lead.id)+'">✎ Edit lead</button>'+
+  '<button class="btn nexa-lead-action-secondary" data-action="leadTask" data-id="'+e(lead.id)+'">＋ Add follow-up task</button>'+
+  '<button class="btn nexa-lead-action-secondary" data-action="leadDeal" data-id="'+e(lead.id)+'">＋ Create opportunity</button>'+
+  (lead.status!=='converted'?'<button class="btn nexa-lead-action-outline" data-action="convert" data-id="'+e(lead.id)+'">Convert to client</button>':'')+'</div>';
+ const contactActions='<div class="nexa-lead-contact-actions">'+
+  (mail?'<a class="nexa-lead-contact-btn" href="'+e(mail)+'">✉ Email</a>':'')+
+  (dial?'<a class="nexa-lead-contact-btn" href="'+e(dial)+'">☎ Call</a>':'')+
+  (website?'<a class="nexa-lead-contact-btn" href="'+e(website)+'" target="_blank" rel="noopener noreferrer">↗ Website</a>':'')+
+  '<button class="nexa-lead-contact-btn" data-action="leadCopy" data-id="'+e(lead.id)+'">⧉ Copy details</button></div>';
+ const profile='<section class="nexa-lead-profile-card"><h3>Contact information</h3><div class="nexa-lead-info-grid">'+
+  nexaLeadContactField('Lead name',lead.name,website&&rawName===website?website:'')+
+  nexaLeadContactField('Company',lead.company,'')+
+  nexaLeadContactField('Phone number',phone,dial)+
+  nexaLeadContactField('Email address',email,mail)+
+  nexaLeadContactField('Lead source',source?t(source[1]):lead.source,'')+
+  nexaLeadContactField('Service interest',lead.interest,'')+
+  nexaLeadContactField('Created',fmtDate(lead.createdAt||lead.created_at||''),'')+
+  nexaLeadContactField('Last updated',fmtDate(lead.updatedAt||lead.updated_at||''),'')+'</div></section>';
+ const followup='<section class="nexa-lead-profile-card"><div class="nexa-lead-card-heading"><h3>Manage lead</h3><span>Changes save to CRM</span></div>'+
+  '<form id="nexaLeadQuickForm" data-id="'+e(lead.id)+'"><div class="nexa-lead-form-grid">'+
+  '<div><label for="nexaLeadStatus">Lead status</label><select id="nexaLeadStatus" name="status">'+options(STATUS.leads.map(x=>[x,t(x)]),lead.status||'new')+'</select></div>'+
+  '<div><label for="nexaLeadFollowup">Next follow-up</label><input id="nexaLeadFollowup" type="date" name="followup" value="'+e(lead.followup||'')+'"></div>'+
+  '<div class="nexa-lead-field-wide"><label for="nexaLeadOwner">Assigned to / owner</label><input id="nexaLeadOwner" name="owner" maxlength="500" value="'+e(lead.owner||'')+'" placeholder="Team member name"></div>'+
+  '<div class="nexa-lead-field-wide"><label for="nexaLeadNotes">Notes & conversation history</label><textarea id="nexaLeadNotes" name="notes" maxlength="6000" rows="6" placeholder="Save call summaries, client requests, next steps…">'+e(lead.notes||'')+'</textarea></div>'+
+  '</div><div class="nexa-lead-savebar"><span>Save notes, status and follow-up together.</span><button class="btn primary" type="submit">Save lead updates</button></div></form></section>';
+ const related='<section class="nexa-lead-profile-card"><div class="nexa-lead-card-heading"><h3>Linked tasks</h3><span>'+doneTasks+' of '+linkedTasks.length+' completed</span></div>'+
+  (linkedTasks.length?'<div class="nexa-lead-linked-tasks">'+linkedTasks.slice(0,12).map(task=>
+   '<div class="nexa-lead-task-row"><div><strong>'+e(task.title||'Untitled task')+'</strong><span>'+e(fmtDate(task.dueDate))+' · '+e(task.status||'open')+'</span></div><button class="btn neutral" data-action="edit" data-kind="tasks" data-id="'+e(task.id)+'">Open task</button></div>'
+  ).join('')+'</div>':'<p class="nexa-lead-empty-note">No tasks yet. Create a follow-up task directly from this lead.</p>')+'</section>';
+ return '<div class="nexa-lead-detail"><div class="nexa-lead-backbar"><button data-action="leadBack" class="nexa-lead-back-btn">← All leads</button><span>Leads / Details</span></div>'+
+  '<section class="nexa-lead-detail-hero"><div class="nexa-lead-identity"><div class="nexa-lead-avatar">'+e(initial)+'</div><div class="nexa-lead-hero-title"><div class="nexa-lead-hero-kicker">LEAD WORKSPACE</div><h1>'+e(title)+'</h1><p>'+e(lead.company||'Prospective customer')+'</p><div class="nexa-lead-hero-meta">'+pill(lead.status||'new')+(lead.followup?'<span class="nexa-lead-next-date">Next follow-up: '+e(fmtDate(lead.followup))+'</span>':'<span class="nexa-lead-next-date">No follow-up scheduled</span>')+'</div></div></div>'+
+  action+'</section>'+contactActions+'<div class="nexa-lead-detail-grid"><div class="nexa-lead-detail-left">'+profile+related+'</div><div class="nexa-lead-detail-right">'+followup+'</div></div></div>';
+}
+function nexaBindLeadDetail(){
+ const form=document.getElementById('nexaLeadQuickForm');
+ if(!form)return;
+ form.addEventListener('submit',async ev=>{
+  ev.preventDefault();
+  if(!form.reportValidity())return;
+  const btn=form.querySelector('button[type="submit"]');
+  const id=form.dataset.id;
+  if(!(data.leads||[]).some(x=>String(x.id)===String(id))){notify('Lead no longer exists.',true);return;}
+  const values=new FormData(form);
+  const payload={status:String(values.get('status')||'new'),followup:String(values.get('followup')||''),owner:String(values.get('owner')||'').trim(),notes:String(values.get('notes')||'')};
+  btn.disabled=true;btn.textContent='Saving…';
+  try{await api('records/leads/'+encodeURIComponent(id),{method:'PUT',body:payload});await refresh();notify('Lead updates saved successfully.');}
+  catch(err){notify(err.message||'Could not save lead.',true);btn.disabled=false;btn.textContent='Save lead updates';}
+ });
+}
+
 function filtered(kind){let rows=(data[kind]||[]).filter(x=>!query||norm(Object.values(x).join(' ')).includes(norm(query)));if(filter!=='all'){rows=rows.filter(x=>{if(kind==='leads')return x.status===filter;if(kind==='deals')return x.stage===filter;if(kind==='tasks')return filter==='overdue'?isOverdue(x):x.status===filter;return true;});}return rows;}
-function recordPage(kind){const desc={leads:'newLeadDesc',clients:'clientsDesc',deals:'dealsDesc',tasks:'tasksDesc'}[kind];const add={leads:'addLead',clients:'addClient',deals:'addDeal',tasks:'addTask'}[kind];const filters=kind==='leads'?[['all',t('allStatuses')],...STATUS.leads.map(x=>[x,t(x)])]:kind==='tasks'?[['all',t('all')],...STATUS.tasks.map(x=>[x,t(x)]),['overdue',t('overdue')]]:kind==='deals'?[['all',t('all')],...STATUS.deals.map(x=>[x,t(x)])]:[];
+function recordPage(kind){if(kind==='leads')return nexaLeadListPage();const desc={leads:'newLeadDesc',clients:'clientsDesc',deals:'dealsDesc',tasks:'tasksDesc'}[kind];const add={leads:'addLead',clients:'addClient',deals:'addDeal',tasks:'addTask'}[kind];const filters=kind==='leads'?[['all',t('allStatuses')],...STATUS.leads.map(x=>[x,t(x)])]:kind==='tasks'?[['all',t('all')],...STATUS.tasks.map(x=>[x,t(x)]),['overdue',t('overdue')]]:kind==='deals'?[['all',t('all')],...STATUS.deals.map(x=>[x,t(x)])]:[];
  return `${header(t(kind),t(desc),button(t(add),'add',kind)+`<button class="btn neutral" data-action="export" data-kind="${kind}">${e(t('exportCSV'))} ↓</button>`)}
  <div class="tools"><label class="filter-search">⌕ <input id="listSearch" type="search" placeholder="${e(t('searchHere'))}" value="${e(query)}"></label><div class="tool-right">${filters.length?`<select id="statusFilter" class="select-simple">${options(filters,filter)}</select>`:''}</div></div>
  ${kind==='deals'?dealBoard():''}${recordTable(kind)}`;
@@ -1714,7 +1828,7 @@ function emailEditor(kind,id,initial={}){
  modalWindow((id?'Edit ':'New ')+(draft?'draft':'template'),form,'<button class="btn neutral" data-action="closeModal">Cancel</button><button class="btn primary" type="submit" form="emailDraftForm">Save</button>');
  $('#emailDraftForm').onsubmit=async ev=>{ev.preventDefault();const payload=Object.fromEntries(new FormData(ev.target).entries());if(draft)payload.state='draft';try{await api('records/'+kind+(id?'/'+encodeURIComponent(id):''),{method:id?'PUT':'POST',body:payload});closeModal();await refresh();notify('Saved');}catch(err){notify(err.message,true)}};
 }
-function renderContent(){const content=$('#content');if(!content)return;const contextTitle=$('#nexaContextTitle');if(contextTitle)contextTitle.textContent=({dashboard:'Dashboard',calendar:'Company Calendar',automation:'Automation Center',team:'Team & Access',documents:'Invoices & Estimates',email:'Email Center',projects:'Projects',contracts:'Contracts',expenses:'Expenses',clients:'Clients',leads:'Leads',deals:'Sales opportunities',tasks:'Tasks & follow-ups',reports:'Reports'})[page]||t(page);content.innerHTML=page==='dashboard'?internalDash():page==='calendar'?internalCalendar():page==='email'?emailCenterPage():page==='automation'?internalAutomation():page==='team'?internalTeam():['catalog','equipment','technicians','time_entries','checklists','service_plans'].includes(page)?opsPage(page):page==='schedule'?wzSchedule():NEXA_EXTENSION_FIELDS[page]?extensionPage(page):page==='jobs'?wzRecords('jobs'):page==='documents'?wzRecords('documents'):page==='dispatch'?wzDispatch():page==='reports'?reports():page==='settings'?settingsPage():page==='users'?usersPage():recordPage(page);const listSearch=$('#listSearch');if(listSearch)listSearch.addEventListener('input',ev=>{query=ev.target.value;const newContent=page==='dashboard'?dashboard():recordPage(page);const tmp=document.createElement('div');tmp.innerHTML=newContent;const table=$('.table-scroll')?.parentElement;const fresh=tmp.querySelector('.table-scroll')?.parentElement;if(table&&fresh)table.replaceWith(fresh);if(page==='deals'){const old=$('.kanban'),board=tmp.querySelector('.kanban');if(old&&board)old.replaceWith(board);}});const filterEl=$('#statusFilter');if(filterEl)filterEl.addEventListener('change',ev=>{filter=ev.target.value;renderContent();});const gs=$('#globalSearch');if(gs)gs.addEventListener('input',ev=>showSearchHits(ev.target.value));if(page==='messenger')messengerBind();if(page==='email'){const composer=$('#emailDraftForm');if(composer){composer.querySelectorAll('input,textarea').forEach(input=>input.addEventListener('input',()=>{input.setCustomValidity('');const count=$('#nexaComposeCount');if(count)count.textContent=(composer.elements.namedItem('body')?.value.length||0)+' / 10000 characters';}));}const mailFilter=$('#nexaGmailFilter');if(mailFilter)mailFilter.addEventListener('change',ev=>{emailInboxFilter=ev.target.value;renderContent();});const mailSort=$('#nexaGmailSort');if(mailSort)mailSort.addEventListener('change',ev=>{emailInboxSort=ev.target.value;renderContent();});const inboxSearch=$('#nexaGmailSearch');if(inboxSearch)inboxSearch.addEventListener('input',ev=>{const cursor=ev.target.selectionStart;emailInboxSearch=ev.target.value;renderContent();const next=$('#nexaGmailSearch');if(next){next.focus();next.setSelectionRange(cursor,cursor);}});const form=$('#emailDraftForm');if(form)form.addEventListener('submit',async ev=>{ev.preventDefault();try{const fd=new FormData(form);await api('records/email_queue',{method:'POST',body:{recipientEmail:String(fd.get('recipientEmail')||''),subject:String(fd.get('subject')||''),body:String(fd.get('body')||'')}});await loadData();emailTab='drafts';renderContent();notify('Draft saved.');}catch(err){notify(err.message||'Unable to save draft',true);}});const search=$('#emailSearch');if(search)search.addEventListener('input',ev=>{emailSearch=ev.target.value;const rows=$('#emailResults');if(rows)rows.innerHTML=commEmailRows()})}if(page==='documents'){const inp=$('#docSearch'),sel=$('#docFilter');if(inp)inp.addEventListener('input',ev=>{docSearchQuery=ev.target.value;$('#docTableBody').innerHTML=documentTableBody()});if(sel)sel.addEventListener('change',ev=>{docTypeFilter=ev.target.value;$('#docTableBody').innerHTML=documentTableBody()})}
+function renderContent(){const content=$('#content');if(!content)return;const contextTitle=$('#nexaContextTitle');if(contextTitle)contextTitle.textContent=({dashboard:'Dashboard',calendar:'Company Calendar',automation:'Automation Center',team:'Team & Access',documents:'Invoices & Estimates',email:'Email Center',projects:'Projects',contracts:'Contracts',expenses:'Expenses',clients:'Clients',leads:'Leads',deals:'Sales opportunities',tasks:'Tasks & follow-ups',reports:'Reports'})[page]||t(page);content.innerHTML=page==='leads'&&nexaActiveLeadId?nexaLeadDetailPage():page==='dashboard'?internalDash():page==='calendar'?internalCalendar():page==='email'?emailCenterPage():page==='automation'?internalAutomation():page==='team'?internalTeam():['catalog','equipment','technicians','time_entries','checklists','service_plans'].includes(page)?opsPage(page):page==='schedule'?wzSchedule():NEXA_EXTENSION_FIELDS[page]?extensionPage(page):page==='jobs'?wzRecords('jobs'):page==='documents'?wzRecords('documents'):page==='dispatch'?wzDispatch():page==='reports'?reports():page==='settings'?settingsPage():page==='users'?usersPage():recordPage(page);nexaBindLeadDetail();const listSearch=$('#listSearch');if(listSearch)listSearch.addEventListener('input',ev=>{query=ev.target.value;const newContent=page==='dashboard'?dashboard():recordPage(page);const tmp=document.createElement('div');tmp.innerHTML=newContent;const table=$('.table-scroll')?.parentElement;const fresh=tmp.querySelector('.table-scroll')?.parentElement;if(table&&fresh)table.replaceWith(fresh);if(page==='deals'){const old=$('.kanban'),board=tmp.querySelector('.kanban');if(old&&board)old.replaceWith(board);}});const filterEl=$('#statusFilter');if(filterEl)filterEl.addEventListener('change',ev=>{filter=ev.target.value;renderContent();});const gs=$('#globalSearch');if(gs)gs.addEventListener('input',ev=>showSearchHits(ev.target.value));if(page==='messenger')messengerBind();if(page==='email'){const composer=$('#emailDraftForm');if(composer){composer.querySelectorAll('input,textarea').forEach(input=>input.addEventListener('input',()=>{input.setCustomValidity('');const count=$('#nexaComposeCount');if(count)count.textContent=(composer.elements.namedItem('body')?.value.length||0)+' / 10000 characters';}));}const mailFilter=$('#nexaGmailFilter');if(mailFilter)mailFilter.addEventListener('change',ev=>{emailInboxFilter=ev.target.value;renderContent();});const mailSort=$('#nexaGmailSort');if(mailSort)mailSort.addEventListener('change',ev=>{emailInboxSort=ev.target.value;renderContent();});const inboxSearch=$('#nexaGmailSearch');if(inboxSearch)inboxSearch.addEventListener('input',ev=>{const cursor=ev.target.selectionStart;emailInboxSearch=ev.target.value;renderContent();const next=$('#nexaGmailSearch');if(next){next.focus();next.setSelectionRange(cursor,cursor);}});const form=$('#emailDraftForm');if(form)form.addEventListener('submit',async ev=>{ev.preventDefault();try{const fd=new FormData(form);await api('records/email_queue',{method:'POST',body:{recipientEmail:String(fd.get('recipientEmail')||''),subject:String(fd.get('subject')||''),body:String(fd.get('body')||'')}});await loadData();emailTab='drafts';renderContent();notify('Draft saved.');}catch(err){notify(err.message||'Unable to save draft',true);}});const search=$('#emailSearch');if(search)search.addEventListener('input',ev=>{emailSearch=ev.target.value;const rows=$('#emailResults');if(rows)rows.innerHTML=commEmailRows()})}if(page==='documents'){const inp=$('#docSearch'),sel=$('#docFilter');if(inp)inp.addEventListener('input',ev=>{docSearchQuery=ev.target.value;$('#docTableBody').innerHTML=documentTableBody()});if(sel)sel.addEventListener('change',ev=>{docTypeFilter=ev.target.value;$('#docTableBody').innerHTML=documentTableBody()})}
  const settingsForm=$('#settingsForm');if(settingsForm)settingsForm.addEventListener('submit',saveSettings);const restore=$('#restoreFile');if(restore)restore.addEventListener('change',importFile);}
 function optionsByType(type){if(type==='leadStatus')return STATUS.leads.map(s=>[s,t(s)]);if(type==='dealStatus')return STATUS.deals.map(s=>[s,t(s)]);if(type==='taskStatus')return STATUS.tasks.map(s=>[s,t(s)]);if(type==='priority')return ['low','medium','high'].map(s=>[s,t(s)]);if(type==='source')return [['',t('choose')],...SOURCES.map(([v,k])=>[v,t(k)])];if(type==='client')return [['',t('selectClient')],...data.clients.map(c=>[c.id,c.name])];if(type==='lead')return [['',t('selectLead')],...data.leads.map(c=>[c.id,c.name])];if(type==='service')return [['',t('choose')],...data.settings.services.map(s=>[s,s])];if(type==='relation')return [['',t('none')],...['leads','clients','deals'].flatMap(k=>data[k].map(v=>[`${k.slice(0,-1)}|${v.id}`,`${t(k.slice(0,-1))}: ${v.name||v.title}`]))];return [];}
 function formField(key,type,required,obj){let value=key==='linkedRef'?obj?.linkedType&&obj?.linkedId?`${obj.linkedType}|${obj.linkedId}`:'':fieldVal(obj,key);if(type==='priority'&&!value)value='medium';if(type==='taskStatus'&&!value)value='open';if(type==='leadStatus'&&!value)value='new';if(type==='dealStatus'&&!value)value='new';
@@ -1727,7 +1841,7 @@ function formField(key,type,required,obj){let value=key==='linkedRef'?obj?.linke
 }
 function modalWindow(title,body,footer){modal={...(modal||{}),title};document.body.insertAdjacentHTML('beforeend',`<div class="backdrop" id="modalLayer"><div class="dialog" role="dialog" aria-modal="true" aria-label="${e(title)}"><div class="dialog-head"><h3>${e(title)}</h3><button type="button" class="btn neutral icon-only" data-action="closeModal">✕</button></div><div class="dialog-body">${body}</div><div class="dialog-footer">${footer}</div></div></div>`);}
 function closeModal(){const node=$('#modalLayer');if(node)node.remove();modal=null;}
-function openForm(kind,id=null){closeModal();const obj=id?data[kind].find(x=>x.id===id):{};if(id&&!obj)return;modal={kind,id};const name=id?t('editEntry'):t('newEntry');let body=`<form id="recordForm"><div class="form-grid">${FIELDS[kind].map(([key,type,required])=>formField(key,type,required,obj)).join('')}</div></form>`;
+function openForm(kind,id=null,defaults=null){closeModal();const obj=id?data[kind].find(x=>x.id===id):(defaults||{});if(id&&!obj)return;modal={kind,id};const name=id?t('editEntry'):t('newEntry');let body=`<form id="recordForm"><div class="form-grid">${FIELDS[kind].map(([key,type,required])=>formField(key,type,required,obj)).join('')}</div></form>`;
  modalWindow(`${name} · ${t(kind)}`,body,`<button class="btn neutral" data-action="closeModal">${e(t('cancel'))}</button><button class="btn primary" type="submit" form="recordForm">${e(t(id?'save':'create'))}</button>`);
  $('#recordForm').addEventListener('submit',async ev=>{ev.preventDefault();const f=new FormData(ev.target),payload=Object.fromEntries(f.entries());if(kind==='tasks'){const ref=payload.linkedRef||'';delete payload.linkedRef;[payload.linkedType,payload.linkedId]=ref?ref.split('|'):['',''];}if(kind==='deals')payload.value=Number(payload.value||0);try{if(id)await api(`records/${kind}/${encodeURIComponent(id)}`,{method:'PUT',body:payload});else await api(`records/${kind}`,{method:'POST',body:payload});closeModal();await refresh();notify(t(id?'updated':'created'));}catch(err){notify(err.message,true);}});
 }
@@ -1753,7 +1867,23 @@ function openMyPassword(){closeModal();modal={kind:'password'};
  $('#passwordForm').addEventListener('submit',async ev=>{ev.preventDefault();const f=new FormData(ev.target);try{await api('account/password',{method:'POST',body:{current:f.get('current'),password:f.get('password')}});closeModal();user=null;csrf=null;data=null;renderAuth(false);notify(t('passwordChanged'));}catch(err){notify(err.message,true);}});
 }
 
-async function handleAction(action,el){const kind=el.dataset.kind,id=el.dataset.id;try{if(action==='newEvent'){eventEditor();return}if(action==='editEvent'){eventEditor(id);return}if(action==='eventICS'){eventICS(id);return}if(action==='inviteMember'){teamInvite();return}if(action==='editMember'){teamEdit(id);return}if(action==='removeMember'){if(!confirm('Revoke this employee\'s CRM access?'))return;await api('team',{method:'POST',body:{action:'remove',userId:id}});await refresh();notify('Access revoked');return}if(action==='markNotice'){await api('notifications/'+id,{method:'PATCH',body:{}});await refresh();return}if(action==='opsStock'){opsStock();return}if(action==='opsNew'||action==='opsEdit'){opsEditor(kind,action==='opsEdit'?id:null);return}if(action==='createEstimate'){invoiceEditor(null,{docType:'estimate'});return}if(action==='createInvoice'){invoiceEditor();return}
+async function handleAction(action,el){const kind=el.dataset.kind,id=el.dataset.id;try{if(action==='leadOpen'){if(!(data.leads||[]).some(x=>String(x.id)===String(id)))throw Error('Lead not found.');page='leads';nexaActiveLeadId=id;renderContent();window.scrollTo({top:0,behavior:'smooth'});return;}
+ if(action==='leadBack'){nexaActiveLeadId=null;page='leads';renderContent();window.scrollTo({top:0,behavior:'smooth'});return;}
+ if(action==='leadTask'){
+  const lead=(data.leads||[]).find(x=>String(x.id)===String(id));if(!lead)throw Error('Lead not found.');
+  openForm('tasks',null,{title:'Follow up: '+String(lead.company||lead.name||'Lead').slice(0,200),linkedType:'lead',linkedId:lead.id,dueDate:lead.followup||dateToday(),priority:'medium',status:'open'});return;
+ }
+ if(action==='leadDeal'){
+  const lead=(data.leads||[]).find(x=>String(x.id)===String(id));if(!lead)throw Error('Lead not found.');
+  openForm('deals',null,{title:'Opportunity: '+String(lead.company||lead.name||'Lead').slice(0,200),leadId:lead.id,service:lead.interest||'',stage:'new',value:0,notes:lead.notes||''});return;
+ }
+ if(action==='leadCopy'){
+  const lead=(data.leads||[]).find(x=>String(x.id)===String(id));if(!lead)throw Error('Lead not found.');
+  const details=['Lead: '+(lead.name||''),'Company: '+(lead.company||''),'Phone: '+(lead.phone||''),'Email: '+(lead.email||''),'Interest: '+(lead.interest||''),'Status: '+(lead.status||''),'Next follow-up: '+(lead.followup||''),'Owner: '+(lead.owner||''),'Notes: '+(lead.notes||'')].join('\n');
+  if(!navigator.clipboard?.writeText)throw Error('Clipboard is unavailable in this browser.');
+  await navigator.clipboard.writeText(details);notify('Lead details copied.');return;
+ }
+ if(action==='newEvent'){eventEditor();return}if(action==='editEvent'){eventEditor(id);return}if(action==='eventICS'){eventICS(id);return}if(action==='inviteMember'){teamInvite();return}if(action==='editMember'){teamEdit(id);return}if(action==='removeMember'){if(!confirm('Revoke this employee\'s CRM access?'))return;await api('team',{method:'POST',body:{action:'remove',userId:id}});await refresh();notify('Access revoked');return}if(action==='markNotice'){await api('notifications/'+id,{method:'PATCH',body:{}});await refresh();return}if(action==='opsStock'){opsStock();return}if(action==='opsNew'||action==='opsEdit'){opsEditor(kind,action==='opsEdit'?id:null);return}if(action==='createEstimate'){invoiceEditor(null,{docType:'estimate'});return}if(action==='createInvoice'){invoiceEditor();return}
  if(action==='convertEstimate'||action==='duplicateDocument'){
   const original=(data.documents||[]).find(x=>x.id===id);
   if(!original)return notify('Document unavailable.',true);
@@ -1763,7 +1893,7 @@ async function handleAction(action,el){const kind=el.dataset.kind,id=el.dataset.
   return;
  }
  if(action==='invoicePay'){invoicePayment(id);return}if(action==='invoicePrint'){invoicePrint(id);return}if(action==='wzAdd'||action==='wzEdit'){wzForm(kind,action==='wzEdit'?id:null);return}if(action==='wzMonth'){wzOffset=el.dataset.step==='0'?0:wzOffset+Number(el.dataset.step);renderContent();return}
- if(action==='searchHit'){page=kind;query='';filter='all';render();openForm(kind,id);return;}
+ if(action==='searchHit'){page=kind;query='';filter='all';nexaActiveLeadId=kind==='leads'?id:null;render();if(kind!=='leads')openForm(kind,id);return;}
  if(action==='myPassword'){if(window.__NEXA_OFFLINE__){notify(t('offlineNotice'));return;}openMyPassword();return;}
  if(action==='menu'){menuOpen=!menuOpen;render();return;}
  if(action==='closeMenu'){menuOpen=false;render();return;}
@@ -1802,15 +1932,15 @@ async function handleAction(action,el){const kind=el.dataset.kind,id=el.dataset.
  if(action==='emailDraftCopy'){const d=(data.email_queue||[]).find(x=>x.id===id);if(d){await navigator.clipboard.writeText('To: '+d.recipientEmail+'\nSubject: '+d.subject+'\n\n'+d.body);notify('Copied');}return;}
  if(action==='emailDraftDelete'){if(!['owner','admin'].includes(user.role))throw Error('Admin access required');if(!confirm('Permanently delete this email draft?'))return;await api('records/email_queue/'+encodeURIComponent(id),{method:'DELETE'});await refresh();notify('Draft deleted');return;}
  if(action==='emailTemplateDelete'){if(!['owner','admin'].includes(user.role))throw Error('Admin access required');if(!confirm('Delete this email template?'))return;await api('records/email_templates/'+encodeURIComponent(id),{method:'DELETE'});await refresh();notify('Deleted');return;}
- if(action==='extensionEdit'){extensionEdit(kind,id);return;}if(action==='extensionDelete'){if(!['owner','admin'].includes(user.role))throw Error('Administrator access required');if(!confirm('Permanently delete this record?'))return;await api('records/'+kind+'/'+encodeURIComponent(id),{method:'DELETE'});await refresh();notify('Deleted');return;}if(action==='page'){if(el.dataset.page==='email')emailTab='overview';page=el.dataset.page;query='';filter='all';menuOpen=false;render();scrollTo({top:0,behavior:'smooth'});return;}
- if(action==='goClients'){page='clients';query='';filter='all';render();return;}
+ if(action==='extensionEdit'){extensionEdit(kind,id);return;}if(action==='extensionDelete'){if(!['owner','admin'].includes(user.role))throw Error('Administrator access required');if(!confirm('Permanently delete this record?'))return;await api('records/'+kind+'/'+encodeURIComponent(id),{method:'DELETE'});await refresh();notify('Deleted');return;}if(action==='page'){if(el.dataset.page==='email')emailTab='overview';page=el.dataset.page;nexaActiveLeadId=null;query='';filter='all';menuOpen=false;render();scrollTo({top:0,behavior:'smooth'});return;}
+ if(action==='goClients'){page='clients';nexaActiveLeadId=null;query='';filter='all';render();return;}
  if(action==='logout'){if(window.__NEXA_OFFLINE__){notify(t('offlineNotice'));return;}if(!confirm(t('logoutConfirm')))return;await api('logout',{method:'POST',body:{}});user=null;csrf=null;data=null;renderAuth(false);return;}
  if(action==='add'){openForm(kind);return;}
  if(action==='addUser'){openUserForm();return;}
  if(action==='edit'){openForm(kind,id);return;}
  if(action==='closeModal'){closeModal();return;}
  if(action==='deleteInvoice'){const doc=data.documents.find(d=>d.id===id);if(!doc)throw Error('Invoice or estimate not found.');if((data.payments||[]).some(p=>p.document_id===id))throw Error('This document has recorded payments and cannot be deleted.');if(!confirm('Permanently delete '+(doc.number||'this document')+'? This cannot be undone.'))return;await api('records/documents/'+encodeURIComponent(id),{method:'DELETE'});await refresh();notify('Document deleted successfully.');return;}
- if(action==='delete'){if(!['owner','admin'].includes(user.role))throw Error('Administrator access required.');if(!confirm(t('confirmDelete')))return;await api(`records/${kind}/${encodeURIComponent(id)}`,{method:'DELETE'});await refresh();notify(t('deleted'));return;}
+ if(action==='delete'){if(!['owner','admin'].includes(user.role))throw Error('Administrator access required.');if(!confirm(t('confirmDelete')))return;await api(`records/${kind}/${encodeURIComponent(id)}`,{method:'DELETE'});if(kind==='leads'&&String(nexaActiveLeadId)===String(id))nexaActiveLeadId=null;await refresh();notify(t('deleted'));return;}
  if(action==='convert'){if(!confirm(t('confirmConvert')))return;await api(`convert/${id}`,{method:'POST',body:{}});await refresh();notify(t('convertedToast'));return;}
  if(action==='toggleTask'){let obj=data.tasks.find(x=>x.id===id);await api(`records/tasks/${id}`,{method:'PUT',body:{status:obj.status==='done'?'open':'done'}});await refresh();notify(t('updated'));return;}
  if(action==='export'){await download('export/'+kind+'.csv','NexaBridge_'+kind+'.csv');return;}
@@ -1823,6 +1953,12 @@ async function handleAction(action,el){const kind=el.dataset.kind,id=el.dataset.
  if(action==='passwordUser'){const p=prompt(t('newPassword')+' ('+t('passwordHint')+')');if(p===null)return;if(p.length<12){notify(t('passwordHint'),true);return;}await changeUser(id,{password:p});return;}
  }catch(err){notify(err.message,true);}}
  root.addEventListener('click',ev=>{const el=ev.target.closest('[data-action]');if(el){ev.preventDefault();handleAction(el.dataset.action,el);}});
+ root.addEventListener('keydown',ev=>{
+  if((ev.key==='Enter'||ev.key===' ')&&ev.target.matches('tr.nexa-clickable-lead')){
+   ev.preventDefault();handleAction('leadOpen',{dataset:{id:ev.target.dataset.id}});
+  }
+ });
+
  document.addEventListener('change',async ev=>{const el=ev.target;if(el.dataset.action==='dealStage'){try{await api(`records/deals/${el.dataset.id}`,{method:'PUT',body:{stage:el.value}});await refresh();notify(t('updated'));}catch(err){notify(err.message,true);}}});
  document.addEventListener('click',ev=>{if(ev.target.id==='modalLayer')closeModal();const action=ev.target.closest('#modalLayer [data-action]');if(action){ev.preventDefault();handleAction(action.dataset.action,action);}if(!ev.target.closest('.top-search'))$('#globalHits')?.classList.add('hide');});
  document.addEventListener('keydown',ev=>{if(ev.key==='Enter'&&document.activeElement?.id==='globalSearch'){const first=$('#globalHits [data-action=searchHit]');if(first){ev.preventDefault();first.click();}}});
