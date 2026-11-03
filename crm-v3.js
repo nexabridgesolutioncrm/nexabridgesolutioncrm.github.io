@@ -20,8 +20,8 @@ const C={
  expenses:{title:'Expenses',one:'Expense',desc:'Business expenditure',key:'title',status:'status',columns:['title','category','amount','expenseDate','status'],fields:[['title','Expense title','text',1],['projectId','Project','rel:projects'],['category','Category'],['expenseDate','Expense date','date'],['amount','Amount','number'],['status','Status','choice:recorded|approved|paid'],['notes','Notes','textarea']]}
 };
 const NAV=[['dashboard','Dashboard','▦'],['leads','Leads','♧'],['clients','Clients','♧'],['deals','Sales pipeline','◇'],['tasks','Tasks','☑'],['jobs','Jobs','▤'],['calendar','Calendar','▦'],['documents','Documents','▣'],['projects','Projects','▤'],['contracts','Contracts','▣'],['expenses','Expenses','＄'],['reports','Reports','▥']];
-const S={user:null,data:null,page:'dashboard',detail:null,search:'',status:'all',sort:'',descending:false,offset:0,selected:new Set(),editCell:null,hidden:{},history:[],redo:[],filters:[],range:null,density:'normal',frozen:false,mode:'table',loading:false,toast:null,importRows:[],importKind:null};
-try{S.theme=localStorage.getItem('nexa-v3-theme')||'light';S.mode=localStorage.getItem('nexa-v3-gridmode')||'table';S.hidden=JSON.parse(localStorage.getItem('nexa-v3-hidden')||'{}');S.density=localStorage.getItem('nexa-v3-density')==='compact'?'compact':'normal';S.frozen=localStorage.getItem('nexa-v3-frozen')==='true'}catch(_){S.theme='light'}
+const S={user:null,data:null,page:'dashboard',detail:null,search:'',status:'all',sort:'',descending:false,offset:0,selected:new Set(),editCell:null,hidden:{},history:[],redo:[],filters:[],savedViews:{},range:null,density:'normal',frozen:false,mode:'table',loading:false,toast:null,importRows:[],importKind:null};
+try{S.theme=localStorage.getItem('nexa-v3-theme')||'light';S.mode=localStorage.getItem('nexa-v3-gridmode')||'table';S.hidden=JSON.parse(localStorage.getItem('nexa-v3-hidden')||'{}');S.density=localStorage.getItem('nexa-v3-density')==='compact'?'compact':'normal';S.frozen=localStorage.getItem('nexa-v3-frozen')==='true';S.savedViews=JSON.parse(localStorage.getItem('nexa-v3-views')||'{}')}catch(_){S.theme='light'}
 document.body.classList.toggle('dark',S.theme==='dark');
 const API=async(path,opts={})=>{const res=await fetch('/api/'+path,{method:opts.method||'GET',credentials:'same-origin',headers:opts.body!==undefined?{'Content-Type':'application/json'}:{},body:opts.body===undefined?undefined:JSON.stringify(opts.body)});let body=await res.json().catch(()=>({}));if(!res.ok){if(res.status===401&&path!=='me'&&path!=='login'){S.user=null;S.data=null;loginPage()}throw Error(body.detail||body.message||'Request failed ('+res.status+')')}return body};
 function tip(msg,bad=false){$('#toast')?.remove();const el=document.createElement('div');el.id='toast';el.className='toast'+(bad?' error':'');el.textContent=msg;document.body.appendChild(el);setTimeout(()=>{if(el.isConnected)el.remove()},4500)}
@@ -85,6 +85,73 @@ function sheetSummary(){
  }).join('');
  return '<section class="sheet-calculations" aria-label="Spreadsheet calculations"><div class="sheet-metric"><span>'+(S.selected.size?'Selected':'Filtered')+' rows</span><strong>'+fmt(rows.length)+'</strong><small>COUNT of records</small></div>'+stats+'</section>';
 }
+
+function localViewNames(){return Object.keys(S.savedViews[S.page]||{}).sort((a,b)=>a.localeCompare(b))}
+function savedViewsToolbar(){
+ const names=localViewNames();
+ return '<select id="savedSheetView" class="select" aria-label="Load saved spreadsheet view"><option value="">Saved views ('+names.length+')</option>'+
+  names.map(name=>'<option value="'+E(name)+'">'+E(name)+'</option>').join('')+'</select>'+
+  '<button class="btn" data-action="saveViewModal">Save view</button>'+
+  (names.length?'<button class="btn" data-action="manageViews">Manage views</button>':'');
+}
+function saveViewModal(){
+ modal('Save spreadsheet view','<p class="card-sub">Save search, column filters, sorting and visible columns on this browser. Views are private to this device.</p>'+
+ '<div class="field"><label for="viewName">View name</label><input id="viewName" class="select" maxlength="60" placeholder="e.g. Leads requiring follow-up"></div>',
+ '<button class="btn" data-action="close">Cancel</button><button class="btn primary" data-action="viewSave">Save view</button>');
+ $('#viewName')?.focus();
+}
+function saveView(){
+ const name=String($('#viewName')?.value||'').trim();if(name.length<2||name.length>60)throw Error('Enter a view name of 2–60 characters');
+ if(!S.savedViews[S.page])S.savedViews[S.page]={};
+ if(localViewNames().length>=30&&!S.savedViews[S.page][name])throw Error('Maximum 30 saved views per module');
+ if(S.savedViews[S.page][name]&&!confirm('Replace the saved view "'+name+'"?'))return;
+ S.savedViews[S.page][name]={search:S.search,status:S.status,filters:S.filters.map(x=>({...x})),sort:S.sort,descending:S.descending,hidden:[...(S.hidden[S.page]||[])],density:S.density,frozen:S.frozen};
+ try{localStorage.setItem('nexa-v3-views',JSON.stringify(S.savedViews))}catch(_){throw Error('Cannot save view: browser storage unavailable')}
+ $('#dialog').close();tip('View "'+name+'" saved to this browser');render();
+}
+function loadView(name){
+ const v=S.savedViews[S.page]?.[name];if(!v)return;
+ S.search=String(v.search||'');S.status=String(v.status||'all');
+ S.filters=Array.isArray(v.filters)?v.filters.filter(x=>C[S.page].fields.some(f=>f[0]===x.field)).slice(0,8):[];
+ S.sort=C[S.page].columns.includes(v.sort)?v.sort:'';S.descending=!!v.descending;
+ S.hidden[S.page]=Array.isArray(v.hidden)?v.hidden.filter(x=>C[S.page].columns.includes(x)):[];
+ S.density=v.density==='compact'?'compact':'normal';S.frozen=!!v.frozen;
+ S.offset=0;S.selected.clear();S.range=null;
+ render();tip('Loaded view "'+name+'"');
+}
+function manageViews(){
+ const names=localViewNames();
+ modal('Saved spreadsheet views','<p class="card-sub">Views are available only in this browser.</p>'+
+ (names.length?names.map(name=>'<div class="panelrow"><strong>'+E(name)+'</strong><div class="actions"><button class="btn small" data-action="viewLoad" data-view="'+E(name)+'">Open</button><button class="btn small danger" data-action="viewDelete" data-view="'+E(name)+'">Delete</button></div></div>').join(''):'<div class="empty">No saved views</div>'),
+ '<button class="btn" data-action="close">Close</button>');
+}
+function pivotModal(){
+ const fields=C[S.page].columns,nums=C[S.page].fields.filter(x=>x[2]==='number');
+ modal('Pivot-style summary','<p class="card-sub">Group the currently filtered records, count entries and optionally sum a numeric field. This summary does not change any CRM data.</p>'+
+  '<div class="formgrid"><div class="field"><label>Group by</label><select class="select" id="pivotGroup">'+fields.map(f=>'<option value="'+E(f)+'">'+E(label(S.page,f))+'</option>').join('')+'</select></div>'+
+  '<div class="field"><label>Calculation</label><select class="select" id="pivotCalc"><option value="">COUNT of rows</option>'+nums.map(([f,name])=>'<option value="'+E(f)+'">SUM '+E(name)+'</option>').join('')+'</select></div></div>'+
+  '<div id="pivotResult" style="margin-top:18px"></div>',
+  '<button class="btn" data-action="close">Close</button><button class="btn primary" data-action="pivotRun">Calculate</button>');
+}
+function pivotRun(){
+ const group=$('#pivotGroup')?.value,measure=$('#pivotCalc')?.value;
+ if(!C[S.page].columns.includes(group))throw Error('Invalid pivot grouping');
+ const metric=measure&&C[S.page].fields.find(x=>x[0]===measure&&x[2]==='number');
+ if(measure&&!metric)throw Error('Invalid numeric field');
+ const grouped=new Map();
+ for(const row of filtered()){
+  const label=String(fieldValue(S.page,row,group)||'(empty)'),entry=grouped.get(label)||{count:0,total:0};
+  entry.count++;entry.total+=metric?Number(row[measure]||0):1;grouped.set(label,entry);
+ }
+ const values=[...grouped.entries()].sort((a,b)=>b[1].total-a[1].total);
+ const max=Math.max(1,...values.map(x=>x[1].total));
+ const el=$('#pivotResult');if(!el)return;
+ el.innerHTML='<div class="notice">COUNT '+fmt(filtered().length)+' records · '+fmt(values.length)+' groups</div>'+
+  (values.length?'<div class="pivot-results">'+values.slice(0,50).map(([name,val])=>
+  '<div class="pivot-row"><span title="'+E(name)+'">'+E(name)+'</span><div class="pivot-bar"><span style="width:'+(Math.max(0,val.total)/max*100)+'%"></span></div><strong>'+E(metric?dollars(val.total):fmt(val.count))+'</strong><small>'+fmt(val.count)+' rows</small></div>'
+  ).join('')+'</div>':'<div class="empty">No matching records</div>');
+}
+
 function filterChips(){
  if(!S.filters.length)return '';
  return '<div class="sheet-filter-chips" aria-label="Active filters">'+S.filters.map((r,i)=>
@@ -127,9 +194,9 @@ function barList(rows,field){const group=Object.entries(rows.reduce((a,x)=>(a[x[
 function tablePage(){const c=C[S.page],rows=filtered(),shown=cols(),pageRows=rows.slice(S.offset,S.offset+50);const selectedCount=S.selected.size;const statuses=c.statuses||[...new Set((S.data[S.page]||[]).map(x=>x[c.status]).filter(Boolean))];
 $('#main').innerHTML=head(c.title,c.desc,'<button class="btn primary" data-action="new" data-kind="'+S.page+'">＋ New '+c.one+'</button><button class="btn" data-action="export">↓ Export CSV</button><button class="btn" data-action="exportXLSX">↓ Excel (.xlsx)</button><button class="btn" data-action="import">↑ Import CSV</button>')+
 '<div class="toolbar"><label class="search">⌕ <input id="query" placeholder="Search all columns…" value="'+E(S.search)+'"></label>'+(c.status?'<select id="status" class="select" aria-label="Filter status"><option value="all">All statuses</option>'+statuses.map(x=>'<option value="'+E(x)+'"'+(S.status===x?' selected':'')+'>'+E(x.replaceAll('_',' '))+'</option>').join('')+'</select>':'')+
-'<button class="btn" data-action="filterModal">＋ Filter column</button><button class="btn" data-action="columns">Columns</button><button class="btn" data-action="findReplace">Find & replace</button><button class="btn" data-action="density">'+(S.density==='compact'?'Comfortable rows':'Compact rows')+'</button><button class="btn" data-action="freeze">'+(S.frozen?'Unfreeze first column':'Freeze first column')+'</button><button class="btn" data-action="undo" '+(S.history.length?'':'disabled')+'>↶ Undo</button><button class="btn" data-action="redo" '+(S.redo.length?'':'disabled')+'>↷ Redo</button><button class="btn" data-action="copy">Copy rows</button><button class="btn" data-action="copyCells">Copy cells</button><button class="btn" data-action="exportSelected">Export selected</button><button class="btn" data-action="paste">Paste TSV</button><button class="btn" data-action="fillDown">Fill down</button>'+
+'<button class="btn" data-action="filterModal">＋ Filter column</button><button class="btn" data-action="pivotModal">Pivot summary</button><button class="btn" data-action="columns">Columns</button><button class="btn" data-action="findReplace">Find & replace</button><button class="btn" data-action="density">'+(S.density==='compact'?'Comfortable rows':'Compact rows')+'</button><button class="btn" data-action="freeze">'+(S.frozen?'Unfreeze first column':'Freeze first column')+'</button><button class="btn" data-action="undo" '+(S.history.length?'':'disabled')+'>↶ Undo</button><button class="btn" data-action="redo" '+(S.redo.length?'':'disabled')+'>↷ Redo</button><button class="btn" data-action="copy">Copy rows</button><button class="btn" data-action="copyCells">Copy cells</button><button class="btn" data-action="exportSelected">Export selected</button><button class="btn" data-action="paste">Paste TSV</button><button class="btn" data-action="fillDown">Fill down</button>'+
 (c.statuses&&['leads','deals','tasks','jobs'].includes(S.page)?'<button class="btn" data-action="viewBoard">Board view</button>':'')+'</div>'+
-filterChips()+sheetSummary()+(selectedCount?'<div class="notice" style="margin-bottom:12px;display:flex;gap:12px;align-items:center;flex-wrap:wrap"><strong>'+selectedCount+' selected</strong><button class="btn small" data-action="copy">Copy selection</button>'+(c.status?'<button class="btn small" data-action="bulk">Change status</button>':'')+'<button class="btn small" data-action="clearSelected">Clear selection</button></div>':'')+
+savedViewsToolbar()+filterChips()+sheetSummary()+(selectedCount?'<div class="notice" style="margin-bottom:12px;display:flex;gap:12px;align-items:center;flex-wrap:wrap"><strong>'+selectedCount+' selected</strong><button class="btn small" data-action="copy">Copy selection</button>'+(c.status?'<button class="btn small" data-action="bulk">Change status</button>':'')+'<button class="btn small" data-action="clearSelected">Clear selection</button></div>':'')+
 '<section class="card"><div class="tablewrap '+(S.density==='compact'?'sheet-compact':'')+'"><table class="table '+(S.frozen?'sheet-frozen':'')+'" id="grid"><thead><tr><th><input type="checkbox" id="allRows" aria-label="Select visible rows" '+(pageRows.length&&pageRows.every(x=>S.selected.has(x.id))?'checked':'')+'></th><th>No.</th>'+shown.map(f=>'<th class="sortable" data-action="sort" data-field="'+E(f)+'">'+E(label(S.page,f))+(S.sort===f?(S.descending?' ↓':' ↑'):'')+'</th>').join('')+'<th>Actions</th></tr></thead><tbody>'+
 (pageRows.length?pageRows.map((r,i)=>'<tr data-id="'+E(r.id)+'"><td><input type="checkbox" class="selRow" data-id="'+E(r.id)+'" '+(S.selected.has(r.id)?'checked':'')+' aria-label="Select row '+(S.offset+i+1)+'"></td><td class="no">'+fmt(S.offset+i+1)+'</td>'+shown.map(f=>'<td><span class="gridcell" tabindex="0" role="button" title="Double-click or press Enter to edit" data-id="'+E(r.id)+'" data-field="'+E(f)+'">'+renderVal(S.page,r,f)+'</span></td>').join('')+'<td class="act"><button class="btn small" data-action="open" data-kind="'+S.page+'" data-id="'+E(r.id)+'">Open</button> <button class="btn small" data-action="edit" data-kind="'+S.page+'" data-id="'+E(r.id)+'">Edit</button></td></tr>').join(''):'<tr><td colspan="'+(shown.length+3)+'"><div class="empty"><b>No matching records</b><p>Try a different search or create a new record.</p></div></td></tr>')+
 '</tbody></table></div><div class="table-footer"><span>'+fmt(rows.length)+' rows · Showing '+(rows.length?fmt(S.offset+1)+'–'+fmt(Math.min(rows.length,S.offset+50)):'0')+' · Double-click to edit · Ctrl+C / Ctrl+V for cells</span><div class="actions"><button class="btn small" data-action="prev" '+(!S.offset?'disabled':'')+'>← Previous</button><button class="btn small" data-action="next" '+(S.offset+50>=rows.length?'disabled':'')+'>Next →</button></div></div></section>';paintRange()}
@@ -376,6 +443,14 @@ case 'clearSelected':S.selected.clear();render();break;
 case 'undo':await undo();break;
 case 'redo':await redo();break;
 case 'filterModal':filterModal();break;
+case 'pivotModal':pivotModal();break;
+case 'pivotRun':pivotRun();break;
+case 'saveViewModal':saveViewModal();break;
+case 'viewSave':saveView();break;
+case 'manageViews':manageViews();break;
+case 'viewLoad':{const name=el.dataset.view;$('#dialog').close();loadView(name);break}
+case 'viewDelete':{const name=el.dataset.view;if(confirm('Delete saved view "'+name+'"?')){delete S.savedViews[S.page][name];try{localStorage.setItem('nexa-v3-views',JSON.stringify(S.savedViews))}catch(_){}manageViews()}break}
+
 case 'filterApply':applyFilter();break;
 case 'filterRemove':{const i=Number(el.dataset.index);if(Number.isInteger(i))S.filters.splice(i,1);S.offset=0;S.selected.clear();render();break}
 case 'filterClear':S.filters=[];S.offset=0;S.selected.clear();render();break;
@@ -410,7 +485,7 @@ case 'saveDetail':{const changes={},c=C[S.page];if(c.status&&$('#detailStatus'))
 document.addEventListener('click',e=>{const action=e.target.closest('[data-action]');if(action){e.preventDefault();execute(action.dataset.action,action)}});
 document.addEventListener('submit',async e=>{if(e.target.id==='loginForm'){e.preventDefault();const btn=$('#loginForm button');btn.disabled=true;try{const f=new FormData(e.target);S.user=(await API('login',{method:'POST',body:{username:f.get('username'),password:f.get('password')}})).user;S.data=await API('data');shell()}catch(err){loginPage(err.message)}finally{btn.disabled=false}}else if(e.target.id==='entryForm')saveForm(e)});
 document.addEventListener('input',e=>{if(e.target.id==='query'){const el=e.target,pos=el.selectionStart;S.search=el.value;S.offset=0;const focused=pos;tablePage();const next=$('#query');next?.focus();next?.setSelectionRange(focused,focused)}else if(e.target.id==='globalSearch'){globalResults(e.target.value)}});
-document.addEventListener('change',e=>{if(e.target.id==='status'){S.status=e.target.value;S.offset=0;render()}else if(e.target.id==='allRows'){for(const row of filtered().slice(S.offset,S.offset+50)){if(e.target.checked)S.selected.add(row.id);else S.selected.delete(row.id)}render()}else if(e.target.classList.contains('selRow')){if(e.target.checked)S.selected.add(e.target.dataset.id);else S.selected.delete(e.target.dataset.id);render()}});
+document.addEventListener('change',e=>{if(e.target.id==='savedSheetView'){if(e.target.value)loadView(e.target.value)}else if(e.target.id==='status'){S.status=e.target.value;S.offset=0;render()}else if(e.target.id==='allRows'){for(const row of filtered().slice(S.offset,S.offset+50)){if(e.target.checked)S.selected.add(row.id);else S.selected.delete(row.id)}render()}else if(e.target.classList.contains('selRow')){if(e.target.checked)S.selected.add(e.target.dataset.id);else S.selected.delete(e.target.dataset.id);render()}});
 document.addEventListener('click',e=>{const cell=e.target.closest('.gridcell');if(cell)selectRange(cell,e.shiftKey)});
 document.addEventListener('dblclick',e=>{const c=e.target.closest('.gridcell');if(c)editCell(c)});
 document.addEventListener('click',e=>{if(!e.target.closest('.top-search-wrap')){const box=$('#searchHits');if(box)box.hidden=true}});
