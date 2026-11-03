@@ -45,3 +45,27 @@ dialog{width:min(690px,calc(100% - 28px));border:1px solid var(--stroke);padding
 .table-footer{gap:14px;flex-wrap:wrap}
 body.dark .table .gridcell:hover,body.dark .table .gridcell:focus-visible{background:#6951c530}
 @media(max-width:760px){.top-search-wrap{max-width:180px;min-width:92px;width:30vw}.search-results{right:-100px}.top-actions{gap:5px}.top-actions>.iconbtn{min-width:36px;padding:0 7px}.table .gridcell{max-width:220px}}
+
+/* NexaBridge Spreadsheet UX v3.2 — table usability over decorative effects */
+.sheet-calculations{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:11px;margin:0 0 17px}
+.sheet-metric{min-width:0;padding:14px 17px;border-radius:13px;border:1px solid var(--stroke);background:var(--surface);box-shadow:var(--shadow)}
+.sheet-metric span{display:block;font-size:11px;font-weight:760;color:var(--muted)}
+.sheet-metric strong{display:block;margin:5px 0 3px;font-size:21px;font-variant-numeric:tabular-nums;letter-spacing:-.4px;font-weight:840;color:var(--ink)}
+.sheet-metric small{font-size:10.5px;color:var(--muted);display:block;line-height:1.55;overflow-wrap:anywhere}
+.sheet-filter-chips{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:-2px 0 15px}
+.sheet-filter-chip{border:1px solid #bcb0ec;color:#5036ad;background:#efebff;border-radius:20px;font-size:12px;font-weight:750;min-height:34px;padding:7px 11px}
+.sheet-filter-chip:hover{border-color:#8064e6;background:#e3daff}
+body.dark .sheet-filter-chip{color:#e0d3ff;background:#393053;border-color:#624f91}
+#grid .gridcell.range-selected{background:#e8ddff;outline:1px solid #af94e6;outline-offset:-1px;color:#241a4d}
+#grid .gridcell.range-anchor{outline:2px solid #694fd1!important;outline-offset:-1px}
+body.dark #grid .gridcell.range-selected{background:#483766;color:#fff;outline-color:#9d82e0}
+body.dark #grid .gridcell.range-anchor{outline-color:#c0abff!important}
+.tablewrap.sheet-compact .table td{padding:7px 12px}
+.tablewrap.sheet-compact .table th{padding:10px 12px}
+.tablewrap.sheet-compact .table .gridcell{min-height:20px}
+#grid.sheet-frozen th:nth-child(1),#grid.sheet-frozen td:nth-child(1){position:sticky;left:0;z-index:4;width:44px;min-width:44px;max-width:44px;background:var(--surface)}
+#grid.sheet-frozen th:nth-child(2),#grid.sheet-frozen td:nth-child(2){position:sticky;left:44px;z-index:4;width:58px;min-width:58px;max-width:58px;background:var(--surface)}
+#grid.sheet-frozen th:nth-child(3),#grid.sheet-frozen td:nth-child(3){position:sticky;left:102px;z-index:3;background:var(--surface);box-shadow:3px 0 6px #17233c12;min-width:160px}
+#grid.sheet-frozen thead th:nth-child(-n+3){z-index:6;background:var(--surface2)}
+#grid.sheet-frozen tbody tr:hover td:nth-child(-n+3){background:var(--surface2)}
+@media(max-width:700px){.sheet-calculations{grid-template-columns:repeat(2,minmax(0,1fr))}.sheet-metric{padding:12px}.sheet-metric strong{font-size:18px}.sheet-filter-chip{font-size:11px}}
