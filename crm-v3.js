@@ -52,12 +52,12 @@ function barList(rows,field){const group=Object.entries(rows.reduce((a,x)=>(a[x[
 function tablePage(){const c=C[S.page],rows=filtered(),shown=cols(),pageRows=rows.slice(S.offset,S.offset+50);const selectedCount=S.selected.size;const statuses=c.statuses||[...new Set((S.data[S.page]||[]).map(x=>x[c.status]).filter(Boolean))];
 $('#main').innerHTML=head(c.title,c.desc,'<button class="btn primary" data-action="new" data-kind="'+S.page+'">＋ New '+c.one+'</button><button class="btn" data-action="export">↓ Export CSV</button><button class="btn" data-action="import">↑ Import CSV</button>')+
 '<div class="toolbar"><label class="search">⌕ <input id="query" placeholder="Search all columns…" value="'+E(S.search)+'"></label>'+(c.status?'<select id="status" class="select" aria-label="Filter status"><option value="all">All statuses</option>'+statuses.map(x=>'<option value="'+E(x)+'"'+(S.status===x?' selected':'')+'>'+E(x.replaceAll('_',' '))+'</option>').join('')+'</select>':'')+
-'<button class="btn" data-action="columns">Columns</button><button class="btn" data-action="undo" '+(S.history.length?'':'disabled')+'>↶ Undo</button><button class="btn" data-action="copy">Copy rows</button><button class="btn" data-action="paste">Paste TSV</button>'+
+'<button class="btn" data-action="columns">Columns</button><button class="btn" data-action="undo" '+(S.history.length?'':'disabled')+'>↶ Undo</button><button class="btn" data-action="copy">Copy rows</button><button class="btn" data-action="paste">Paste TSV</button><button class="btn" data-action="fillDown">Fill down</button>'+
 (c.statuses&&['leads','deals','tasks','jobs'].includes(S.page)?'<button class="btn" data-action="viewBoard">Board view</button>':'')+'</div>'+
 (selectedCount?'<div class="notice" style="margin-bottom:12px;display:flex;gap:12px;align-items:center;flex-wrap:wrap"><strong>'+selectedCount+' selected</strong><button class="btn small" data-action="copy">Copy selection</button>'+(c.status?'<button class="btn small" data-action="bulk">Change status</button>':'')+'<button class="btn small" data-action="clearSelected">Clear selection</button></div>':'')+
 '<section class="card"><div class="tablewrap"><table class="table" id="grid"><thead><tr><th><input type="checkbox" id="allRows" aria-label="Select visible rows" '+(pageRows.length&&pageRows.every(x=>S.selected.has(x.id))?'checked':'')+'></th><th>No.</th>'+shown.map(f=>'<th class="sortable" data-action="sort" data-field="'+E(f)+'">'+E(label(S.page,f))+(S.sort===f?(S.descending?' ↓':' ↑'):'')+'</th>').join('')+'<th>Actions</th></tr></thead><tbody>'+
 (pageRows.length?pageRows.map((r,i)=>'<tr data-id="'+E(r.id)+'"><td><input type="checkbox" class="selRow" data-id="'+E(r.id)+'" '+(S.selected.has(r.id)?'checked':'')+' aria-label="Select row '+(S.offset+i+1)+'"></td><td class="no">'+fmt(S.offset+i+1)+'</td>'+shown.map(f=>'<td><span class="gridcell" tabindex="0" role="button" title="Double-click or press Enter to edit" data-id="'+E(r.id)+'" data-field="'+E(f)+'">'+renderVal(S.page,r,f)+'</span></td>').join('')+'<td class="act"><button class="btn small" data-action="open" data-kind="'+S.page+'" data-id="'+E(r.id)+'">Open</button> <button class="btn small" data-action="edit" data-kind="'+S.page+'" data-id="'+E(r.id)+'">Edit</button></td></tr>').join(''):'<tr><td colspan="'+(shown.length+3)+'"><div class="empty"><b>No matching records</b><p>Try a different search or create a new record.</p></div></td></tr>')+
-'</tbody></table></div><div class="table-footer"><span>'+fmt(rows.length)+' rows · Showing '+(rows.length?fmt(S.offset+1)+'–'+fmt(Math.min(rows.length,S.offset+50)):'0')+' · Double-click a cell to edit</span><div class="actions"><button class="btn small" data-action="prev" '+(!S.offset?'disabled':'')+'>← Previous</button><button class="btn small" data-action="next" '+(S.offset+50>=rows.length?'disabled':'')+'>Next →</button></div></div></section>'}
+'</tbody></table></div><div class="table-footer"><span>'+fmt(rows.length)+' rows · Showing '+(rows.length?fmt(S.offset+1)+'–'+fmt(Math.min(rows.length,S.offset+50)):'0')+' · Double-click to edit · Ctrl+C / Ctrl+V for cells</span><div class="actions"><button class="btn small" data-action="prev" '+(!S.offset?'disabled':'')+'>← Previous</button><button class="btn small" data-action="next" '+(S.offset+50>=rows.length?'disabled':'')+'>Next →</button></div></div></section>'}
 function renderVal(k,r,f){const v=r[f],c=C[k],choice=c.status===f;if(choice)return '<span class="pill '+E(v||'new')+'">'+E(String(v||'—').replaceAll('_',' '))+'</span>';if(f==='value'||f==='budget'||f==='amount')return E(dollars(v));if(/Date$|^followup$|^expenseDate$|^issueDate$|^startAt$|^endAt$|^scheduledStart$/.test(f))return E(date(v));if(f==='name'||f==='title'||f==='number')return '<span class="name">'+E(v||'Untitled')+'</span>';const value=fieldValue(k,r,f);return E(String(value||'—').slice(0,120))}
 function boardPage(){const c=C[S.page],list=filtered(),stages=c.statuses||[];$('#main').innerHTML=head(c.title+' · Board',c.desc,'<button class="btn" data-action="viewTable">▦ Spreadsheet view</button><button class="btn primary" data-action="new" data-kind="'+S.page+'">＋ New '+c.one+'</button>')+'<div class="notice" style="margin-bottom:15px">Drag cards between stages to update records. Converted leads must be managed as clients.</div><div class="board">'+stages.map(st=>'<section class="lane" data-stage="'+E(st)+'"><h3>'+E(st.replaceAll('_',' '))+' <span>'+fmt(list.filter(x=>x[c.status]===st).length)+'</span></h3>'+list.filter(x=>(x[c.status]||stages[0])===st).map(r=>'<article class="dealcard" draggable="'+(S.page==='leads'&&r.status==='converted'?'false':'true')+'" data-id="'+E(r.id)+'"><strong>'+E(r[c.key]||'Untitled')+'</strong><small>'+E(r.company||r.service||r.contact||'')+'</small>'+(S.page==='deals'?'<strong>'+dollars(r.value)+'</strong>':'')+'<button class="btn small" data-action="open" data-kind="'+S.page+'" data-id="'+E(r.id)+'">Open details</button></article>').join('')+'</section>').join('')+'</div>'}
 function detailPage(){const c=C[S.page],r=(S.data[S.page]||[]).find(x=>String(x.id)===String(S.detail));if(!r){S.detail=null;return tablePage()}const id=r.id;const facts=c.columns.filter(f=>f!=='notes'&&f!==c.key);const linked=[];
@@ -79,6 +79,50 @@ function downloadCSV(){const k=S.page,rows=filtered(),fields=cols(),all=[fields,
 function fileDownload(text,name,type){const blob=new Blob([text],{type}),url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1200)}
 function copyRows(){const rows=filtered();const chosen=S.selected.size?rows.filter(x=>S.selected.has(x.id)):rows.slice(S.offset,S.offset+50);const fields=cols(),v=[fields,...chosen.map(r=>fields.map(f=>String(r[f]??'').replace(/\t/g,' ').replace(/\r?\n/g,' ')))].map(row=>row.join('\t')).join('\n');if(!navigator.clipboard?.writeText)return tip('Clipboard requires a secure connection',true);navigator.clipboard.writeText(v).then(()=>tip('Copied '+chosen.length+' rows')).catch(()=>tip('Clipboard unavailable',true))}
 function parseDelimited(text,delimiter){const rows=[];let row=[],cell='',quote=false;for(let i=0;i<text.length;i++){const ch=text[i];if(ch==='"'){if(quote&&text[i+1]==='"'){cell+='"';i++}else quote=!quote}else if(ch===delimiter&&!quote){row.push(cell);cell=''}else if((ch==='\n'||ch==='\r')&&!quote){if(ch==='\r'&&text[i+1]==='\n')i++;row.push(cell);if(row.some(x=>x.trim()))rows.push(row);row=[];cell=''}else cell+=ch}row.push(cell);if(row.some(x=>x.trim()))rows.push(row);return rows}
+function spreadsheetGridPosition(cell){
+ if(!cell||!cell.matches('.gridcell')||!C[S.page]||S.mode!=='table')return null;
+ const rows=filtered().slice(S.offset,S.offset+50),i=rows.findIndex(x=>String(x.id)===String(cell.dataset.id)),j=cols().indexOf(cell.dataset.field);
+ return i>=0&&j>=0?{rows,row:i,col:j,fields:cols()}:null;
+}
+function spreadsheetCoerce(k,field,value){
+ const raw=String(value??'').trim(),type=fieldInfo(k,field)[2]||'text';
+ if(type.startsWith('rel:')||field==='linkedRef')throw Error('Edit relationship columns in the record form.');
+ if(type==='number'){if(!raw)return 0;const v=Number(raw);if(!Number.isFinite(v)||v<0)throw Error('Invalid amount in '+label(k,field));return v}
+ if(type.startsWith('choice:')){const allowed=type.slice(7).split('|');if(raw&&!allowed.includes(raw))throw Error('Invalid '+field+': '+raw);if(k==='leads'&&field==='status'&&raw==='converted')throw Error('Use Convert to client for lead conversion.')}
+ if(type==='date'&&raw&&!/^\d{4}-\d{2}-\d{2}$/.test(raw))throw Error('Date must use YYYY-MM-DD.');
+ if(type==='datetime-local'&&raw&&isNaN(Date.parse(raw)))throw Error('Invalid date/time.');
+ if(type==='email'&&raw&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(raw))throw Error('Invalid email.');
+ if(raw.length>6000)throw Error('Value exceeds cell limit.');
+ return raw;
+}
+async function pasteGridAt(cell,text){
+ const p=spreadsheetGridPosition(cell);if(!p)throw Error('Select a spreadsheet cell first.');
+ if(text.length>75000)throw Error('Use CSV import for larger data.');
+ const grid=parseDelimited(text.replace(/\r\n/g,'\n'),'\t');if(!grid.length)return;
+ if(grid.length>100||grid.some(row=>row.length>30))throw Error('Paste at most 100 rows and 30 columns.');
+ const changes=new Map();for(let i=0;i<grid.length;i++){
+  const row=p.rows[p.row+i];if(!row)break;
+  if(S.page==='leads'&&row.status==='converted')throw Error('Converted leads cannot be bulk edited.');
+  const updates={};for(let j=0;j<grid[i].length;j++){const f=p.fields[p.col+j];if(!f)continue;const v=spreadsheetCoerce(S.page,f,grid[i][j]);if(String(row[f]??'')!==String(v))updates[f]=v}
+  if(Object.keys(updates).length)changes.set(row.id,updates);
+ }
+ if(!changes.size)return tip('No cells changed.');
+ if(changes.size>1&&!confirm('Update '+changes.size+' existing CRM records?'))return;
+ let n=0,errors=[];for(const[id,updates]of changes){try{await patch(S.page,id,updates,true);n++}catch(err){errors.push(err.message)}}
+ render();tip(n+' record(s) updated'+(errors.length?' · '+errors.length+' failed':''),!!errors.length);
+}
+async function fillSelectedDown(){
+ const k=S.page,p=spreadsheetGridPosition(document.activeElement?.matches('.gridcell')?document.activeElement:$('.gridcell'));
+ if(!p)return tip('Select a spreadsheet cell first',true);
+ const field=p.fields[p.col],rows=p.rows.filter(x=>S.selected.has(x.id));
+ if(rows.length<2)return tip('Select at least two visible rows',true);
+ if(k==='leads'&&rows.some(x=>x.status==='converted'))return tip('Converted leads cannot be bulk edited',true);
+ const value=rows[0][field]??'';
+ if(!confirm('Fill '+label(k,field)+' down into '+(rows.length-1)+' selected records?'))return;
+ let n=0;for(const row of rows.slice(1)){try{await patch(k,row.id,{[field]:value},true);n++}catch(err){tip(err.message,true)}}
+ render();tip(n+' rows filled');
+}
+
 function pasteModal(){modal('Paste spreadsheet data','<p class="card-sub">Paste tab-separated rows copied from Google Sheets or Excel. Match columns by header name; existing rows are not overwritten. Review before importing.</p><div class="field"><label>Paste data (first row must contain column names)</label><textarea id="pasteArea" rows="9" placeholder="name\tcompany\temail\nJane Doe\tExample Ltd\tjane@example.com" style="width:100%"></textarea></div>','<button class="btn" data-action="close">Cancel</button><button class="btn primary" data-action="previewPaste">Preview rows</button>')}
 function importModal(){modal('Import spreadsheet CSV','<p class="card-sub">CSV import creates new records only. Export a sample first to see accepted columns. There is no bulk overwrite.</p><div class="field"><label>Choose CSV file</label><input id="importFile" type="file" accept=".csv,text/csv"></div>','<button class="btn" data-action="close">Cancel</button><button class="btn primary" data-action="previewFile">Preview import</button>')}
 function previewImport(text,delimiter){const raw=parseDelimited(text.replace(/^\uFEFF/,''),delimiter);if(raw.length<2)return tip('Include a header and at least one data row',true);const k=S.page,keys=C[k].fields.map(x=>x[0]),normalize=v=>String(v).trim().toLowerCase().replace(/[\s_()-]/g,'');const headers=raw[0].map(x=>keys.find(f=>normalize(f)===normalize(x))||C[k].fields.find(f=>normalize(f[1])===normalize(x))?.[0]||'');if(!headers.some(x=>x===C[k].key))return tip('A '+C[k].key+' column is required. Use the exported column names.',true);const rows=raw.slice(1).filter(x=>x.some(v=>v.trim())).map(row=>Object.fromEntries(headers.map((f,i)=>[f,(row[i]||'').trim()]).filter(([f])=>f)));if(!rows.length)return tip('No rows found',true);if(rows.length>500)return tip('Import up to 500 rows at a time',true);S.importRows=rows;S.importKind=k;modal('Review import · '+fmt(rows.length)+' records','<div class="notice">This will CREATE '+fmt(rows.length)+' new '+E(k)+' records in Supabase. It will not modify existing records.</div><div class="tablewrap" style="margin-top:14px;max-height:340px"><table class="table"><thead><tr>'+headers.filter(Boolean).map(x=>'<th>'+E(x)+'</th>').join('')+'</tr></thead><tbody>'+rows.slice(0,8).map(row=>'<tr>'+headers.filter(Boolean).map(x=>'<td>'+E(row[x]||'')+'</td>').join('')+'</tr>').join('')+'</tbody></table></div><p class="formhint">First '+Math.min(8,rows.length)+' rows shown. Please check carefully.</p>','<button class="btn" data-action="close">Cancel</button><button class="btn primary" data-action="runImport">Import '+rows.length+' records</button>')}
@@ -109,6 +153,7 @@ case 'saveColumns':{const checked=$$('.colToggle:checked').map(x=>x.value);if(!c
 case 'export':downloadCSV();break;
 case 'copy':copyRows();break;
 case 'paste':pasteModal();break;
+case 'fillDown':await fillSelectedDown();break;
 case 'previewPaste':previewImport($('#pasteArea').value,'\t');break;
 case 'import':importModal();break;
 case 'previewFile':{const file=$('#importFile').files?.[0];if(!file)return tip('Select a CSV file first',true);if(file.size>1500000)return tip('File is too large. Use a smaller CSV.',true);previewImport(await file.text(),',');break}
@@ -127,7 +172,21 @@ document.addEventListener('submit',async e=>{if(e.target.id==='loginForm'){e.pre
 document.addEventListener('input',e=>{if(e.target.id==='query'){const el=e.target,pos=el.selectionStart;S.search=el.value;S.offset=0;const focused=pos;tablePage();const next=$('#query');next?.focus();next?.setSelectionRange(focused,focused)}else if(e.target.id==='globalSearch'){/* Apply global search to current grid with explicit navigation */if(C[S.page]&&!S.detail){S.search=e.target.value;S.offset=0;if(S.mode==='board')boardPage();else tablePage()}}});
 document.addEventListener('change',e=>{if(e.target.id==='status'){S.status=e.target.value;S.offset=0;render()}else if(e.target.id==='allRows'){for(const row of filtered().slice(S.offset,S.offset+50)){if(e.target.checked)S.selected.add(row.id);else S.selected.delete(row.id)}render()}else if(e.target.classList.contains('selRow')){if(e.target.checked)S.selected.add(e.target.dataset.id);else S.selected.delete(e.target.dataset.id);render()}});
 document.addEventListener('dblclick',e=>{const c=e.target.closest('.gridcell');if(c)editCell(c)});
-document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.matches('.gridcell')){e.preventDefault();editCell(e.target)}else if(e.target.matches('.gridcell')&&['ArrowDown','ArrowUp','ArrowLeft','ArrowRight'].includes(e.key)){const cell=e.target,tr=cell.closest('tr'),td=cell.closest('td');let target=e.key==='ArrowDown'?tr?.nextElementSibling?.children[td.cellIndex]:e.key==='ArrowUp'?tr?.previousElementSibling?.children[td.cellIndex]:e.key==='ArrowRight'?td.nextElementSibling:e.key==='ArrowLeft'?td.previousElementSibling:null;const next=target?.querySelector('.gridcell');if(next){e.preventDefault();next.focus()}}});
+document.addEventListener('paste',async e=>{
+ const focus=document.activeElement;
+ if(!focus?.matches('.gridcell'))return;
+ const content=e.clipboardData?.getData('text/plain');if(!content)return;
+ e.preventDefault();try{await pasteGridAt(focus,content)}catch(err){tip(err.message,true)}
+});
+document.addEventListener('keydown',e=>{
+ const active=document.activeElement;
+ if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'&&active?.matches('.gridcell')){e.preventDefault();undo();return}
+ if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='c'&&active?.matches('.gridcell')){
+  e.preventDefault();if(S.selected.size)copyRows();
+  else navigator.clipboard?.writeText(String((S.data[S.page]||[]).find(x=>String(x.id)===String(active.dataset.id))?.[active.dataset.field]??'')).then(()=>tip('Cell copied')).catch(()=>tip('Copy unavailable',true));
+  return
+ }
+ if(e.key==='Enter'&&e.target.matches('.gridcell')){e.preventDefault();editCell(e.target)}else if(e.target.matches('.gridcell')&&['ArrowDown','ArrowUp','ArrowLeft','ArrowRight'].includes(e.key)){const cell=e.target,tr=cell.closest('tr'),td=cell.closest('td');let target=e.key==='ArrowDown'?tr?.nextElementSibling?.children[td.cellIndex]:e.key==='ArrowUp'?tr?.previousElementSibling?.children[td.cellIndex]:e.key==='ArrowRight'?td.nextElementSibling:e.key==='ArrowLeft'?td.previousElementSibling:null;const next=target?.querySelector('.gridcell');if(next){e.preventDefault();next.focus()}}});
 let drag=null;
 document.addEventListener('dragstart',e=>{const card=e.target.closest('.dealcard[draggable="true"]');if(card){drag={kind:S.page,id:card.dataset.id};e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',card.dataset.id)}});
 document.addEventListener('dragover',e=>{if(drag&&e.target.closest('.lane')){e.preventDefault();e.dataTransfer.dropEffect='move';e.target.closest('.lane').classList.add('dragover')}});
