@@ -17,7 +17,7 @@
   return tokens;
  }
  class FormulaEngine{
-  constructor(cells){this.cells=cells instanceof Map?cells:new Map(Object.entries(cells||{}));this.cache=new Map();this.depth=0}
+  constructor(cells){this.cells=cells&&typeof cells.get==='function'&&typeof cells.has==='function'?cells:new Map(Object.entries(cells||{}));this.cache=new Map();this.depth=0}
   evaluateCell(addr,stack=new Set()){
    const key=String(addr).toUpperCase().replaceAll('$','');
    if(this.cache.has(key))return this.cache.get(key);
