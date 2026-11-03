@@ -6,7 +6,7 @@
  const esc=v=>String(v??'').replace(/[&<>"']/g,x=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[x]));
  const uid=()=>Math.random().toString(36).slice(2,10);
  const state={root:null,api:null,user:null,list:[],active:null,cells:new Map(),selected:'A1',editing:null,rowStart:0,
-  channel:null,client:null,timer:null,serial:0,busy:false,pending:[],realtime:false,status:'',lastRemote:null,modal:null};
+  channel:null,client:null,timer:null,serial:0,busy:false,pending:[],realtime:false,presence:[],status:'',lastRemote:null,modal:null};
  const validAddress=v=>/^[A-Z]{1,3}[1-9][0-9]{0,4}$/.test(v);
  const display=v=>typeof v==='boolean'?(v?'TRUE':'FALSE'):v==null?'':String(v);
  const api=(path,opts)=>state.api(path,opts||{});
@@ -19,12 +19,12 @@
  function removeRemote(){
   if(state.timer){clearInterval(state.timer);state.timer=null}
   if(state.channel){try{state.client?.removeChannel(state.channel)}catch(_){}state.channel=null}
-  state.client=null;state.realtime=false;
+  state.client=null;state.realtime=false;state.presence=[];
  }
  function leave(){removeRemote();state.root=null;state.modal=null;state.editing=null;state.pending=[]}
  function header(){
   return '<div class="sheet-studio-head"><div><div class="studio-eyebrow">NEXABRIDGE / LIVE DATA WORKSPACE</div><h1>Sheets Studio</h1><p>Spreadsheet formulas, shared cells, Excel imports and data-driven charts.</p></div>'+
-   '<div class="studio-head-actions"><span id="sheetStatus" aria-live="polite">'+esc(state.status)+'</span>'+
+   '<div class="studio-head-actions"><span id="sheetStatus" aria-live="polite">'+esc(state.status)+'</span>'+(state.active?'<span class="studio-peer-status" id="studioPeerStatus">'+(state.realtime?'● Live':'○ Sync')+'</span>':'')+
    (state.active?'<button class="btn" data-sheet-action="back">← All sheets</button>':'')+
    '<button class="btn" data-sheet-action="script">Apps Script ↗</button></div></div>';
  }
@@ -49,7 +49,7 @@
    '<tr><th class="sheet-grid-row-head">'+(state.rowStart+r+1)+'</th>'+
    Array.from({length:cols},(_,c)=>{const address=F.address(state.rowStart+r,c),entry=dataCell(address),value=cellText(address,calc);
     return '<td data-sheet-address="'+address+'" tabindex="0" class="sheet-studio-cell'+
-     (address===selected?' selected':'')+(entry.raw_value.startsWith('=')?' formula':'')+'">'+
+     (address===selected?' selected':'')+(state.presence.some(p=>p.cell===address&&p.id!==state.user?.id)?' peer-active':'')+(entry.raw_value.startsWith('=')?' formula':'')+'">'+
      '<span>'+esc(value).slice(0,800)+'</span></td>';
    }).join('')+'</tr>'
   ).join('')+'</tbody>';
@@ -112,7 +112,10 @@
  }
  function paint(){
   if(!state.root)return;
+  const focused=state.root.querySelector('#studioFormulaBar');
+  const preserve=focused&&document.activeElement===focused?{value:focused.value,start:focused.selectionStart,end:focused.selectionEnd}:null;
   state.root.innerHTML=state.active?grid():listView();
+  if(preserve){const input=state.root.querySelector('#studioFormulaBar');if(input){input.value=preserve.value;input.focus();try{input.setSelectionRange(preserve.start,preserve.end)}catch(_){}}}
   state.root.dataset.sheetReady='true';
   notice(state.status);
  }
@@ -171,6 +174,7 @@
   const cell=state.root.querySelector('[data-sheet-address="'+address+'"]');cell?.classList.add('selected');
   const box=state.root.querySelector('#studioNameBox'),input=state.root.querySelector('#studioFormulaBar');
   if(box)box.textContent=address;if(input)input.value=dataCell(address).raw_value;
+  trackPresence();
  }
  async function refreshSheet(quiet){
   if(!state.active)return;
@@ -292,6 +296,16 @@
   link.download='NexaBridge_'+String(state.active.name||'Sheet').replace(/[^a-z0-9_-]/gi,'_')+'.csv';link.click();
   setTimeout(()=>URL.revokeObjectURL(url),1000);
  }
+ function trackPresence(){
+  if(!state.channel||!state.realtime||!state.user)return;
+  try{Promise.resolve(state.channel.track({id:state.user.id,username:String(state.user.username||'Team member').slice(0,80),cell:state.selected,at:Date.now()})).catch(()=>{})}catch(_){}
+ }
+ function updatePresence(){
+  if(!state.channel)return;
+  const map=state.channel.presenceState();state.presence=Object.values(map).flat().filter(x=>x.id&&x.cell);
+  if(!state.editing)paint();
+  const label=state.root?.querySelector('#studioPeerStatus');if(label)label.textContent='● '+state.presence.length+' online';
+ }
  async function connect(){
   if(!state.active)return;
   removeRemote();
@@ -304,7 +318,7 @@
      realtime:{params:{eventsPerSecond:8}}
     });
     client.realtime.setAuth(creds.token);
-    const channel=client.channel('nexa-sheets-'+id).on('postgres_changes',
+    const channel=client.channel('nexa-sheets-'+id,{config:{presence:{key:String(state.user?.id||'member')}}}).on('presence',{event:'sync'},()=>updatePresence()).on('postgres_changes',
      {event:'*',schema:'public',table:'crm_sheet_cells',filter:'sheet_id=eq.'+id},
      payload=>{
       if(state.active?.id!==id)return;
@@ -317,13 +331,13 @@
       state.status='Live update received';
       paint();
      });
-    channel.subscribe(status=>{if(status==='SUBSCRIBED'){state.realtime=true;notice('Live collaboration connected')}
+    channel.subscribe(status=>{if(status==='SUBSCRIBED'){state.realtime=true;trackPresence();notice('Live collaboration connected')}
      if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'){state.realtime=false;notice('Live connection interrupted; fallback sync active',true)}});
     state.client=client;state.channel=channel;
    }catch(e){notice('Live connection unavailable; fallback sync active',true)}
   }
   state.timer=setInterval(async()=>{
-   if(!state.active||state.editing||state.busy||document.hidden)return;
+   if(!state.active||state.editing||state.busy||document.hidden||document.activeElement?.id==='studioFormulaBar')return;
    try{await refreshSheet(true)}catch(_){}
   },15000);
  }
