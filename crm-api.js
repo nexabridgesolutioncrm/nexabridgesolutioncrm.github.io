@@ -1,0 +1,157 @@
+
+
+/* NexaBridge Solutions — authenticated Supabase CRM transport. */
+(()=>{'use strict';
+const URL_BASE='https://eahoudfosrblcsbjgjoa.supabase.co';
+const PUBLIC_KEY='sb_publishable_kxVCDTegJm-_nRrvaBAzrw_hbMPoG_5';
+const COLLECTIONS={leads:'crm_leads',clients:'crm_clients',deals:'crm_deals',tasks:'crm_tasks',jobs:'crm_jobs',documents:'crm_documents',calendar:'crm_calendar_events',email_queue:'crm_email_queue',email_templates:'crm_email_templates',catalog:'crm_catalog',stock_movements:'crm_stock_movements',equipment:'crm_equipment',technicians:'crm_technicians',time_entries:'crm_time_entries',checklists:'crm_checklists',service_plans:'crm_service_plans',projects:'crm_projects',contracts:'crm_contracts',expenses:'crm_expenses'};
+const FIELDS={email_queue:{recipientEmail:'recipient_email',subject:'subject',body:'body',state:'state'},email_templates:{name:'name',subject:'subject',body:'body'},projects:{title:'title',clientId:'client_id',description:'description',startDate:'start_date',dueDate:'due_date',budget:'budget',status:'status'},contracts:{title:'title',clientId:'client_id',description:'description',startDate:'start_date',dueDate:'due_date',value:'value',status:'status'},expenses:{title:'title',projectId:'project_id',category:'category',expenseDate:'expense_date',amount:'amount',status:'status',notes:'notes'},leads:{name:'name',company:'company',phone:'phone',email:'email',source:'source',interest:'interest',status:'status',followup:'followup',owner:'owner',notes:'notes'},clients:{name:'name',contact:'contact',phone:'phone',email:'email',industry:'industry',notes:'notes'},deals:{title:'title',value:'value',clientId:'client_id',leadId:'lead_id',stage:'stage',service:'service',closeDate:'close_date',notes:'notes'},tasks:{title:'title',dueDate:'due_date',priority:'priority',status:'status',notes:'notes'},jobs:{title:'title',clientId:'client_id',leadId:'lead_id',service:'service',address:'address',scheduledStart:'scheduled_start',scheduledEnd:'scheduled_end',assignedTo:'assigned_to',status:'status',priority:'priority',notes:'notes'},documents:{billToName:'bill_to_name',billToEmail:'bill_to_email',billToPhone:'bill_to_phone',billToAddress:'bill_to_address',reference:'reference',paymentTerms:'payment_terms',footerText:'footer_text',docType:'doc_type',number:'number',description:'description',amount:'amount',clientId:'client_id',jobId:'job_id',status:'status',issueDate:'issue_date',dueDate:'due_date',notes:'notes'},calendar:{title:'title',eventType:'event_type',startAt:'start_at',endAt:'end_at',location:'location',description:'description',clientId:'client_id',leadId:'lead_id',assignedTo:'assigned_to'},catalog:{name:'name',sku:'sku',kind:'kind',category:'category',unitPrice:'unit_price',unitCost:'unit_cost',stockQty:'stock_qty',reorderPoint:'reorder_point',taxable:'taxable',active:'active',notes:'notes'},equipment:{clientId:'client_id',name:'name',serialNumber:'serial_number',model:'model',location:'location',installedOn:'installed_on',warrantyUntil:'warranty_until',status:'status',notes:'notes'},technicians:{name:'name',email:'email',phone:'phone',skills:'skills',serviceArea:'service_area',status:'status',notes:'notes'},time_entries:{jobId:'job_id',technician:'technician',startedAt:'started_at',endedAt:'ended_at',hourlyRate:'hourly_rate',notes:'notes'},checklists:{jobId:'job_id',title:'title',isDone:'is_done',notes:'notes'},service_plans:{clientId:'client_id',name:'name',intervalDays:'interval_days',nextVisit:'next_visit',price:'price',status:'status',notes:'notes'},stock_movements:{catalogId:'catalog_id',jobId:'job_id',delta:'delta',reason:'reason',notes:'notes'}};
+const COMPANY='NexaBridge Solutions';
+let session=null, member=null, orgId=null;
+const SESSION_KEY='nexa_crm_session_v3';
+try{const stored=sessionStorage.getItem(SESSION_KEY);if(stored){const value=JSON.parse(stored);if(value&&typeof value.access_token==='string'&&typeof value.refresh_token==='string')session=value;}}catch(_){/* session-only auth */}
+function saveSession(){try{if(session)sessionStorage.setItem(SESSION_KEY,JSON.stringify(session));else sessionStorage.removeItem(SESSION_KEY)}catch(_){}}
+
+const defaultSettings={company:COMPANY,currency:'USD',services:['Customer Support','Appointment Scheduling','Dispatch Coordination','CRM Management','Customer Follow-ups','Administrative Support']};
+function reply(obj,status=200){return new Response(JSON.stringify(obj),{status,headers:{'Content-Type':'application/json'}})}
+function err(x,status=400){return reply({detail:x},status)}
+async function request(path,{method='GET',body,auth=true,prefer}={}){
+ const headers={'apikey':PUBLIC_KEY};if(auth){if(!session?.access_token)throw Error('Please sign in again.');headers.Authorization='Bearer '+session.access_token;}
+ if(body!==undefined)headers['Content-Type']='application/json';if(prefer)headers.Prefer=prefer;
+ const r=await fetch(URL_BASE+path,{method,headers,body:body===undefined?undefined:JSON.stringify(body),cache:'no-store'});
+ let data;const text=await r.text();try{data=text?JSON.parse(text):null}catch{data=text;}
+ if(!r.ok)throw Error(data?.msg||data?.message||data?.error_description||data?.error||'Request failed ('+r.status+')');
+ return data;
+}
+async function loadMember(){
+ const claims=await request('/auth/v1/user');
+ const rows=await request('/rest/v1/crm_members?select=org_id,role&user_id=eq.'+encodeURIComponent(claims.id));
+ if(!rows.length)throw Error('This account is not authorized to access the CRM.');
+ let match=null;for(const row of rows){const organizations=await request('/rest/v1/crm_organizations?select=id,name&id=eq.'+row.org_id);if(organizations?.[0]?.name===COMPANY){match=row;break}}
+ if(!match)throw Error('This account does not belong to NexaBridge Solutions.');
+ orgId=match.org_id;member={id:claims.id,username:claims.email,name:claims.email,role:match.role,active:true};
+}
+async function login(email,password){
+ const r=await request('/auth/v1/token?grant_type=password',{method:'POST',auth:false,body:{email,password}});
+ session={access_token:r.access_token,refresh_token:r.refresh_token};saveSession();
+ try{await loadMember()}catch(e){session=null;member=null;orgId=null;saveSession();throw e}
+ return {user:member,csrf:'supabase-auth'};
+}
+async function refresh(){if(!session?.refresh_token)throw Error('Please sign in again.');const r=await request('/auth/v1/token?grant_type=refresh_token',{method:'POST',auth:false,body:{refresh_token:session.refresh_token}});session={access_token:r.access_token,refresh_token:r.refresh_token};saveSession();return r}
+async function secured(path,options={}){try{return await request(path,options)}catch(e){if(session&&/JWT expired|invalid JWT|token is expired/i.test(e.message)){await refresh();return request(path,options)}throw e}}
+window.nexaAuthenticatedRequest=(path,options)=>secured(path,options);
+const table = kind=>COLLECTIONS[kind];
+function fromRow(kind,row){const out={...row,createdAt:row.created_at,updatedAt:row.updated_at};const f=FIELDS[kind];for(const [k,col] of Object.entries(f))out[k]=row[col]??'';
+ if(kind==='tasks'){const t=row.lead_id?'lead':row.client_id?'client':row.deal_id?'deal':'';out.linkedType=t;out.linkedId=t?row[t+'_id']:'';}
+ return out;
+}
+function toRow(kind,rec){const out={};for(const [k,col] of Object.entries(FIELDS[kind]))if(Object.prototype.hasOwnProperty.call(rec,k))out[col]=rec[k]===''&&['followup','close_date','due_date'].includes(col)?null:rec[k];
+ if(['catalog','service_plans','time_entries','stock_movements','projects','contracts','expenses'].includes(kind)){for(const k of ['unit_price','unit_cost','reorder_point','price','hourly_rate','delta','budget','value','amount'])if(out[k]!==undefined){if(out[k]===null||String(out[k]).trim()==='')out[k]=0;else out[k]=Number(out[k]);if(!Number.isFinite(out[k])||(['budget','value','amount'].includes(k)&&out[k]<0))throw Error('Invalid or negative amount');}}if(['projects','contracts','expenses'].includes(kind)){for(const col of ['client_id','project_id','start_date','due_date','expense_date'])if(out[col]==='')out[col]=null;if(out.start_date&&out.due_date&&out.start_date>out.due_date)throw Error('End date cannot be before start date.');if(out.title!==undefined&&!String(out.title).trim())throw Error('Title is required.');if(out.title!==undefined&&String(out.title).length>300)throw Error('Title is too long.');}if(kind==='checklists'&&out.is_done!==undefined)out.is_done=out.is_done===true||out.is_done==='true';if(kind==='catalog'){delete out.stock_qty;}if(kind==='calendar'){for(const col of ['client_id','lead_id','assigned_to'])if(out[col]==='')out[col]=null;}if(kind==='jobs'){for(const col of ['client_id','lead_id','scheduled_start','scheduled_end'])if(out[col]==='')out[col]=null;}if(kind==='documents'){for(const col of ['client_id','job_id','due_date'])if(out[col]==='')out[col]=null;if(out.amount!==undefined)out.amount=Number(out.amount);}if(['equipment','service_plans','time_entries','checklists','stock_movements'].includes(kind)){for(const col of ['client_id','job_id','catalog_id','installed_on','warranty_until'])if(out[col]==='')out[col]=null;}if(kind==='deals'){for(const col of ['client_id','lead_id'])if(out[col]==='')out[col]=null;if(out.value!==undefined){out.value=Number(out.value);if(!Number.isFinite(out.value)||out.value<0)throw Error('Invalid deal amount');}}
+ if(kind==='tasks'&&(Object.hasOwn(rec,'linkedType')||Object.hasOwn(rec,'linkedId'))){out.lead_id=null;out.client_id=null;out.deal_id=null;const typ=rec.linkedType||'';const id=rec.linkedId||'';if(typ&&id&&['lead','client','deal'].includes(typ))out[typ+'_id']=id;}
+ return out;
+}
+async function audit(action,kind,label){/* Server-side CRM audit triggers record changes atomically. */}
+async function list(kind){
+ const rows=[],pageSize=500,maxRecords=10000;
+ for(let offset=0;offset<maxRecords;offset+=pageSize){
+  const page=await secured('/rest/v1/'+table(kind)+'?select=*&org_id=eq.'+encodeURIComponent(orgId)+'&order=created_at.desc&limit='+pageSize+'&offset='+offset);
+  if(!Array.isArray(page))throw Error('Invalid CRM data response');
+  rows.push(...page);
+  if(page.length<pageSize)return rows.map(x=>fromRow(kind,x));
+ }
+ throw Error('Too many '+kind+' records to load safely. Please use a filtered export.');
+}
+async function listPayments(){
+ const rows=[],pageSize=500,maxRecords=10000;
+ for(let offset=0;offset<maxRecords;offset+=pageSize){
+  const batch=await secured('/rest/v1/crm_payments?select=*&org_id=eq.'+encodeURIComponent(orgId)+'&order=received_at.desc&limit='+pageSize+'&offset='+offset);
+  if(!Array.isArray(batch))throw Error('Invalid payments response.');
+  rows.push(...batch);
+  if(batch.length<pageSize)return rows;
+ }
+ throw Error('Too many payments to load safely.');
+}
+async function getData(){
+ const [email_queue,email_templates,projects,contracts,expenses,leads,clients,deals,tasks,jobs,documents,calendar,notifications,catalog,equipment,technicians,time_entries,checklists,service_plans,stock_movements,activity]=await Promise.all([list('email_queue'),list('email_templates'),list('projects'),list('contracts'),list('expenses'),list('leads'),list('clients'),list('deals'),list('tasks'),list('jobs'),list('documents'),list('calendar'),secured('/rest/v1/crm_notifications?select=*&org_id=eq.'+orgId+'&order=created_at.desc&limit=100'),list('catalog'),list('equipment'),list('technicians'),list('time_entries'),list('checklists'),list('service_plans'),list('stock_movements'),secured('/rest/v1/crm_activities?select=*&org_id=eq.'+orgId+'&order=created_at.desc&limit=150')]);
+ return {email_queue,email_templates,projects,contracts,expenses,leads,clients,deals,tasks,jobs,documents,calendar,notifications,catalog,equipment,technicians,time_entries,checklists,service_plans,stock_movements,payments:await listPayments(),activity:activity.map(x=>({...x,createdAt:x.created_at,actor:'CRM team'})),users:['owner','admin'].includes(member?.role)?(await secured('/functions/v1/nexabridge-team-admin',{method:'POST',body:{action:'list'}}).catch(()=>({members:[]}))).members:[],directory:(await secured('/functions/v1/nexabridge-team-admin',{method:'POST',body:{action:'directory'}}).catch(()=>({members:[]}))).members||[],settings:defaultSettings};
+}
+function csv(v){let s=String(v??'');if(/^[\s]*[=+\-@\t\r]/.test(s))s="'"+s;return '"'+s.replaceAll('"','""')+'"'}
+function csvExport(kind,records){const cols=['id',...Object.keys(FIELDS[kind]),'createdAt','updatedAt'];return '\ufeff'+[cols.map(csv).join(','),...records.map(r=>cols.map(k=>csv(r[k])).join(','))].join('\r\n')}
+async function adapter(input,init={}){
+ const u=typeof input==='string'?input:input.url;
+ if(!u.startsWith('/api/'))return err('Unsupported URL',403);
+ const parsed=new URL(u,'https://crm.nexabridge.invalid'),path=decodeURIComponent(parsed.pathname.slice(5)),method=(init.method||'GET').toUpperCase();let b={};
+ if(init.body!==undefined)try{b=typeof init.body==='string'?JSON.parse(init.body):init.body}catch{return err('Invalid JSON')}
+ try{
+ if(path==='status')return reply({setup_required:false,setup_token_required:false,version:'2.0-professional-online'});
+ if(path==='accept-invite'&&method==='POST'){
+ const at=String(b.accessToken||''),rt=String(b.refreshToken||''),password=String(b.password||'');
+ if(!at||!rt||password.length<12||password.length>72)return err('Invalid invitation or password',400);
+ const resp=await fetch(URL_BASE+'/auth/v1/user',{method:'PUT',headers:{'apikey':PUBLIC_KEY,'Authorization':'Bearer '+at,'Content-Type':'application/json'},body:JSON.stringify({password}),cache:'no-store'});
+ const result=await resp.json().catch(()=>({}));
+ if(!resp.ok)throw Error(result.message||result.msg||'Unable to activate account');
+ session={access_token:at,refresh_token:rt};saveSession();await loadMember();
+ return reply({user:member,csrf:'supabase-auth'});
+ }
+ if(path==='login'&&method==='POST')return reply(await login(b.username,b.password));
+ if(path==='me'&&method==='GET'){if(!session)throw Error('Please sign in.');try{await loadMember()}catch(e){if(session?.refresh_token){await refresh();await loadMember()}else throw e;}return reply({user:member,csrf:'supabase-auth'})}
+ if(path==='logout'&&method==='POST'){try{await request('/auth/v1/logout',{method:'POST'})}catch{}session=null;member=null;orgId=null;saveSession();return reply({ok:true})}
+ if(!session||!orgId)return err('Please sign in.',401);
+ if(path==='data'&&method==='GET')return reply(await getData());
+ if(path==='stock'&&method==='POST'){const row={org_id:orgId,catalog_id:b.catalogId,job_id:b.jobId||null,delta:Number(b.delta),reason:b.reason||'adjustment',notes:b.notes||''};if(!Number.isFinite(row.delta)||!row.delta)return err('Invalid quantity',400);const r=await secured('/rest/v1/crm_stock_movements?select=*&org_id=eq.'+orgId,{method:'POST',body:row,prefer:'return=representation'});return reply(r[0],201)}
+ if(path==='team'&&method==='POST')return reply(await secured('/functions/v1/nexabridge-team-admin',{method:'POST',body:b}));
+ if(path.startsWith('notifications/')&&method==='PATCH'){const id=path.split('/')[1];const list=await secured('/rest/v1/crm_notifications?select=id&id=eq.'+id+'&org_id=eq.'+orgId,{method:'PATCH',body:{read_at:new Date().toISOString()},prefer:'return=representation'});return reply(list[0]||{ok:false});}
+ if(path==='payments'&&method==='POST'){if(!b.documentId||!Number.isFinite(Number(b.amount))||Number(b.amount)<=0)return err('Invalid payment',400);const row={org_id:orgId,document_id:b.documentId,amount:Number(b.amount),method:b.method||'other',reference:b.reference||'',notes:b.notes||''};const result=await secured('/rest/v1/crm_payments?select=*&org_id=eq.'+orgId,{method:'POST',body:row,prefer:'return=representation'});return reply(result[0],201)}
+ if(path==='health'&&method==='GET'){const check=await secured('/rest/v1/crm_organizations?select=id&id=eq.'+orgId+'&limit=1');return reply({status:check.length===1?'ok':'error',mode:'online',database:check.length===1?'reachable':'unavailable',checkedAt:new Date().toISOString()});}
+ if(path==='backup'&&method==='GET'){return new Response(JSON.stringify({...await getData(),exportedAt:new Date().toISOString()},null,2),{headers:{'Content-Type':'application/json'}})}
+ if(path.startsWith('export/')&&path.endsWith('.csv')&&method==='GET'){const kind=path.slice(7,-4);if(!table(kind))return err('Unknown type',404);return new Response(csvExport(kind,await list(kind)),{headers:{'Content-Type':'text/csv; charset=utf-8'}})}
+ if(path==='settings'&&method==='PUT')return err('Online company settings require administrator configuration.',403);
+ if(path==='import'&&method==='POST')return err('Import is disabled for safety in the online version.',403);
+ if(path.startsWith('users'))return err('Manage team users from Supabase dashboard.',403);
+ if(path==='account/password'&&method==='POST'){
+  const current=String(b.current||''),password=String(b.password||'');
+  if(!current||password.length<12||password.length>72||password===current)return err('Use a different password of 12–72 characters and enter your current password.',400);
+  const identity=await secured('/auth/v1/user');
+  if(!identity?.email)return err('Unable to verify your account.',401);
+  const check=await request('/auth/v1/token?grant_type=password',{method:'POST',auth:false,body:{email:identity.email,password:current}}).catch(()=>null);
+  if(!check?.access_token)return err('Current password is incorrect.',401);
+  const updated=await fetch(URL_BASE+'/auth/v1/user',{method:'PUT',headers:{apikey:PUBLIC_KEY,Authorization:'Bearer '+check.access_token,'Content-Type':'application/json'},body:JSON.stringify({password}),cache:'no-store'});
+  if(!updated.ok){const detail=await updated.json().catch(()=>({}));return err(detail?.msg||detail?.message||'Unable to update password.',updated.status);}
+  try{await fetch(URL_BASE+'/auth/v1/logout',{method:'POST',headers:{apikey:PUBLIC_KEY,Authorization:'Bearer '+check.access_token}})}catch{}
+  session=null;member=null;orgId=null;saveSession();
+  return reply({success:true,signInRequired:true});
+ }
+ if(path==='change-password' || path==='password')return err('Use the secure account password form.',403);
+ const pieces=path.split('/');
+ if(pieces[0]==='convert'&&pieces.length===2&&method==='POST'){
+  const r=await secured('/rest/v1/crm_leads?select=*&id=eq.'+pieces[1]+'&org_id=eq.'+orgId);if(r.length!==1)throw Error('Lead not found');const lead=r[0];if(lead.status==='converted')throw Error('Lead already converted');
+  const [client]=await secured('/rest/v1/crm_clients?select=*&org_id=eq.'+orgId,{method:'POST',body:{org_id:orgId,name:lead.company||lead.name,contact:lead.name,email:lead.email,phone:lead.phone,notes:lead.notes},prefer:'return=representation'});
+  await secured('/rest/v1/crm_leads?id=eq.'+lead.id+'&org_id=eq.'+orgId,{method:'PATCH',body:{status:'converted'},prefer:'return=minimal'});await audit('convert','leads',lead.name);return reply({ok:true,clientId:client.id});
+ }
+ if(pieces[0]==='records'&&table(pieces[1])){
+  const kind=pieces[1],id=pieces[2],target='/rest/v1/'+table(kind);if(pieces.length===2&&method==='POST'){
+   const row={...toRow(kind,b),org_id:orgId};const [created]=await secured(target+'?select=*&org_id=eq.'+orgId,{method:'POST',body:row,prefer:'return=representation'});await audit('create',kind,created.name||created.title);return reply(fromRow(kind,created),201);
+  }
+  if(!id)return err('Record ID is required',400);
+  if(pieces.length===3&&method==='PUT'){
+   const row=toRow(kind,b);const updated=await secured(target+'?select=*&id=eq.'+id+'&org_id=eq.'+orgId,{method:'PATCH',body:row,prefer:'return=representation'});if(!updated.length)return err('Record not found or access denied',404);await audit('update',kind,updated[0].name||updated[0].title);return reply(fromRow(kind,updated[0]));
+  }
+  if(pieces.length===3&&method==='DELETE'){
+   if(!member||!['owner','admin'].includes(member.role))return err('Only an Owner or Admin can delete records.',403);
+   if(kind==='documents'){
+    const payments=await secured('/rest/v1/crm_payments?select=id&org_id=eq.'+encodeURIComponent(orgId)+'&document_id=eq.'+encodeURIComponent(id)+'&limit=1');
+    if(payments.length)return err('Cannot delete a document with recorded payments. Preserve the invoice and its financial history.',409);
+   }
+   const deleted=await secured(target+'?select=id&org_id=eq.'+orgId+'&id=eq.'+id,{method:'DELETE',prefer:'return=representation'});if(!deleted.length)return err('Record not found or delete permission denied',403);await audit('delete',kind,id);return reply({ok:true});
+  }
+ }
+ return err('Unsupported operation',403);
+ }catch(e){return err(e.message||'Request failed',/sign in|authorized|token|JWT/i.test(e.message)?401:400)}
+}
+const nativeFetch=window.fetch.bind(window);window.fetch=(input,init)=>{
+ const u=typeof input==='string'?input:input.url;
+ if(u.startsWith('/api/'))return adapter(input,init);
+ return nativeFetch(input,init);
+};
+})();
+
