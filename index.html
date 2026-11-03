@@ -2031,6 +2031,98 @@ html[data-nexa-theme="dark"] #root .shell .main-content .pill.gray{color:#ced5e4
  }
  .nexa-task-celebration{display:none!important}
 }
+</style><style id="nexa-theme-consistency-v25">
+/* Follow-through for 5-stage lead and 6-stage opportunity boards. */
+#root .shell .main-content .nexa-lead-kanban{
+ grid-template-columns:repeat(5,minmax(235px,1fr))!important;
+}
+#root .shell .main-content .nexa-draggable-pipeline{
+ grid-template-columns:repeat(6,minmax(235px,1fr))!important;
+}
+#root .shell .main-content .nexa-lead-kanban,
+#root .shell .main-content .nexa-draggable-pipeline{
+ grid-auto-flow:column!important;
+}
+#root .shell .main-content :is(.nexa-leads-hero,.nexa-lead-detail-hero) h1{
+ color:#fff!important;
+}
+/* Dark-mode coverage across email, extensions, forms and operations pages. */
+html[data-nexa-theme="dark"] #root .shell .main-content :is(
+ .mail-card,.nexa-gmail-row,.nexa-gmail-detail,.nexa-gmail-toolbar,.nexa-gmail-list,
+ .nexa-gmail-header,.nexa-gmail-sidebar,.nexa-gmail-message,.nexa-gmail-workspace,
+ .nexa-mail-workspace,.nexa-mail-card,.nexa-mail-panel,.mail-empty,
+ .record-card,.doc-page-stat,.doc-page-stats,.settings-grid,.dialog-body,
+ .wz-table,.wz-tablewrap,.wz-job,.wz-column,.nexa-ops-pulse>div,
+ .lane,.deal-card,.nexa-ops-board .wz-job,.nexa-ops-board .wz-column
+ ){
+ background:var(--nexa-surface)!important;
+ border-color:var(--nexa-border)!important;
+ color:var(--nexa-text)!important;
+}
+html[data-nexa-theme="dark"] #root .shell .main-content :is(
+ .nexa-gmail-row-subject,.nexa-gmail-row-from,.nexa-gmail-row-preview,
+ .mail-card h3,.mail-card strong,.nexa-mail-panel strong,.wz-job b,
+ .nexa-ops-title h2,.data-name,.td-title,.nexa-lead-stat strong,
+ .doc-page-stat strong
+ ){color:var(--nexa-text)!important}
+html[data-nexa-theme="dark"] #root .shell .main-content :is(
+ .nexa-gmail-row-from,.nexa-gmail-row-preview,.wz-job small,.doc-page-stat small,
+ .nexa-ops-title p,.mail-card small,.nexa-gmail-toolbar small
+ ){color:var(--nexa-subtle)!important}
+html[data-nexa-theme="dark"] #root .shell .main-content .nexa-gmail-row:hover,
+html[data-nexa-theme="dark"] #root .shell .main-content .wz-job:hover{
+ background:var(--nexa-hover)!important;
+}
+html[data-nexa-theme="dark"] #root .shell .main-content :is(
+ .nexa-gmail-row.current,.nexa-gmail-tab.active,.nexa-mail-tab.selected,
+ .nexa-gmail-tab.active
+ ){background:#35305b!important;color:#e5dbff!important}
+html[data-nexa-theme="dark"] #root .shell .main-content :is(
+ .btn.soft,.wz-ref,.mail-btn,.wz-lite,.nav-count
+ ){color:#cdbbff!important;background:#322b50!important;border-color:#50426f!important}
+html[data-nexa-theme="dark"] #root .shell .main-content :is(
+ .wz-panel,.panel,.card,.record-card,.mail-card,.nexa-gmail-shell
+ ) input:not([type=checkbox]):not([type=radio]),
+html[data-nexa-theme="dark"] #root .shell .main-content :is(
+ .wz-panel,.panel,.card,.record-card,.mail-card,.nexa-gmail-shell
+ ) textarea,
+html[data-nexa-theme="dark"] #root .shell .main-content :is(
+ .wz-panel,.panel,.card,.record-card,.mail-card,.nexa-gmail-shell
+ ) select{
+ color:var(--nexa-text)!important;
+ background:var(--nexa-surface-raised)!important;
+ border-color:var(--nexa-border)!important;
+ -webkit-text-fill-color:var(--nexa-text)!important;
+}
+html[data-nexa-theme="dark"] #root .shell .main-content .nexa-mail-hero,
+html[data-nexa-theme="dark"] #root .shell .main-content .nexa-ops-title{
+ background:#262245!important;color:#f7f5ff!important;border-color:#3d3565!important;
+}
+html[data-nexa-theme="dark"] #root .shell .main-content .nexa-ops-title h2{
+ color:#f7f5ff!important;
+}
+html[data-nexa-theme="dark"] #root .shell .main-content :is(.lane-head,.wz-column>strong){
+ color:var(--nexa-text)!important;
+}
+html[data-nexa-theme="dark"] #root .shell .main-content table :is(th,td){
+ border-color:var(--nexa-border)!important;
+}
+html[data-nexa-theme="dark"] #root .shell .main-content :is(.nexa-lead-detail-hero,.nexa-leads-hero) h1,
+html[data-nexa-theme="dark"] #root .shell .main-content .nexa-dash-hero h2{
+ color:#fff!important;
+}
+/* Persian-capable system-font fallback, without external font files. */
+#root .shell :lang(fa),#root .shell [dir="rtl"]{
+ font-family:"Vazirmatn","IRANYekan","Segoe UI",Tahoma,sans-serif!important;
+}
+@media(max-width:1100px){
+ #root .shell .main-content .nexa-lead-kanban{grid-template-columns:repeat(5,260px)!important}
+ #root .shell .main-content .nexa-draggable-pipeline{grid-template-columns:repeat(6,260px)!important}
+}
+@media(max-width:600px){
+ #root .shell .main-content .nexa-lead-kanban{grid-template-columns:repeat(5,240px)!important}
+ #root .shell .main-content .nexa-draggable-pipeline{grid-template-columns:repeat(6,240px)!important}
+}
 </style></head><body>
 <div id="root"><div class="startup">NexaBridge CRM — Secure Workspace</div></div><div aria-live="polite" class="toast-host" id="toast" role="status"></div>
 <script>
