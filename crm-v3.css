@@ -163,3 +163,8 @@ body.dark #grid .gridcell.range-anchor{outline-color:#c0abff!important}
 .sheet-grid td.peer-active:not(.selected){background:#e7f5ef!important;outline:2px solid #42ba91;outline-offset:-2px}
 body.dark .studio-peer-status{background:#203b37;border-color:#3f7168;color:#a1e9d2}
 body.dark .sheet-grid td.peer-active:not(.selected){background:#254a44!important;outline-color:#55c3a2}
+
+/* Spreadsheet rectangular selection and paste dialog */
+.sheet-grid td.range-selected:not(.selected){background:#e7e0ff!important;box-shadow:inset 0 0 0 1px #ac94f5;color:#271d4c}
+body.dark .sheet-grid td.range-selected:not(.selected){background:#42365b!important;color:#efecff}
+.studio-paste-area{width:100%;min-height:160px;resize:vertical;font-family:ui-monospace,Consolas,monospace;white-space:pre;font-size:12px}
