@@ -84,7 +84,7 @@ function nexaRaw_(value, formula) {
   if (value instanceof Date)
     return Utilities.formatDate(value, 'Etc/UTC', 'yyyy-MM-dd');
   if (value === undefined || value === null) return '';
-  return String(value);
+  return String(value).replace(/^'(?=[=+@\t\r])/,'');
 }
 
 function nexaPull() {
@@ -168,15 +168,16 @@ function nexaPush() {
     baseRows.forEach(r => {if(r[0])baseline.set(String(r[0]),{revision:Number(r[1])||0,raw:String(r[2]??'')});});
     const range=linked.getDataRange(),values=range.getValues(),formulas=range.getFormulas();
     if (values.length>10000 || values[0].length>26) throw new Error('Only A1:Z10000 is supported.');
-    const modified=[];
+    const modified=[],visited=new Set();
     for(let row=0;row<values.length;row++)for(let col=0;col<values[row].length;col++){
-      const address=nexaAddress_(row+1,col+1);
+      const address=nexaAddress_(row+1,col+1);visited.add(address);
       const current=nexaRaw_(values[row][col],formulas[row][col]);
       const before=baseline.get(address)||{revision:0,raw:''};
       if (current!==before.raw && current.length<=4000)
         modified.push({address,value:current,revision:before.revision});
       else if(current.length>4000)throw new Error(address+' exceeds 4,000 characters');
     }
+    for(const [address,before] of baseline){if(!visited.has(address)&&before.raw!=='')modified.push({address,value:'',revision:before.revision});}
     if (!modified.length) return ui.alert('No changed cells to push. CRM was not modified.');
     if (modified.length>2000) throw new Error('Push at most 2,000 edited cells. Split large changes into batches.');
     const answer=ui.alert('Push changes to NexaBridge CRM?',
