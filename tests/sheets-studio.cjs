@@ -11,6 +11,7 @@ const dom=new JSDOM('<!doctype html><html><body><div id="sheetApp"></div></body>
 const win=dom.window,doc=win.document;
 win.prompt=()=> 'Team Revenue Sheet';
 win.confirm=()=>true;
+let clipboard='';Object.defineProperty(win.navigator,'clipboard',{value:{writeText:async text=>{clipboard=text}}});
 win.eval(formula);win.eval(studio);
 const F=win.NexaFormula;
 assert.ok(F,'Formula engine is exposed');
@@ -73,11 +74,27 @@ const wait=async(fn,description)=>{for(let i=0;i<180;i++){if(fn())return;await n
  root.querySelector('[data-sheet-action=saveChart]').click();
  await wait(()=>sheets[0].charts.length===1,'chart saved to Supabase mock');
  await wait(()=>root.querySelector('#sheetCharts')?.textContent.includes('Revenue by region'),'chart visible after async save');
+ 
+ // Multi-cell paste and copy ranges preserve the real cell write path.
+ root.querySelector('[data-sheet-action=pasteCells]').click();
+ await wait(()=>root.querySelector('#studioPasteData'),'TSV paste editor');
+ root.querySelector('#studioPasteStart').value='A4';
+ root.querySelector('#studioPasteData').value='North\t120\nSouth\t250';
+ root.querySelector('[data-sheet-action=pasteSave]').click();
+ await wait(()=>cells.get('B5')?.raw_value==='250','TSV paste saved four cells');
+ await wait(()=>root.querySelector('[data-sheet-address=A4]')?.textContent==='North','pasted row visible');
+ root.querySelector('[data-sheet-address=A4]').click();
+ root.querySelector('[data-sheet-address=B5]').dispatchEvent(new win.MouseEvent('click',{bubbles:true,shiftKey:true}));
+ assert.equal(root.querySelectorAll('.sheet-studio-cell.range-selected').length,4,'Rectangular range selected');
+ root.querySelector('[data-sheet-action=copyCells]').click();
+ await wait(()=>clipboard.includes('South\t250'),'TSV range copied to clipboard');
+ assert.match(clipboard,/North\t120/);
+
  root.querySelector('[data-sheet-action=back]').click();
  await wait(()=>root.querySelector('[data-sheet-action=new]'),'return to sheet library');
  assert.ok(root.textContent.includes('Team Revenue Sheet'),'saved workbook in library');
  win.NexaSheetStudio.leave();
  assert.equal(errors.length,0,'No DOM script errors: '+errors.join('\n'));
- console.log('PASS Sheets Studio — common formulas, circular refs, sheet create/open, cell version saves, chart editor and back navigation');
+ console.log('PASS Sheets Studio — common formulas, circular refs, sheet create/open, cell version saves, chart editor, multi-cell TSV paste, range copy and back navigation');
  dom.window.close();
 })().catch(e=>{console.error(e);if(errors.length)console.error(errors);win.NexaSheetStudio.leave();dom.window.close();process.exitCode=1});
