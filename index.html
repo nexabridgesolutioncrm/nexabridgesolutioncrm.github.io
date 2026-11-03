@@ -1500,6 +1500,56 @@ body:has(#authForm) #authForm input::placeholder{
  #root .shell .main-content .btn,
  #root .shell .main-content .nexa-clickable-lead{transition:none!important;transform:none!important}
 }
+</style><style id="nexa-lead-visible-back-and-number-v23">
+#root .shell .main-content .nexa-lead-backbar {
+ display:flex!important;align-items:center!important;justify-content:flex-start!important;
+ gap:16px!important;margin:0 0 19px!important;flex-wrap:wrap!important;
+}
+#root .shell .main-content .nexa-lead-backbar .nexa-back-to-leads,
+#root .shell .main-content .nexa-lead-bottom-nav .nexa-back-to-leads {
+ display:inline-flex!important;align-items:center!important;justify-content:center!important;
+ min-width:170px!important;min-height:48px!important;padding:12px 20px!important;
+ background:linear-gradient(135deg,#7658f4,#5436c7)!important;
+ color:#fff!important;-webkit-text-fill-color:#fff!important;
+ border:1px solid #6d4ce2!important;
+ border-radius:12px!important;font-weight:800!important;font-size:14px!important;
+ box-shadow:0 8px 20px rgba(89,60,194,.23)!important;cursor:pointer!important;
+ text-decoration:none!important;
+}
+#root .shell .main-content .nexa-lead-backbar .nexa-back-to-leads:hover,
+#root .shell .main-content .nexa-lead-bottom-nav .nexa-back-to-leads:hover {
+ background:linear-gradient(135deg,#886afa,#6345d9)!important;
+ transform:translateY(-1px)!important;
+ box-shadow:0 10px 25px rgba(89,60,194,.31)!important;
+}
+#root .shell .main-content .nexa-lead-breadcrumb{
+ color:#636b81!important;font-size:13px!important;font-weight:700!important;
+}
+#root .shell .main-content .nexa-lead-number-col{
+ width:74px!important;min-width:74px!important;max-width:90px!important;
+ text-align:center!important;
+}
+#root .shell .main-content .nexa-lead-number{
+ display:inline-flex;align-items:center;justify-content:center;
+ min-width:36px;min-height:36px;padding:4px 8px;
+ border-radius:11px;
+ color:#5438b5;font-size:14px;font-weight:800;
+ background:#eee9ff;border:1px solid #ddd5ff;
+}
+#root .shell .main-content .nexa-lead-bottom-nav{
+ margin:22px 0 8px;padding:17px 0;
+ border-top:1px solid #e1e5ef;
+ display:flex;align-items:center;gap:16px;justify-content:space-between;
+ color:#7b8196;font-size:13px;font-weight:750;
+}
+@media(max-width:600px){
+ #root .shell .main-content .nexa-lead-backbar .nexa-back-to-leads,
+ #root .shell .main-content .nexa-lead-bottom-nav .nexa-back-to-leads{
+  min-height:46px!important;min-width:150px!important;
+  padding:11px 15px!important;
+ }
+ #root .shell .main-content .nexa-lead-number-col{min-width:65px!important;width:65px!important}
+}
 </style></head><body>
 <div id="root"><div class="startup">NexaBridge CRM — Secure Workspace</div></div><div aria-live="polite" class="toast-host" id="toast" role="status"></div>
 <script>
@@ -1819,18 +1869,20 @@ function recordTable(kind){
    :textCol(f,x);
   return '<'+(i===0?'div':'span')+' class="'+(i===0?'td-title':'td-secondary')+'">'+value+'</'+(i===0?'div':'span')+'>';
  }).join('')+'</td>';
- return '<div class="panel nexa-record-table"><div class="table-scroll"><table class="table"><thead><tr>'+
+ return '<div class="panel nexa-record-table"><div class="table-scroll"><table class="table"><thead><tr>'+ (kind==='leads'?'<th class="nexa-lead-number-col">No.</th>':'')+
   fieldCols.map(([f])=>'<th>'+e(t(f==='title'&&kind==='tasks'?'taskTitle':f==='title'?'dealTitle':f))+'</th>').join('')+
   '<th>'+e(t('actions'))+'</th></tr></thead><tbody>'+
   (items.length?items.map(x=>{
+   const leadIndex=kind==='leads'?(data.leads||[]).findIndex(lead=>String(lead.id)===String(x.id))+1:0;
+   const leadNumber=kind==='leads'?'<td class="nexa-lead-number-col"><span class="nexa-lead-number">'+fmt(leadIndex)+'</span></td>':'';
    const rowOpen=kind==='leads'?' class="nexa-clickable-lead" data-action="leadOpen" data-id="'+e(x.id)+'" tabindex="0" aria-label="Open lead '+e(x.name||x.company||'record')+'"':'';
    const actions=(kind==='tasks'?button(x.status==='done'?t('taskReopen'):t('taskDone'),'toggleTask','','soft').replace('data-action','data-id="'+e(x.id)+'" data-action'):'')+
     (kind==='leads'?'<button type="button" class="btn tiny nexa-view-lead" data-action="leadOpen" data-id="'+e(x.id)+'">View details</button>':'')+
     (kind==='leads'&&x.status!=='converted'?'<button class="btn tiny soft" data-action="convert" data-id="'+e(x.id)+'">'+e(t('convert'))+'</button>':'')+
     '<button class="btn tiny neutral" data-action="edit" data-kind="'+e(kind)+'" data-id="'+e(x.id)+'">'+e(t('edit'))+'</button>'+
     (['owner','admin'].includes(user.role)?'<button class="btn tiny danger" data-action="delete" data-kind="'+e(kind)+'" data-id="'+e(x.id)+'">'+e(t('delete'))+'</button>':'');
-   return '<tr'+rowOpen+'>'+fieldCols.map(c=>cell(x,c)).join('')+'<td><div class="row-actions">'+actions+'</div></td></tr>';
-  }).join(''):'<tr><td class="empty-td" colspan="'+(fieldCols.length+1)+'">'+e(query||filter!=='all'?t('noResults'):t('noRecords'))+'</td></tr>')+
+   return '<tr'+rowOpen+'>'+leadNumber+fieldCols.map(c=>cell(x,c)).join('')+'<td><div class="row-actions">'+actions+'</div></td></tr>';
+  }).join(''):'<tr><td class="empty-td" colspan="'+(fieldCols.length+1+(kind==='leads'?1:0))+'">'+e(query||filter!=='all'?t('noResults'):t('noRecords'))+'</td></tr>')+
   '</tbody></table></div><div class="table-footer">'+fmt(items.length)+' '+e(t('recordCount'))+'</div></div>';
 }
 
@@ -1864,6 +1916,7 @@ function nexaLeadListPage(){
 function nexaLeadDetailPage(){
  const lead=(data.leads||[]).find(x=>String(x.id)===String(nexaActiveLeadId));
  if(!lead)return '<section class="nexa-lead-not-found"><h2>Lead unavailable</h2><p>This lead may have been removed.</p><button class="btn primary" data-action="leadBack">Back to leads</button></section>';
+ const leadNumber=(data.leads||[]).findIndex(x=>String(x.id)===String(lead.id))+1;
  const rawName=String(lead.name||'').trim();
  const website=nexaLeadUrl(rawName)||nexaLeadUrl(lead.company);
  const title=website&&nexaLeadUrl(rawName)?String(lead.company||rawName):String(rawName||lead.company||'Unnamed lead');
@@ -1907,9 +1960,9 @@ function nexaLeadDetailPage(){
   (linkedTasks.length?'<div class="nexa-lead-linked-tasks">'+linkedTasks.slice(0,12).map(task=>
    '<div class="nexa-lead-task-row"><div><strong>'+e(task.title||'Untitled task')+'</strong><span>'+e(fmtDate(task.dueDate))+' · '+e(task.status||'open')+'</span></div><button class="btn neutral" data-action="edit" data-kind="tasks" data-id="'+e(task.id)+'">Open task</button></div>'
   ).join('')+'</div>':'<p class="nexa-lead-empty-note">No tasks yet. Create a follow-up task directly from this lead.</p>')+'</section>';
- return '<div class="nexa-lead-detail"><div class="nexa-lead-backbar"><button data-action="leadBack" class="nexa-lead-back-btn">← All leads</button><span>Leads / Details</span></div>'+
-  '<section class="nexa-lead-detail-hero"><div class="nexa-lead-identity"><div class="nexa-lead-avatar">'+e(initial)+'</div><div class="nexa-lead-hero-title"><div class="nexa-lead-hero-kicker">LEAD WORKSPACE</div><h1>'+e(title)+'</h1><p>'+e(lead.company||'Prospective customer')+'</p><div class="nexa-lead-hero-meta">'+pill(lead.status||'new')+(lead.followup?'<span class="nexa-lead-next-date">Next follow-up: '+e(fmtDate(lead.followup))+'</span>':'<span class="nexa-lead-next-date">No follow-up scheduled</span>')+'</div></div></div>'+
-  action+'</section>'+contactActions+'<div class="nexa-lead-detail-grid"><div class="nexa-lead-detail-left">'+profile+related+'</div><div class="nexa-lead-detail-right">'+followup+'</div></div></div>';
+ return '<div class="nexa-lead-detail"><div class="nexa-lead-backbar"><button type="button" data-action="leadBack" class="btn nexa-back-to-leads">← Back to Leads</button><span class="nexa-lead-breadcrumb">Leads / Lead #'+fmt(leadNumber)+'</span></div>'+
+  '<section class="nexa-lead-detail-hero"><div class="nexa-lead-identity"><div class="nexa-lead-avatar">'+e(initial)+'</div><div class="nexa-lead-hero-title"><div class="nexa-lead-hero-kicker">LEAD #'+fmt(leadNumber)+' · WORKSPACE</div><h1>'+e(title)+'</h1><p>'+e(lead.company||'Prospective customer')+'</p><div class="nexa-lead-hero-meta">'+pill(lead.status||'new')+(lead.followup?'<span class="nexa-lead-next-date">Next follow-up: '+e(fmtDate(lead.followup))+'</span>':'<span class="nexa-lead-next-date">No follow-up scheduled</span>')+'</div></div></div>'+
+  action+'</section>'+contactActions+'<div class="nexa-lead-detail-grid"><div class="nexa-lead-detail-left">'+profile+related+'</div><div class="nexa-lead-detail-right">'+followup+'</div></div><div class="nexa-lead-bottom-nav"><button type="button" data-action="leadBack" class="btn nexa-back-to-leads">← Back to Leads</button><span>Lead #'+fmt(leadNumber)+'</span></div></div>';
 }
 function nexaBindLeadDetail(){
  const form=document.getElementById('nexaLeadQuickForm');
