@@ -6,7 +6,7 @@
  const esc=v=>String(v??'').replace(/[&<>"']/g,x=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[x]));
  const uid=()=>Math.random().toString(36).slice(2,10);
  const state={root:null,api:null,user:null,list:[],active:null,cells:new Map(),selected:'A1',editing:null,
-  channel:null,client:null,timer:null,serial:0,busy:false,realtime:false,status:'',lastRemote:null,modal:null};
+  channel:null,client:null,timer:null,serial:0,busy:false,pending:[],realtime:false,status:'',lastRemote:null,modal:null};
  const validAddress=v=>/^[A-Z]{1,3}[1-9][0-9]{0,4}$/.test(v);
  const display=v=>typeof v==='boolean'?(v?'TRUE':'FALSE'):v==null?'':String(v);
  const api=(path,opts)=>state.api(path,opts||{});
@@ -21,7 +21,7 @@
   if(state.channel){try{state.client?.removeChannel(state.channel)}catch(_){}state.channel=null}
   state.client=null;state.realtime=false;
  }
- function leave(){removeRemote();state.root=null;state.modal=null;state.editing=null}
+ function leave(){removeRemote();state.root=null;state.modal=null;state.editing=null;state.pending=[]}
  function header(){
   return '<div class="sheet-studio-head"><div><div class="studio-eyebrow">NEXABRIDGE / LIVE DATA WORKSPACE</div><h1>Sheets Studio</h1><p>Spreadsheet formulas, shared cells, Excel imports and data-driven charts.</p></div>'+
    '<div class="studio-head-actions"><span id="sheetStatus" aria-live="polite">'+esc(state.status)+'</span>'+
@@ -144,17 +144,25 @@
   await listRefresh();
  }
  async function saveCell(address,value){
-  if(state.busy)return;
+  if(state.busy){
+   state.pending=state.pending.filter(item=>item.address!==address);
+   state.pending.push({address,value});
+   notice('Saving in order · '+state.pending.length+' queued');
+   return;
+  }
   const previous=dataCell(address);
   if(previous.raw_value===value)return;
   if(String(value).length>4000){notice('Cell values cannot exceed 4,000 characters',true);return}
   state.busy=true;notice('Saving '+address+'…');
   try{
    const saved=await api('sheets/'+state.active.id+'/cell',{method:'POST',body:{address,value,revision:previous.revision||0}});
-   state.cells.set(address,saved);state.selected=address;paint();notice('Saved '+address);
+   state.cells.set(address,saved);paint();notice('Saved '+address);
   }catch(e){
    notice(e.message,true);if(/another session|conflict|revision|409/i.test(e.message)){await refreshSheet(true)}
-  }finally{state.busy=false}
+  }finally{
+   state.busy=false;
+   const next=state.pending.shift();if(next&&state.active)Promise.resolve().then(()=>saveCell(next.address,next.value));
+  }
  }
  function selectCell(address){
   if(!validAddress(address))return;
