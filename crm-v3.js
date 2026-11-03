@@ -89,10 +89,10 @@ function sheetSummary(){
 function localViewNames(){return Object.keys(S.savedViews[S.page]||{}).sort((a,b)=>a.localeCompare(b))}
 function savedViewsToolbar(){
  const names=localViewNames();
- return '<select id="savedSheetView" class="select" aria-label="Load saved spreadsheet view"><option value="">Saved views ('+names.length+')</option>'+
+ return '<div class="sheet-saved-views"><span class="sheet-saved-label">My views</span><select id="savedSheetView" class="select" aria-label="Load saved spreadsheet view"><option value="">Saved views ('+names.length+')</option>'+
   names.map(name=>'<option value="'+E(name)+'">'+E(name)+'</option>').join('')+'</select>'+
   '<button class="btn" data-action="saveViewModal">Save view</button>'+
-  (names.length?'<button class="btn" data-action="manageViews">Manage views</button>':'');
+  (names.length?'<button class="btn" data-action="manageViews">Manage views</button>':'')+'</div>';
 }
 function saveViewModal(){
  modal('Save spreadsheet view','<p class="card-sub">Save search, column filters, sorting and visible columns on this browser. Views are private to this device.</p>'+
