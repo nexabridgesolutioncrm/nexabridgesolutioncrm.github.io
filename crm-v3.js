@@ -125,7 +125,7 @@ function reports(){const leads=S.data.leads||[],deals=S.data.deals||[],jobs=S.da
 $('#main').innerHTML=head('Reports','Live figures from your CRM records','<button class="btn" data-action="refresh">↻ Refresh</button>')+'<div class="grid kpis">'+kpi('Revenue won',dollars(won.reduce((n,x)=>n+Number(x.value||0),0)),'Won deals','mint')+kpi('Lead conversion',all?Math.round(converted/all*100)+'%':'0%','Converted leads','sky')+kpi('Open jobs',jobs.filter(x=>!['completed','cancelled'].includes(x.status)).length,'Active service orders','violet')+kpi('Tasks completed',tasks.filter(x=>x.status==='done').length,'Of '+tasks.length+' total','amber')+'</div><div class="two"><section class="card pad"><h3>Lead source distribution</h3>'+barList(leads,'source')+'</section><section class="card pad"><h3>Sales stage distribution</h3>'+barList(deals,'stage')+'</section></div>'}
 function barList(rows,field){const group=Object.entries(rows.reduce((a,x)=>(a[x[field]||'unspecified']=(a[x[field]||'unspecified']||0)+1,a),{}));const high=Math.max(1,...group.map(x=>x[1]));return group.length?group.map(([name,n])=>'<div class="panelrow"><span style="width:100px;font-size:12px">'+E(name)+'</span><div class="progressline"><span style="width:'+(n/high*100)+'%"></span></div><b>'+fmt(n)+'</b></div>').join(''):'<div class="empty">No records yet.</div>'}
 function tablePage(){const c=C[S.page],rows=filtered(),shown=cols(),pageRows=rows.slice(S.offset,S.offset+50);const selectedCount=S.selected.size;const statuses=c.statuses||[...new Set((S.data[S.page]||[]).map(x=>x[c.status]).filter(Boolean))];
-$('#main').innerHTML=head(c.title,c.desc,'<button class="btn primary" data-action="new" data-kind="'+S.page+'">＋ New '+c.one+'</button><button class="btn" data-action="export">↓ Export CSV</button><button class="btn" data-action="import">↑ Import CSV</button>')+
+$('#main').innerHTML=head(c.title,c.desc,'<button class="btn primary" data-action="new" data-kind="'+S.page+'">＋ New '+c.one+'</button><button class="btn" data-action="export">↓ Export CSV</button><button class="btn" data-action="exportXLSX">↓ Excel (.xlsx)</button><button class="btn" data-action="import">↑ Import CSV</button>')+
 '<div class="toolbar"><label class="search">⌕ <input id="query" placeholder="Search all columns…" value="'+E(S.search)+'"></label>'+(c.status?'<select id="status" class="select" aria-label="Filter status"><option value="all">All statuses</option>'+statuses.map(x=>'<option value="'+E(x)+'"'+(S.status===x?' selected':'')+'>'+E(x.replaceAll('_',' '))+'</option>').join('')+'</select>':'')+
 '<button class="btn" data-action="filterModal">＋ Filter column</button><button class="btn" data-action="columns">Columns</button><button class="btn" data-action="findReplace">Find & replace</button><button class="btn" data-action="density">'+(S.density==='compact'?'Comfortable rows':'Compact rows')+'</button><button class="btn" data-action="freeze">'+(S.frozen?'Unfreeze first column':'Freeze first column')+'</button><button class="btn" data-action="undo" '+(S.history.length?'':'disabled')+'>↶ Undo</button><button class="btn" data-action="redo" '+(S.redo.length?'':'disabled')+'>↷ Redo</button><button class="btn" data-action="copy">Copy rows</button><button class="btn" data-action="copyCells">Copy cells</button><button class="btn" data-action="exportSelected">Export selected</button><button class="btn" data-action="paste">Paste TSV</button><button class="btn" data-action="fillDown">Fill down</button>'+
 (c.statuses&&['leads','deals','tasks','jobs'].includes(S.page)?'<button class="btn" data-action="viewBoard">Board view</button>':'')+'</div>'+
@@ -150,7 +150,73 @@ function editCell(span){if(S.editCell)return;const id=span.dataset.id,k=S.page,f
 input.className='select';input.setAttribute('aria-label','Edit '+label(k,f));span.replaceWith(input);S.editCell={input,span,k,id,f,original:value};input.focus();if(input.select)input.select();let working=false;const stop=()=>{if(S.editCell?.input===input){input.replaceWith(span);S.editCell=null}};const commit=async()=>{if(working||S.editCell?.input!==input)return;working=true;const next=input.value;if(String(next)===String(value)){stop();return}input.disabled=true;try{await patch(k,id,{[f]:type==='number'?Number(next||0):next},true);stop();render();tip('Cell updated')}catch(e){tip(e.message,true);input.disabled=false;working=false;input.focus()}};input.addEventListener('keydown',e=>{if(e.key==='Escape'){e.stopPropagation();stop()}else if(e.key==='Enter'){e.preventDefault();commit()}});input.addEventListener('blur',commit,{once:true});if(input.tagName==='SELECT')input.addEventListener('change',commit,{once:true})}
 async function patch(k,id,changes,remember=true){const row=S.data[k]?.find(x=>String(x.id)===String(id));if(!row)throw Error('Record was not found');const before={};for(const field of Object.keys(changes))before[field]=row[field]??'';await API('records/'+k+'/'+encodeURIComponent(id),{method:'PUT',body:changes});Object.assign(row,changes);if(remember){S.history.push({k,id,changes:before,after:{...changes}});if(S.history.length>100)S.history.shift();S.redo=[]}}
 async function reload(){const data=await API('data');S.data=data;S.selected=new Set([...S.selected].filter(id=>(data[S.page]||[]).some(r=>r.id===id)));shell()}
-function downloadCSV(selectedOnly=false){const k=S.page,rows=selectedOnly?filtered().filter(x=>S.selected.has(x.id)):filtered(),fields=cols(),all=[fields,...rows.map(r=>fields.map(f=>String(r[f]??'')))];const csv=all.map(row=>row.map(x=>'"'+String(x).replaceAll('"','""')+'"').join(',')).join('\r\n');fileDownload('\uFEFF'+csv,'NexaBridge_'+k+'_'+day()+'.csv','text/csv;charset=utf-8')}
+function csvSafe(value){
+ const raw=String(value??'');
+ return /^[\s]*[=+@-]/.test(raw)?"'"+raw:raw;
+}
+function downloadCSV(selectedOnly=false){
+ const k=S.page,rows=selectedOnly?filtered().filter(x=>S.selected.has(x.id)):filtered(),
+ fields=cols(),all=[fields,...rows.map(row=>fields.map(f=>typeof row[f]==='number'?String(row[f]):csvSafe(row[f])))];
+ const csv=all.map(row=>row.map(value=>'"'+String(value).replaceAll('"','""')+'"').join(',')).join('\r\n');
+ fileDownload('\uFEFF'+csv,'NexaBridge_'+k+'_'+day()+'.csv','text/csv;charset=utf-8');
+}
+function xlsxArchive(files){
+ const enc=new TextEncoder();
+ const table=new Uint32Array(256);
+ for(let n=0;n<256;n++){let x=n;for(let bit=0;bit<8;bit++)x=(x&1)?(0xedb88320^(x>>>1)):(x>>>1);table[n]=x>>>0;}
+ const crc=data=>{let x=0xffffffff;for(const b of data)x=(x>>>8)^table[(x^b)&255];return (x^0xffffffff)>>>0};
+ const parts=[],central=[],dv=(bytes)=>new DataView(bytes.buffer),stamp=new Date();
+ const time=((stamp.getHours()&31)<<11)|((stamp.getMinutes()&63)<<5)|Math.floor(stamp.getSeconds()/2);
+ const dateValue=(((Math.max(1980,stamp.getFullYear())-1980)&127)<<9)|(((stamp.getMonth()+1)&15)<<5)|(stamp.getDate()&31);
+ let offset=0,count=0;
+ for(const [path,text]of files){
+  const name=enc.encode(path),body=enc.encode(text),checksum=crc(body),local=new Uint8Array(30+name.length);
+  const a=dv(local);
+  a.setUint32(0,0x04034b50,true);a.setUint16(4,20,true);a.setUint16(6,0x0800,true);
+  a.setUint16(8,0,true);a.setUint16(10,time,true);a.setUint16(12,dateValue,true);
+  a.setUint32(14,checksum,true);a.setUint32(18,body.length,true);a.setUint32(22,body.length,true);
+  a.setUint16(26,name.length,true);local.set(name,30);
+  parts.push(local,body);
+  const dir=new Uint8Array(46+name.length),b=dv(dir);
+  b.setUint32(0,0x02014b50,true);b.setUint16(4,20,true);b.setUint16(6,20,true);b.setUint16(8,0x0800,true);
+  b.setUint16(10,0,true);b.setUint16(12,time,true);b.setUint16(14,dateValue,true);
+  b.setUint32(16,checksum,true);b.setUint32(20,body.length,true);b.setUint32(24,body.length,true);
+  b.setUint16(28,name.length,true);b.setUint32(42,offset,true);dir.set(name,46);
+  central.push(dir);offset+=local.length+body.length;count++;
+ }
+ const centralSize=central.reduce((n,p)=>n+p.length,0),end=new Uint8Array(22),v=dv(end);
+ v.setUint32(0,0x06054b50,true);v.setUint16(8,count,true);v.setUint16(10,count,true);
+ v.setUint32(12,centralSize,true);v.setUint32(16,offset,true);
+ return new Blob([...parts,...central,end],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+}
+function exportXLSX(){
+ const fields=cols(),rows=filtered(),k=S.page;
+ if(rows.length>10000)return tip('Excel export is limited to 10,000 filtered records',true);
+ const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]));
+ const col=n=>{let s='';while(n){n--;s=String.fromCharCode(65+n%26)+s;n=Math.floor(n/26)}return s};
+ const cell=(value,column,row)=>{
+  const address=col(column)+row;
+  if(typeof value==='number'&&Number.isFinite(value))return '<c r="'+address+'"><v>'+value+'</v></c>';
+  return '<c r="'+address+'" t="inlineStr"><is><t xml:space="preserve">'+esc(String(value??''))+'</t></is></c>';
+ };
+ const lines=['<row r="1">'+fields.map((f,i)=>cell(label(k,f),i+1,1)).join('')+'</row>'];
+ rows.forEach((row,i)=>lines.push('<row r="'+(i+2)+'">'+fields.map((f,j)=>cell(row[f],j+1,i+2)).join('')+'</row>'));
+ const declaration='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
+ const sheet=declaration+'<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'+
+  '<sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>'+
+  '<sheetData>'+lines.join('')+'</sheetData></worksheet>';
+ const workbook=declaration+'<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="'+esc(C[k].title.slice(0,31))+'" sheetId="1" r:id="rId1"/></sheets></workbook>';
+ const files=[
+  ['[Content_Types].xml',declaration+'<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/></Types>'],
+  ['_rels/.rels',declaration+'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>'],
+  ['xl/workbook.xml',workbook],
+  ['xl/_rels/workbook.xml.rels',declaration+'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/></Relationships>'],
+  ['xl/worksheets/sheet1.xml',sheet]
+ ];
+ const blob=xlsxArchive(files),url=URL.createObjectURL(blob),link=document.createElement('a');
+ link.href=url;link.download='NexaBridge_'+k+'_'+day()+'.xlsx';document.body.appendChild(link);link.click();link.remove();
+ setTimeout(()=>URL.revokeObjectURL(url),1800);tip('Excel workbook exported · '+fmt(rows.length)+' rows');
+}
 function fileDownload(text,name,type){const blob=new Blob([text],{type}),url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1200)}
 function copyRows(){const rows=filtered();const chosen=S.selected.size?rows.filter(x=>S.selected.has(x.id)):rows.slice(S.offset,S.offset+50);const fields=cols(),v=[fields,...chosen.map(r=>fields.map(f=>String(r[f]??'').replace(/\t/g,' ').replace(/\r?\n/g,' ')))].map(row=>row.join('\t')).join('\n');if(!navigator.clipboard?.writeText)return tip('Clipboard requires a secure connection',true);navigator.clipboard.writeText(v).then(()=>tip('Copied '+chosen.length+' rows')).catch(()=>tip('Clipboard unavailable',true))}
 function parseDelimited(text,delimiter){const rows=[];let row=[],cell='',quote=false;for(let i=0;i<text.length;i++){const ch=text[i];if(ch==='"'){if(quote&&text[i+1]==='"'){cell+='"';i++}else quote=!quote}else if(ch===delimiter&&!quote){row.push(cell);cell=''}else if((ch==='\n'||ch==='\r')&&!quote){if(ch==='\r'&&text[i+1]==='\n')i++;row.push(cell);if(row.some(x=>x.trim()))rows.push(row);row=[];cell=''}else cell+=ch}row.push(cell);if(row.some(x=>x.trim()))rows.push(row);return rows}
@@ -323,6 +389,7 @@ case 'replacePreview':previewReplace();break;
 case 'replaceRun':await runReplace();break;
 case 'saveColumns':{const checked=$$('.colToggle:checked').map(x=>x.value);if(!checked.length)return tip('Keep at least one column',true);S.hidden[S.page]=C[S.page].columns.filter(f=>!checked.includes(f));try{localStorage.setItem('nexa-v3-hidden',JSON.stringify(S.hidden))}catch(_){}$('#dialog').close();render();break}
 case 'export':downloadCSV();break;
+case 'exportXLSX':exportXLSX();break;
 case 'exportSelected':if(!S.selected.size)return tip('Select rows to export',true);downloadCSV(true);break;
 case 'copy':copyRows();break;
 case 'paste':pasteModal();break;
