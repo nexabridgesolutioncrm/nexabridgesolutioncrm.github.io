@@ -59,6 +59,8 @@ const dom=new JSDOM(html,{
   win.TextEncoder=TextEncoder;
   win.URL.createObjectURL=blob=>{downloadBlob=blob;return 'blob:mock'};
   win.URL.revokeObjectURL=()=>{};
+  const nativeAnchorClick=win.HTMLAnchorElement.prototype.click;
+  win.HTMLAnchorElement.prototype.click=function(){if(this.href.startsWith('blob:'))return;return nativeAnchorClick.call(this)};
   win.confirm=()=>true;
   win.HTMLDialogElement.prototype.showModal=function(){this.open=true};
   win.HTMLDialogElement.prototype.close=function(){this.open=false;this.dispatchEvent(new win.Event('close'))};
@@ -197,6 +199,7 @@ const wait=async(condition,step)=>{for(let n=0;n<150;n++){if(condition())return;
  // Undo and redo persist through authenticated backend, even with a filter selected.
  document.querySelector('[data-action="undo"]').click();
  await wait(()=>state.leads[0].company==='Changed Co','undo replacement');
+ await wait(()=>document.querySelector('[data-action="redo"]')?.disabled===false,'redo ready after refreshed grid');
  document.querySelector('[data-action="redo"]').click();
  await wait(()=>state.leads[0].company==='Updated Co','redo replacement');
 
