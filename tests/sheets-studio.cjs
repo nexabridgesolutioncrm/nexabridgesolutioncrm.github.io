@@ -16,6 +16,7 @@ Object.defineProperty(win,'indexedDB',{configurable:true,value:indexedDB});
 win.prompt=()=> 'Team Revenue Sheet';
 win.confirm=()=>true;
 let clipboard='';Object.defineProperty(win.navigator,'clipboard',{value:{writeText:async text=>{clipboard=text}}});
+win.formulajs=require('@formulajs/formulajs');
 win.eval(formula);win.eval(features);win.eval(offline);win.eval(studio);
 const F=win.NexaFormula;
 assert.ok(F,'Formula engine is exposed');
@@ -34,6 +35,7 @@ assert.equal(engine.evaluate('XLOOKUP(13,A1:A2,B1:B2)'), 'qualified','XLOOKUP ex
 assert.equal(engine.evaluate('INDEX(A1:A2,2)'),13,'INDEX picks rows');
 assert.equal(engine.evaluate('MATCH(13,A1:A2,0)'),2,'MATCH returns matching index');
 assert.equal(engine.evaluate('TEXTJOIN("-",TRUE,"North","South")'),'North-South');
+assert.equal(engine.evaluate('MEDIAN(A1:A2)'),10,'Pinned Formula.js fallback computes additional Excel functions');
 
 
  // Advanced formula operations on bounded arrays and approved linked-sheet maps.
