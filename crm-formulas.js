@@ -205,17 +205,16 @@
     const point=coordinates(start),matrix=value.matrix;
     if(!point||!matrix.length||!matrix[0].length||matrix.length*matrix[0].length>3000)continue;
     let blocked=false;
+    const placements=[];
     for(let r=0;r<matrix.length;r++)for(let c=0;c<matrix[r].length;c++){
      const row=point.row+r,col=point.col+c;
-     if(row>=10000||col>=26||((r||c)&&occupied.has(address(row,col))))blocked=true;
+     const loc=address(row,col);
+     if(row>=10000||col>=26||((r||c)&&(occupied.has(loc)||this._spills.has(loc))))blocked=true;
+     placements.push([loc,matrix[r][c]]);
     }
+    // Spill is all-or-nothing. Never leave partially populated output behind.
     if(blocked){this.cache.set(start,ERR.ref);continue}
-    for(let r=0;r<matrix.length;r++)for(let c=0;c<matrix[r].length;c++){
-     const loc=address(point.row+r,point.col+c);
-     if((r||c)&&this._spills.has(loc)){blocked=true;break}
-     this._spills.set(loc,matrix[r][c]);
-    }
-    if(blocked)this.cache.set(start,ERR.ref);
+    for(const [loc,result] of placements)this._spills.set(loc,result);
    }
    return this._spills;
   }
