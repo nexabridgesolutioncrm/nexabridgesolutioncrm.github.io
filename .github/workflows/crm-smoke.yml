@@ -35,7 +35,7 @@ jobs:
           node --check crm-sheet-features.js
           node --check crm-sheet-offline.js
       - name: Install pinned DOM test dependency
-        run: npm install --no-save --ignore-scripts --no-audit --no-fund --no-package-lock jsdom@26.1.0 fake-indexeddb@6.2.7
+        run: npm install --no-save --ignore-scripts --no-audit --no-fund --no-package-lock jsdom@26.1.0 fake-indexeddb@6.2.7 @formulajs/formulajs@4.6.1
       - name: Test CRM workflow against simulated Supabase
         run: |
           node tests/crm-smoke.cjs
