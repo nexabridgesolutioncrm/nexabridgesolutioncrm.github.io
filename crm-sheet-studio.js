@@ -698,7 +698,8 @@
   const needle=state.root?.querySelector('#studioFindText')?.value||'';
   if(!needle)throw Error('Enter a search term');
   const replacement=state.root?.querySelector('#studioReplaceText')?.value||'';
-  const pattern=new RegExp(needle.replace(/[-/\\^$*+?.()|[\]{}]/g,'\\ function onDouble(ev){'),'gi');
+  const escaped=Array.from(needle).map(ch=>'.*+?^$()[]{}|\\'.includes(ch)?'\\'+ch:ch).join('');
+  const pattern=new RegExp(escaped,'gi');
   const entries=[...state.cells.values()].filter(row=>String(row.raw_value||'').toLowerCase().includes(needle.toLowerCase()))
    .map(row=>({address:row.address,value:String(row.raw_value).replace(pattern,()=>replacement)}));
   if(!entries.length)return notice('No matching cells',true);
