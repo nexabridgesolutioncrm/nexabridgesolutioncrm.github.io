@@ -104,7 +104,7 @@
   }catch(e){if(canQueue(e))return queue(address,value,revision);throw e}
  }
  async function flush(){
-  if(replaying||!ctx||!enabled||!pending.size||!global.navigator.onLine)return;
+  if(replaying||!ctx||!enabled||!pending.size||!global.navigator.onLine||ctx.state.busy||ctx.state.editing||ctx.state.root?.querySelector('.studio-modal-layer'))return;
   const key=sheetKey(),account=userKey();
   replaying=true;let done=0,conflicts=0;
   try{
