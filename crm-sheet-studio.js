@@ -6,7 +6,7 @@
  const esc=v=>String(v??'').replace(/[&<>"']/g,x=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[x]));
  const uid=()=>Math.random().toString(36).slice(2,10);
  const state={root:null,api:null,user:null,list:[],active:null,cells:new Map(),selected:'A1',anchor:'A1',range:false,editing:null,rowStart:0,
-  channel:null,client:null,timer:null,generation:0,serial:0,busy:false,pending:[],realtime:false,presence:[],status:'',lastRemote:null,modal:null};
+  channel:null,client:null,timer:null,generation:0,serial:0,busy:false,pending:[],realtime:false,presence:[],status:'',lastRemote:null,conflictDraft:null,modal:null};
  const canCreate=()=>['owner','admin','agent'].includes(state.user?.role);
  const canManage=()=>['owner','admin'].includes(state.user?.role);
  const validAddress=v=>/^[A-Z]{1,3}[1-9][0-9]{0,4}$/.test(v);
@@ -28,7 +28,7 @@
   state.root=null;state.user=null;state.api=null;state.list=[];state.active=null;
   state.cells.clear();state.selected='A1';state.anchor='A1';state.range=false;
   state.rowStart=0;state.editing=null;state.pending=[];state.busy=false;
-  state.status='';state.lastRemote=null;state.importBook=null;state.modal=null;
+  state.status='';state.lastRemote=null;state.conflictDraft=null;state.importBook=null;state.modal=null;
  }
  function header(){
   return '<div class="sheet-studio-head"><div><div class="studio-eyebrow">NEXABRIDGE / LIVE DATA WORKSPACE</div><h1>Sheets Studio</h1><p>Spreadsheet formulas, shared cells, Excel imports and data-driven charts.</p></div>'+
@@ -176,10 +176,23 @@
   try{
    const saved=await api('sheets/'+state.active.id+'/cell',{method:'POST',body:{address,value,revision:previous.revision||0}});
    if(generation!==state.generation||state.active?.id!==sheetId)return;
-   state.cells.set(address,saved);paint();notice('Saved '+address);
+   state.conflictDraft=null;state.cells.set(address,saved);paint();notice('Saved '+address);
   }catch(e){
    if(generation!==state.generation||state.active?.id!==sheetId)return;
-   notice(e.message,true);if(/another session|conflict|revision|409/i.test(e.message)){await refreshSheet(true)}
+   notice(e.message,true);
+   if(/another session|conflict|revision|409/i.test(e.message)){
+    const draft={address,value,reason:String(e.message||'Revision conflict')};
+    try{await refreshSheet(true)}catch(_){}
+    if(generation===state.generation&&state.active?.id===sheetId){
+     state.conflictDraft=draft;
+     showModal('<h2>Cell edit conflict · '+esc(address)+'</h2>'+
+      '<p>Another user updated this cell before your changes could be saved. We loaded the latest version; your unsaved edit is preserved below.</p>'+
+      '<label class="studio-input-label" for="studioConflictDraft">Your unsaved value</label>'+
+      '<textarea id="studioConflictDraft" class="select studio-paste-area" rows="5" readonly>'+esc(value)+'</textarea>'+
+      '<div class="studio-modal-foot"><button class="btn" data-sheet-action="copyDraft">Copy my changes</button><button class="btn primary" data-sheet-action="dismiss">Close and review</button></div>');
+     notice('Conflict in '+address+' · your unsaved value has been preserved',true);
+    }
+   }
   }finally{
    state.busy=false;
    if(generation!==state.generation||state.active?.id!==sheetId)return;
@@ -453,6 +466,11 @@
     else if(action==='back')await back();
     else if(action==='refresh')await refreshSheet();
     else if(action==='copyCells')await copyCells();
+    else if(action==='copyDraft'){
+     if(!state.conflictDraft)throw Error('No draft to copy');
+     if(!navigator.clipboard?.writeText)throw Error('Select the draft text and copy it manually');
+     await navigator.clipboard.writeText(state.conflictDraft.value);notice('Unsaved cell value copied');
+    }
     else if(action==='pasteCells')pasteCellsDialog();
     else if(action==='pasteSave')await pasteCellsSave();
     else if(action==='rowPrev'){state.rowStart=Math.max(0,state.rowStart-50);state.selected=F.address(state.rowStart,0);paint()}
