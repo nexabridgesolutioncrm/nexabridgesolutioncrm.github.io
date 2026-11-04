@@ -55,11 +55,26 @@ async function identity(token: string): Promise<Account | null> {
 }
 async function sheetFor(orgId: string, id: string) {
   const { data, error } = await client.from("crm_spreadsheets")
-    .select("id,name,org_id").eq("id", id).eq("org_id", orgId).maybeSingle();
+    .select("id,name,org_id,protected_ranges").eq("id", id).eq("org_id", orgId).maybeSingle();
   if (error) throw error;
   return data;
 }
 
+
+function columnNumber(label: string): number {
+  return label.split("").reduce((n,c)=>n*26+c.charCodeAt(0)-64,0);
+}
+function cellPosition(value: string): {col: number; row: number} | null {
+  const m=/^([A-Z]{1,3})([1-9]\d{0,4})$/.exec(value);
+  return m?{col:columnNumber(m[1]),row:Number(m[2])}:null;
+}
+function cellInRange(address: string,range: string): boolean {
+  const parts=range.split(":");
+  if(parts.length!==2)return false;
+  const a=cellPosition(parts[0]),b=cellPosition(parts[1]),p=cellPosition(address);
+  return !!(a&&b&&p&&p.col>=Math.min(a.col,b.col)&&p.col<=Math.max(a.col,b.col)
+    &&p.row>=Math.min(a.row,b.row)&&p.row<=Math.max(a.row,b.row));
+}
 Deno.serve(async (req: Request) => {
   if (req.method !== "POST") return bad("POST required", 405);
   if (!SERVICE_KEY || !SUPABASE_URL) return bad("Service configuration missing", 503);
@@ -114,6 +129,11 @@ Deno.serve(async (req: Request) => {
       }
       for (const cell of payload.cells) {
         const address = String(cell.address).toUpperCase();
+        const protectedRanges = Array.isArray(sheet.protected_ranges) ? sheet.protected_ranges : [];
+        if (who.role === 'agent' && protectedRanges.some((r: {range?: string}) => cellInRange(address,String(r.range||'')))) {
+          result.push({address,saved:false,error:'Protected range — Owner/Admin permission required'});
+          continue;
+        }
         const row = {
           sheet_id: sheetId, org_id: who.orgId, address,
           raw_value: String(cell.value ?? ""), updated_by: who.userId,
