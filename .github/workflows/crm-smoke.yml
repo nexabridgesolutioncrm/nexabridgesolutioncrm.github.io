@@ -8,6 +8,9 @@ on:
       - crm-api.js
       - crm-formulas.js
       - crm-sheet-studio.js
+      - crm-sheet-features.js
+      - crm-sheet-offline.js
+      - crm-v3.css
       - tests/sheets-studio.cjs
       - tests/crm-smoke.cjs
       - .github/workflows/crm-smoke.yml
@@ -29,6 +32,8 @@ jobs:
           node --check crm-v3.js
           node --check crm-formulas.js
           node --check crm-sheet-studio.js
+          node --check crm-sheet-features.js
+          node --check crm-sheet-offline.js
       - name: Install pinned DOM test dependency
         run: npm install --no-save --ignore-scripts --no-audit --no-fund --no-package-lock jsdom@26.1.0
       - name: Test CRM workflow against simulated Supabase
