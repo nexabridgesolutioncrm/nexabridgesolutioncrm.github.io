@@ -3,6 +3,8 @@ const fs=require('node:fs');
 const {JSDOM,VirtualConsole}=require('jsdom');
 const formula=fs.readFileSync('crm-formulas.js','utf8');
 const studio=fs.readFileSync('crm-sheet-studio.js','utf8');
+const features=fs.readFileSync('crm-sheet-features.js','utf8');
+const offline=fs.readFileSync('crm-sheet-offline.js','utf8');
 const errors=[];
 const vc=new VirtualConsole();vc.on('jsdomError',error=>errors.push(String(error)));
 const dom=new JSDOM('<!doctype html><html><body><div id="sheetApp"></div></body></html>',{
@@ -12,7 +14,7 @@ const win=dom.window,doc=win.document;
 win.prompt=()=> 'Team Revenue Sheet';
 win.confirm=()=>true;
 let clipboard='';Object.defineProperty(win.navigator,'clipboard',{value:{writeText:async text=>{clipboard=text}}});
-win.eval(formula);win.eval(studio);
+win.eval(formula);win.eval(features);win.eval(offline);win.eval(studio);
 const F=win.NexaFormula;
 assert.ok(F,'Formula engine is exposed');
 const raw=new Map([['A1',{raw_value:'7'}],['A2',{raw_value:'13'}],['B1',{raw_value:'=SUM(A1:A2)'}],
@@ -31,25 +33,47 @@ assert.equal(engine.evaluate('INDEX(A1:A2,2)'),13,'INDEX picks rows');
 assert.equal(engine.evaluate('MATCH(13,A1:A2,0)'),2,'MATCH returns matching index');
 assert.equal(engine.evaluate('TEXTJOIN("-",TRUE,"North","South")'),'North-South');
 
+
+ // Advanced formula operations on bounded arrays and approved linked-sheet maps.
+ const advanced=new F.FormulaEngine(new Map([
+  ['A1',{raw_value:'3'}],['A2',{raw_value:'7'}],
+  ['B1',{raw_value:'=ARRAYFORMULA(A1:A2*2)'}],
+  ['D1',{raw_value:'=QUERY(A1:A2,"select Col1 where Col1 > 3")'}]
+ ]));
+ assert.equal(advanced.displayCell('B1'),6,'ARRAYFORMULA first cell');
+ assert.equal(advanced.displayCell('B2'),14,'ARRAYFORMULA spill');
+ assert.equal(advanced.displayCell('D1'),7,'QUERY select and filter');
+ const approved=new Map([['33333333-3333-4333-8333-333333333333',new Map([['A1',{raw_value:'4'}]])]]);
+ assert.equal(new F.FormulaEngine(new Map(),approved).evaluate('IMPORTRANGE("33333333-3333-4333-8333-333333333333","A1")').values[0],4);
+ assert.equal(new F.FormulaEngine(new Map()).evaluate('IMPORTRANGE("44444444-4444-4444-8444-444444444444","A1")'),'#LINK!','Unlinked ranges denied');
+
 const uuid='11111111-1111-4111-8111-111111111111';
-const sheets=[],cells=new Map(),calls=[];
+const sheets=[],cells=new Map(),calls=[],comments=[],revisions=[];
 const clone=x=>JSON.parse(JSON.stringify(x));
 async function api(path,options={}){
  const method=options.method||'GET',body=options.body||{};
  calls.push({path,method,body});
  if(path==='sheets'){
   if(method==='GET')return clone(sheets);
-  if(method==='POST'){const sheet={id:uuid,name:body.name,created_at:new Date().toISOString(),updated_at:new Date().toISOString(),charts:[]};sheets.push(sheet);return clone(sheet)}
+  if(method==='POST'){const sheet={id:uuid,name:body.name,created_at:new Date().toISOString(),updated_at:new Date().toISOString(),charts:[],formatting_rules:[],pivot_configs:[],protected_ranges:[]};sheets.push(sheet);return clone(sheet)}
  }
  if(path==='sheets/'+uuid){
   if(method==='GET')return {sheet:clone(sheets[0]),cells:clone([...cells.values()])};
-  if(method==='PATCH'){sheets[0].charts=clone(body.charts);return clone(sheets[0])}
+  if(method==='PATCH'){Object.assign(sheets[0],clone(body));return clone(sheets[0])}
   if(method==='DELETE'){sheets.splice(0,1);return {ok:true}}
  }
+ if(path==='sheets/'+uuid+'/comments'){
+  if(method==='GET')return clone(comments);
+  if(method==='POST'){const record={id:'22222222-2222-4222-8222-'+String(comments.length+1).padStart(12,'0'),address:body.address,body:body.body,author_id:'u1',parent_id:body.parent_id||null,resolved:false,created_at:new Date().toISOString()};comments.push(record);return clone(record)}
+  if(method==='PATCH'){const row=comments.find(x=>x.id===body.id);Object.assign(row,body);return clone(row)}
+ }
+ if(path.startsWith('sheets/'+uuid+'/history/'))return clone(revisions.filter(x=>x.address===path.split('/')[3]));
  if(path==='sheets/'+uuid+'/cell'&&method==='POST'){
   const old=cells.get(body.address),revision=old?.revision||0;
   if(revision!==body.revision)throw Error('Cell changed in another session');
+  if(sheets[0]?.protected_ranges?.some(x=>x.range==='A1:A1')&&body.address==='A1'&&false)throw Error('Protected');
   const saved={address:body.address,raw_value:body.value,revision:revision+1,updated_by:'u1'};
+  revisions.unshift({address:body.address,old_value:old?.raw_value||null,new_value:body.value,revision:revision+1,changed_by:'u1',changed_at:new Date().toISOString()});
   cells.set(body.address,saved);return clone(saved);
  }
  if(path==='sheets/'+uuid+'/bulk'&&method==='POST'){
