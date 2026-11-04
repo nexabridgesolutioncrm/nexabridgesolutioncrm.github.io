@@ -407,7 +407,7 @@
      realtime:{params:{eventsPerSecond:8}}
     });
     client.realtime.setAuth(creds.token);
-    const channel=client.channel('nexa-sheets-'+id,{config:{presence:{key:String(state.user?.id||'member')}}}).on('presence',{event:'sync'},()=>updatePresence()).on('postgres_changes',
+    const channel=client.channel('nexa-sheets-'+id,{config:{private:true,presence:{key:String(state.user?.id||'member')}}}).on('presence',{event:'sync'},()=>updatePresence()).on('postgres_changes',
      {event:'*',schema:'public',table:'crm_sheet_cells',filter:'sheet_id=eq.'+id},
      payload=>{
       if(state.active?.id!==id)return;
