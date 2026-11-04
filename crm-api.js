@@ -100,6 +100,35 @@ async function adapter(input,init={}){
  if(path==='logout'&&method==='POST'){try{await request('/auth/v1/logout',{method:'POST'})}catch{}session=null;member=null;orgId=null;saveSession();return reply({ok:true})}
  if(!session||!orgId)return err('Please sign in.',401);
  if(path==='data'&&method==='GET')return reply(await getData());
+ // Official Google Sheets links: CRM stores pointers only, never Google tokens or file contents.
+ if(path==='google-sheets'&&method==='GET'){
+  const rows=await secured('/rest/v1/crm_google_sheets?select=id,google_sheet_id,title,added_by,created_at&org_id=eq.'+encodeURIComponent(orgId)+'&order=created_at.desc&limit=100');
+  return reply(rows.map(row=>({id:row.id,title:row.title,addedBy:row.added_by,createdAt:row.created_at,url:'https://docs.google.com/spreadsheets/d/'+row.google_sheet_id+'/edit'})));
+ }
+ if(path==='google-sheets'&&method==='POST'){
+  if(!['owner','admin','agent'].includes(member?.role))return err('Only authorized staff may link Google Sheets',403);
+  let url;
+  try{url=new URL(String(b.url||''))}catch(_){return err('Enter the full Google Sheets sharing URL',400)}
+  if(url.protocol!=='https:'||url.hostname!=='docs.google.com')return err('Only Google Sheets links from docs.google.com are supported',400);
+  const match=/^\/spreadsheets\/d\/([A-Za-z0-9_-]{20,150})(?:\/(?:edit|view|copy|preview))?\/?$/.exec(url.pathname);
+  if(!match)return err('Invalid Google Sheets file link',400);
+  const title=String(b.title||'Google spreadsheet').trim().slice(0,120);
+  if(!title)return err('A spreadsheet name is required',400);
+  const saved=await secured('/rest/v1/crm_google_sheets?select=id,google_sheet_id,title,added_by,created_at',{
+   method:'POST',body:{org_id:orgId,google_sheet_id:match[1],title,added_by:member.id},prefer:'return=representation'
+  });
+  return reply({id:saved[0].id,title:saved[0].title,url:'https://docs.google.com/spreadsheets/d/'+saved[0].google_sheet_id+'/edit'},201);
+ }
+ const googleMatch=/^google-sheets\/([a-f0-9-]{36})$/.exec(path);
+ if(googleMatch&&method==='DELETE'){
+  if(!['owner','admin','agent'].includes(member?.role))return err('Read-only account',403);
+  const existing=await secured('/rest/v1/crm_google_sheets?select=id,added_by&id=eq.'+googleMatch[1]+'&org_id=eq.'+encodeURIComponent(orgId)+'&limit=1');
+  if(!existing.length)return err('Google Sheets link not found',404);
+  if(!['owner','admin'].includes(member.role)&&existing[0].added_by!==member.id)return err('You may only unlink your own Google Sheets',403);
+  const rows=await secured('/rest/v1/crm_google_sheets?select=id&id=eq.'+googleMatch[1]+'&org_id=eq.'+encodeURIComponent(orgId),{method:'DELETE',prefer:'return=representation'});
+  return reply({ok:rows.length===1});
+ }
+
  // Sheets Studio: independently stored spreadsheet cells. Every row is org-scoped and RLS-protected.
  if(path==='sheets'&&method==='GET'){
   const sheets=await secured('/rest/v1/crm_spreadsheets?select=id,name,parent_id,created_at,updated_at,charts,formatting_rules,pivot_configs,protected_ranges&org_id=eq.'+encodeURIComponent(orgId)+'&order=updated_at.desc&limit=100');
