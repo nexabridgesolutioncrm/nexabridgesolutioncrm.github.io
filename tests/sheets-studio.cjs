@@ -97,6 +97,20 @@ const wait=async(fn,description)=>{for(let i=0;i<180;i++){if(fn())return;await n
  await wait(()=>clipboard.includes('South\t250'),'TSV range copied to clipboard');
  assert.match(clipboard,/North\t120/);
 
+ // Simulate another editor saving the same cell before our current revision.
+ const otherRow=cells.get('A1');cells.set('A1',{...otherRow,raw_value:'Updated remotely',revision:otherRow.revision+1});
+ root.querySelector('[data-sheet-address=A1]').click();
+ const conflictInput=root.querySelector('#studioFormulaBar');
+ conflictInput.value='My unsaved calculation';
+ root.querySelector('[data-sheet-action=save]').click();
+ await wait(()=>root.querySelector('#studioConflictDraft'),'revision conflict recovery');
+ assert.equal(root.querySelector('#studioConflictDraft').value,'My unsaved calculation',
+   'An optimistic concurrency conflict preserves the local text');
+ assert.equal(cells.get('A1').raw_value,'Updated remotely','Remote revision is not overwritten');
+ root.querySelector('[data-sheet-action=copyDraft]').click();
+ await wait(()=>clipboard==='My unsaved calculation','rejected edit copied');
+ root.querySelector('[data-sheet-action=dismiss]').click();
+
  root.querySelector('[data-sheet-action=back]').click();
  await wait(()=>root.querySelector('[data-sheet-action=new]'),'return to sheet library');
  assert.ok(root.textContent.includes('Team Revenue Sheet'),'saved workbook in library');
