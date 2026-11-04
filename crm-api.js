@@ -163,6 +163,43 @@ async function adapter(input,init={}){
      return {id:String(x.id||'').slice(0,48),range:x.range,description:String(x.description||'Restricted range').slice(0,160)};
     });
    }
+
+   if(Object.prototype.hasOwnProperty.call(b,'cell_styles')){
+    if(!b.cell_styles||typeof b.cell_styles!=='object'||Array.isArray(b.cell_styles))return err('Invalid cell styles');
+    const styles=Object.entries(b.cell_styles);
+    if(styles.length>1200||JSON.stringify(b.cell_styles).length>140000)return err('Too many cell styles');
+    const sanitized={};
+    for(const [address,x] of styles){
+     if(!/^[A-Z]{1,2}[1-9][0-9]{0,3}$/.test(address)||!x||typeof x!=='object'||Array.isArray(x))return err('Invalid style address');
+     const rule={};
+     if(x.bold===true)rule.bold=true;
+     if(x.italic===true)rule.italic=true;
+     if(['left','center','right'].includes(x.align))rule.align=x.align;
+     if(/^#[0-9a-f]{6}$/i.test(x.background||''))rule.background=x.background;
+     if(/^#[0-9a-f]{6}$/i.test(x.color||''))rule.color=x.color;
+     if(['plain','currency','percent','number','date'].includes(x.format))rule.format=x.format;
+     if(Object.keys(rule).length)sanitized[address]=rule;
+    }
+    changes.cell_styles=sanitized;
+   }
+   if(Object.prototype.hasOwnProperty.call(b,'validation_rules')){
+    if(!Array.isArray(b.validation_rules)||b.validation_rules.length>40)return err('Too many validation rules');
+    const range=/^[A-Z]{1,2}[1-9][0-9]{0,3}:[A-Z]{1,2}[1-9][0-9]{0,3}$/;
+    changes.validation_rules=b.validation_rules.map((x,i)=>{
+     if(!x||!range.test(x.range)||!['number','email','date','list'].includes(x.type))throw Error('Invalid validation rule '+(i+1));
+     const values=Array.isArray(x.values)?x.values.map(v=>String(v).slice(0,100)).slice(0,30):[];
+     if(x.type==='list'&&!values.length)throw Error('List validation requires values');
+     return {range:x.range,type:x.type,values};
+    });
+   }
+   if(Object.prototype.hasOwnProperty.call(b,'view_settings')){
+    const x=b.view_settings;
+    if(!x||typeof x!=='object'||Array.isArray(x))return err('Invalid view settings');
+    const col=/^[A-Z]$/;
+    const sort=x.sort&&col.test(x.sort.column||'')&&['asc','desc'].includes(x.sort.direction)?{column:x.sort.column,direction:x.sort.direction}:null;
+    const filter=x.filter&&col.test(x.filter.column||'')?{column:x.filter.column,contains:String(x.filter.contains||'').slice(0,100)}:null;
+    changes.view_settings={sort,filter,freezeRows:x.freezeRows===true,freezeColumns:x.freezeColumns===true};
+   }
    if(!Object.keys(changes).length)return err('No supported configuration supplied');
    changes.updated_at=new Date().toISOString();
    const rows=await secured('/rest/v1/crm_spreadsheets?select=*&id=eq.'+encodeURIComponent(id)+filter,
