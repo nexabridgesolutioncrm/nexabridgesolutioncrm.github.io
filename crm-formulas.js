@@ -17,7 +17,7 @@
   return tokens;
  }
  class FormulaEngine{
-  constructor(cells){this.cells=cells&&typeof cells.get==='function'&&typeof cells.has==='function'?cells:new Map(Object.entries(cells||{}));this.cache=new Map();this.depth=0}
+  constructor(cells,externalSheets){this.externalSheets=externalSheets||new Map();this.cells=cells&&typeof cells.get==='function'&&typeof cells.has==='function'?cells:new Map(Object.entries(cells||{}));this.cache=new Map();this.depth=0}
   evaluateCell(addr,stack=new Set()){
    const key=String(addr).toUpperCase().replaceAll('$','');
    if(this.cache.has(key))return this.cache.get(key);
@@ -83,6 +83,41 @@
    const output=expr(0);if(i!==tokens.length)throw Error(ERR.parse);
    return output;
   }
+  query(matrix,statement){
+   if(!Array.isArray(matrix)||!matrix.length||matrix.length>10000)return '#N/A';
+   const sql=String(statement||'').trim();
+   if(sql.length>800)return ERR.value;
+   const m=/^select\s+([\w*,\s]+?)(?:\s+where\s+(.+?))?(?:\s+order\s+by\s+([\w]+)(?:\s+(asc|desc))?)?(?:\s+limit\s+(\d+))?\s*$/i.exec(sql);
+   if(!m)return '#QUERY?';
+   const col=token=>{
+    const v=String(token||'').trim(),c=/^Col(\d{1,3})$/i.exec(v);
+    return c?Number(c[1])-1:/^[A-Z]{1,3}$/i.test(v)?colIndex(v):-1;
+   };
+   const select=m[1].trim()==='*'?matrix[0].map((_,i)=>i):m[1].split(',').map(x=>col(x));
+   if(select.some(x=>x<0||x>=matrix[0].length))return ERR.ref;
+   let records=matrix.map((row,i)=>({row,i}));
+   if(m[2]){
+    const check=/^(\w+)\s*(=|<>|!=|>=|<=|>|<|contains)\s*(?:"([^"]*)"|'([^']*)'|(-?\d+(?:\.\d+)?))$/i.exec(m[2].trim());
+    if(!check)return '#QUERY?';
+    const idx=col(check[1]);if(idx<0||idx>=matrix[0].length)return ERR.ref;
+    const desired=check[3]??check[4]??check[5]??'',op=check[2].toLowerCase();
+    records=records.filter(({row})=>{
+     const original=row[idx],a=Number(original),b=Number(desired);
+     const both=Number.isFinite(a)&&Number.isFinite(b);
+     const x=both?a:String(original??'').toLowerCase(),y=both?b:String(desired).toLowerCase();
+     return op==='contains'?String(x).includes(String(y)):op==='='?x===y:op==='!='||op==='<>'?x!==y:op==='>'?x>y:op==='<'?x<y:op==='>='?x>=y:x<=y;
+    });
+   }
+   if(m[3]){
+    const idx=col(m[3]);if(idx<0||idx>=matrix[0].length)return ERR.ref;
+    const dir=m[4]?.toLowerCase()==='desc'?-1:1;
+    records.sort((a,b)=>dir*(Number.isFinite(Number(a.row[idx]))&&Number.isFinite(Number(b.row[idx]))
+     ?Number(a.row[idx])-Number(b.row[idx]):String(a.row[idx]).localeCompare(String(b.row[idx]))));
+   }
+   if(m[5])records=records.slice(0,Math.min(10000,Number(m[5])));
+   const output=records.map(x=>select.map(i=>x.row[i]));
+   return {matrix:output.length?output:[['']],values:output.flat()};
+  }
   func(name,args){
    const vals=flatten(args.map(v=>v&&v.matrix?v.values:v));
    const ns=vals.filter(v=>v!==''&&v!=null).map(numeric).filter(Number.isFinite);
@@ -96,6 +131,27 @@
     return op==='='?x===y:op==='<>'?x!==y:op==='>'?x>y:op==='<'?x<y:op==='>='?x>=y:x<=y;
    };
    switch(name){
+    case 'ARRAYFORMULA':return args[0]?.matrix?args[0]:{matrix:[[args[0]??'']],values:[args[0]??'']};
+    case 'QUERY':return this.query(args[0]?.matrix||[[args[0]]],args[1]);
+    case 'IMPORTRANGE':{
+     const id=String(args[0]||'').trim(),ref=String(args[1]||'').replace(/^.*!/,'').trim();
+     if(!/^[a-f0-9-]{36}$/i.test(id))return ERR.ref;
+     const external=this.externalSheets.get?.(id);
+     if(!external)return '#LINK!';
+     const parts=ref.split(':');
+     if(parts.length>2)return ERR.ref;
+     const a=coordinates(parts[0]),b=coordinates(parts[1]||parts[0]);
+     if(!a||!b)return ERR.ref;
+     const top=Math.min(a.row,b.row),bottom=Math.max(a.row,b.row),left=Math.min(a.col,b.col),right=Math.max(a.col,b.col);
+     if((bottom-top+1)*(right-left+1)>3000)return ERR.value;
+     const calc=new FormulaEngine(external,new Map()),matrix=[];
+     for(let row=top;row<=bottom;row++){
+      const line=[];for(let col=left;col<=right;col++)line.push(calc.evaluateCell(address(row,col)));
+      matrix.push(line);
+     }
+     return {matrix,values:matrix.flat()};
+    }
+
     case 'SUM':return sum;
     case 'AVERAGE':case 'AVG':return ns.length?sum/ns.length:ERR.div;
     case 'COUNT':return ns.length;
@@ -195,5 +251,5 @@
    }
   }
  }
- global.NexaFormula={FormulaEngine,colIndex,colName,address,coordinates,supported:['SUM','AVERAGE','COUNT','COUNTA','MIN','MAX','IF','IFERROR','COUNTIF','SUMIF','VLOOKUP','ROUND','ABS','SQRT','CONCAT','CONCATENATE','LEFT','RIGHT','MID','AND','OR','NOT','TODAY','PRODUCT','POWER','UPPER','LOWER','TRIM','COUNTIFS','SUMIFS','INDEX','MATCH','XLOOKUP','TEXTJOIN','SUBSTITUTE','ISBLANK','ISNUMBER','ISTEXT','VALUE','INT','MOD','CEILING','FLOOR','DATE','YEAR','MONTH','DAY','NOW','IFNA']};
+ global.NexaFormula={FormulaEngine,colIndex,colName,address,coordinates,supported:['SUM','AVERAGE','COUNT','COUNTA','MIN','MAX','IF','IFERROR','COUNTIF','SUMIF','VLOOKUP','ROUND','ABS','SQRT','CONCAT','CONCATENATE','LEFT','RIGHT','MID','AND','OR','NOT','TODAY','PRODUCT','POWER','UPPER','LOWER','TRIM','COUNTIFS','SUMIFS','INDEX','MATCH','XLOOKUP','TEXTJOIN','SUBSTITUTE','ISBLANK','ISNUMBER','ISTEXT','VALUE','INT','MOD','CEILING','FLOOR','DATE','YEAR','MONTH','DAY','NOW','IFNA','ARRAYFORMULA','QUERY','IMPORTRANGE']};
 })(typeof window!=='undefined'?window:globalThis);
