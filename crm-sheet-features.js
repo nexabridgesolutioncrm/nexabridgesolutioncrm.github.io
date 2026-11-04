@@ -125,10 +125,13 @@
   if(rowColumn<0||valueColumn<0)return {rows:[],columns:[]};
   let maxrow=0;for(const key of ctx.state.cells.keys())maxrow=Math.max(maxrow,F.coordinates(key)?.row||0);
   for(let n=(config.skipHeader!==false?1:0);n<=Math.min(9999,maxrow);n++){
-   const label=String(calc.displayCell(F.address(n,rowColumn))||'(empty)');
-   const column=colColumn>=0?String(calc.displayCell(F.address(n,colColumn))||'(empty)'):'Total';
-   const v=Number(calc.displayCell(F.address(n,valueColumn)));
-   if(label==='(empty)'&&column==='(empty)'&&(!Number.isFinite(v)||v===0))continue;
+   const groupRaw=calc.displayCell(F.address(n,rowColumn));
+   const columnRaw=colColumn>=0?calc.displayCell(F.address(n,colColumn)):'';
+   const valueRaw=calc.displayCell(F.address(n,valueColumn));
+   const groupText=String(groupRaw??'').trim(),columnText=String(columnRaw??'').trim();
+   if(!groupText&&!columnText&&(valueRaw==null||String(valueRaw).trim()===''))continue;
+   const label=groupText||'(empty)',column=colColumn>=0?(columnText||'(empty)'):'Total';
+   const v=valueRaw==null||String(valueRaw).trim()===''?NaN:Number(valueRaw);
    const key=label+'∎'+column,entry=rows.get(key)||{row:label,column,count:0,sum:0,min:Infinity,max:-Infinity};
    entry.count++;if(Number.isFinite(v)){entry.sum+=v;entry.min=Math.min(entry.min,v);entry.max=Math.max(entry.max,v)}
    rows.set(key,entry);columns.add(column);
