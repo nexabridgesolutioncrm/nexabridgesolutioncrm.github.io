@@ -59,7 +59,7 @@
    Array.from({length:cols},(_,c)=>{const address=F.address(state.rowStart+r,c),entry=dataCell(address),value=cellText(address,calc);
     const decor=global.NexaSheetFeatures?.cellDecoration?.(address,value)||{className:'',style:''};
     return '<td data-sheet-address="'+address+'" tabindex="0" class="sheet-studio-cell'+
-     (address===selected?' selected':'')+(rangeIncludes(address)?' range-selected':'')+(state.presence.some(p=>p.cell===address&&p.id!==state.user?.id)?' peer-active':'')+(entry.raw_value.startsWith('=')?' formula':'')+decor.className+(entry.offline?' offline-draft':'')+'"'+decor.style+'> '+
+     (address===selected?' selected':'')+(rangeIncludes(address)?' range-selected':'')+(state.presence.some(p=>p.cell===address&&p.id!==state.user?.id)?' peer-active':'')+(entry.raw_value.startsWith('=')?' formula':'')+decor.className+(entry.offline?' offline-draft':'')+'"'+decor.style+'>'+
      '<span>'+esc(value).slice(0,800)+'</span></td>';
    }).join('')+'</tr>'
   ).join('')+'</tbody>';
