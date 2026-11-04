@@ -273,12 +273,32 @@ async function adapter(input,init={}){
    const rows=await secured('/rest/v1/crm_spreadsheets?id=eq.'+encodeURIComponent(id)+filter,{method:'DELETE',prefer:'return=representation'});
    return reply({ok:rows.length>0});
   }
+  const validateSheetValue=(address,value)=>{
+   if(!value||String(value).startsWith('='))return '';
+   const point=/^([A-Z]{1,2})([1-9][0-9]{0,3}|10000)$/.exec(address);
+   if(!point)return 'Invalid cell address';
+   const column=x=>x.split('').reduce((n,ch)=>n*26+ch.charCodeAt(0)-64,0);
+   const col=column(point[1]),row=Number(point[2]);
+   for(const rule of (sheets[0].validation_rules||[])){
+    if(!rule.range)continue;
+    const parts=String(rule.range).split(':').map(x=>/^([A-Z]{1,2})([1-9][0-9]{0,3}|10000)$/.exec(x));
+    if(parts.length!==2||parts.some(x=>!x))continue;
+    const [a,b]=parts;
+    if(row<Math.min(+a[2],+b[2])||row>Math.max(+a[2],+b[2])||col<Math.min(column(a[1]),column(b[1]))||col>Math.max(column(a[1]),column(b[1])))continue;
+    if(rule.type==='number'&&!Number.isFinite(Number(value)))return 'Cell '+address+' requires a number';
+    if(rule.type==='email'&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value))return 'Cell '+address+' requires an email';
+    if(rule.type==='date'&&(!/^\d{4}-\d{2}-\d{2}$/.test(value)||isNaN(Date.parse(value))))return 'Cell '+address+' requires YYYY-MM-DD';
+    if(rule.type==='list'&&!(Array.isArray(rule.values)&&rule.values.includes(value)))return 'Cell '+address+' is not in the allowed list';
+   }
+   return '';
+  };
   if(action==='cell'&&method==='POST'){
    if(!['owner','admin','agent'].includes(member?.role))return err('Read-only account',403);
    const address=String(b.address||'').toUpperCase(),value=String(b.value??'');
    const revision=Number(b.revision);
    if(!/^[A-Z]{1,3}[1-9][0-9]{0,4}$/.test(address)||value.length>4000)return err('Invalid cell address or value length',400);
    if(!Number.isSafeInteger(revision)||revision<0)return err('Invalid cell revision',400);
+   const validationError=validateSheetValue(address,value);if(validationError)return err(validationError,400);
    const row={sheet_id:id,org_id:orgId,address,raw_value:value,updated_by:member.id,updated_at:new Date().toISOString()};
    if(revision===0){
     try{
@@ -298,6 +318,7 @@ async function adapter(input,init={}){
    for(const entry of entries){
     const address=String(entry.address||'').toUpperCase(),value=String(entry.value??'');
     if(!/^[A-Z]{1,3}[1-9][0-9]{0,4}$/.test(address)||value.length>4000||unique.has(address))return err('Duplicate/invalid cell or cell too long',400);
+    const validationError=validateSheetValue(address,value);if(validationError)return err(validationError,400);
     unique.add(address);rows.push({sheet_id:id,org_id:orgId,address,raw_value:value,revision:1,updated_by:member.id});
    }
    const saved=await secured('/rest/v1/crm_sheet_cells?select=address&on_conflict=sheet_id,address',{method:'POST',body:rows,prefer:'resolution=ignore-duplicates,return=representation'});
