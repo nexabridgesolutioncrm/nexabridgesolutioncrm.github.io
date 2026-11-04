@@ -101,40 +101,94 @@
    const output=expr(0);if(i!==tokens.length)throw Error(ERR.parse);
    return output;
   }
-  query(matrix,statement){
-   if(!Array.isArray(matrix)||!matrix.length||matrix.length>10000)return '#N/A';
+  query(matrix,statement,headerRows=0){
+   if(!Array.isArray(matrix)||matrix.length>10000||!matrix.length)return '#N/A';
    const sql=String(statement||'').trim();
-   if(sql.length>800)return ERR.value;
-   const m=/^select\s+([\w*,\s]+?)(?:\s+where\s+(.+?))?(?:\s+order\s+by\s+([\w]+)(?:\s+(asc|desc))?)?(?:\s+limit\s+(\d+))?\s*$/i.exec(sql);
-   if(!m)return '#QUERY?';
+   if(!sql||sql.length>1200)return '#QUERY?';
+   // Deliberately bounded subset of Google Visualization Query Language.
+   // Queries are parsed as data; SQL/JavaScript code is never executed.
+   const parser=/^select\s+(.+?)(?:\s+where\s+(.+?))?(?:\s+group\s+by\s+(.+?))?(?:\s+order\s+by\s+(.+?))?(?:\s+limit\s+(\d+))?(?:\s+offset\s+(\d+))?\s*$/i;
+   const m=parser.exec(sql);if(!m)return '#QUERY?';
+   const width=Math.max(0,...matrix.map(row=>row.length));
    const col=token=>{
     const v=String(token||'').trim(),c=/^Col(\d{1,3})$/i.exec(v);
     return c?Number(c[1])-1:/^[A-Z]{1,3}$/i.test(v)?colIndex(v):-1;
    };
-   const select=m[1].trim()==='*'?matrix[0].map((_,i)=>i):m[1].split(',').map(x=>col(x));
-   if(select.some(x=>x<0||x>=matrix[0].length))return ERR.ref;
-   let records=matrix.map((row,i)=>({row,i}));
+   const parseField=raw=>{
+    const text=String(raw||'').trim(),agg=/^(sum|avg|average|count|min|max)\(\s*(Col\d+|[A-Z]{1,3}|\*)\s*\)$/i.exec(text);
+    if(agg){
+     const idx=agg[2]==='*'?-1:col(agg[2]);
+     if(idx>=width||idx<(-1))return null;
+     return {kind:'aggregate',type:agg[1].toLowerCase(),idx,key:text.toLowerCase().replace(/\s+/g,'')};
+    }
+    const idx=col(text);
+    return idx<0||idx>=width?null:{kind:'column',idx,key:text.toLowerCase()};
+   };
+   const selected=m[1].trim()==='*'?Array.from({length:width},(_,idx)=>({kind:'column',idx,key:'col'+(idx+1)})):
+    m[1].split(',').map(parseField);
+   if(!selected.length||selected.some(x=>!x))return ERR.ref;
+   const group=m[3]?m[3].split(',').map(v=>col(v.trim())):[];
+   if(group.some(idx=>idx<0||idx>=width))return ERR.ref;
+   const aggregates=selected.some(x=>x.kind==='aggregate');
+   if(aggregates&&selected.some(x=>x.kind==='column'&&!group.includes(x.idx)))return '#QUERY?';
+   if(group.length&&!aggregates&&selected.some(x=>!group.includes(x.idx)))return '#QUERY?';
+   let rows=matrix.slice(Math.max(0,Math.min(20,Number(headerRows)||0))).map((row,index)=>({row,index}));
    if(m[2]){
-    const check=/^(\w+)\s*(=|<>|!=|>=|<=|>|<|contains)\s*(?:"([^"]*)"|'([^']*)'|(-?\d+(?:\.\d+)?))$/i.exec(m[2].trim());
-    if(!check)return '#QUERY?';
-    const idx=col(check[1]);if(idx<0||idx>=matrix[0].length)return ERR.ref;
-    const desired=check[3]??check[4]??check[5]??'',op=check[2].toLowerCase();
-    records=records.filter(({row})=>{
-     const original=row[idx],a=Number(original),b=Number(desired);
-     const both=Number.isFinite(a)&&Number.isFinite(b);
-     const x=both?a:String(original??'').toLowerCase(),y=both?b:String(desired).toLowerCase();
-     return op==='contains'?String(x).includes(String(y)):op==='='?x===y:op==='!='||op==='<>'?x!==y:op==='>'?x>y:op==='<'?x<y:op==='>='?x>=y:x<=y;
+    const cond=/^(Col\d+|[A-Z]{1,3})\s*(=|<>|!=|>=|<=|>|<|contains|starts\s+with|ends\s+with)\s*(?:"([^"]*)"|'([^']*)'|(-?\d+(?:\.\d+)?))$/i.exec(m[2].trim());
+    if(!cond)return '#QUERY?';
+    const idx=col(cond[1]);if(idx<0||idx>=width)return ERR.ref;
+    const op=cond[2].toLowerCase().replace(/\s+/g,' '),wanted=cond[3]??cond[4]??cond[5]??'';
+    rows=rows.filter(({row})=>{
+     const original=row[idx],a=Number(original),b=Number(wanted),isNumeric=
+      original!==''&&wanted!==''&&Number.isFinite(a)&&Number.isFinite(b);
+     const x=isNumeric?a:String(original??'').toLowerCase(),y=isNumeric?b:String(wanted).toLowerCase();
+     return op==='contains'?String(x).includes(String(y)):
+      op==='starts with'?String(x).startsWith(String(y)):
+      op==='ends with'?String(x).endsWith(String(y)):
+      op==='='?x===y:op==='!='||op==='<>'?x!==y:
+      op==='>'?x>y:op==='<'?x<y:op==='>='?x>=y:x<=y;
     });
    }
-   if(m[3]){
-    const idx=col(m[3]);if(idx<0||idx>=matrix[0].length)return ERR.ref;
-    const dir=m[4]?.toLowerCase()==='desc'?-1:1;
-    records.sort((a,b)=>dir*(Number.isFinite(Number(a.row[idx]))&&Number.isFinite(Number(b.row[idx]))
-     ?Number(a.row[idx])-Number(b.row[idx]):String(a.row[idx]).localeCompare(String(b.row[idx]))));
+   let results;
+   if(group.length||aggregates){
+    const groups=new Map();
+    for(const item of rows){
+     const key=JSON.stringify(group.map(i=>item.row[i]??''));
+     if(!groups.has(key))groups.set(key,[]);
+     groups.get(key).push(item.row);
+    }
+    if(aggregates&&!group.length)groups.set('[]',rows.map(x=>x.row));
+    results=[...groups.values()].map(records=>{
+     const first=records[0]||[];
+     return selected.map(field=>{
+      if(field.kind==='column')return first[field.idx]??'';
+      const numbers=records.map(row=>Number(row[field.idx])).filter(n=>Number.isFinite(n));
+      const value=field.type==='count'? (field.idx===-1?records.length:records.filter(row=>row[field.idx]!==''&&row[field.idx]!=null).length):
+       field.type==='sum'?numbers.reduce((a,b)=>a+b,0):
+       field.type==='avg'||field.type==='average'?(numbers.length?numbers.reduce((a,b)=>a+b,0)/numbers.length:0):
+       field.type==='min'?(numbers.length?Math.min(...numbers):0):
+       (numbers.length?Math.max(...numbers):0);
+      return value;
+     });
+    });
+   }else{
+    results=rows.map(item=>selected.map(field=>item.row[field.idx]??''));
    }
-   if(m[5])records=records.slice(0,Math.min(10000,Number(m[5])));
-   const output=records.map(x=>select.map(i=>x.row[i]));
-   return {matrix:output.length?output:[['']],values:output.flat()};
+   if(m[4]){
+    const sort=/^(.+?)(?:\s+(asc|desc))?$/i.exec(m[4].trim());
+    if(!sort)return '#QUERY?';
+    const field=parseField(sort[1]);if(!field)return ERR.ref;
+    const pos=selected.findIndex(x=>x.key===field.key||(x.kind==='column'&&field.kind==='column'&&x.idx===field.idx));
+    if(pos<0)return '#QUERY?';
+    const direction=sort[2]?.toLowerCase()==='desc'?-1:1;
+    results.sort((a,b)=>{
+     const ax=a[pos],bx=b[pos],an=Number(ax),bn=Number(bx);
+     return direction*(ax!==''&&bx!==''&&Number.isFinite(an)&&Number.isFinite(bn)?an-bn:String(ax).localeCompare(String(bx)));
+    });
+   }
+   if(m[6])results=results.slice(Math.min(10000,Number(m[6])));
+   if(m[5])results=results.slice(0,Math.min(10000,Number(m[5])));
+   return {matrix:results.length?results:[['']],values:results.flat()};
   }
   computeSpills(){
    if(this._spills)return this._spills;
@@ -185,7 +239,7 @@
    };
    switch(name){
     case 'ARRAYFORMULA':return args[0]?.matrix?args[0]:{matrix:[[args[0]??'']],values:[args[0]??'']};
-    case 'QUERY':return this.query(args[0]?.matrix||[[args[0]]],args[1]);
+    case 'QUERY':return this.query(args[0]?.matrix||[[args[0]]],args[1],args[2]);
     case 'IMPORTRANGE':{
      const id=String(args[0]||'').trim(),ref=String(args[1]||'').replace(/^.*!/,'').trim();
      if(!/^[a-f0-9-]{36}$/i.test(id))return ERR.ref;
