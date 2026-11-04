@@ -37,6 +37,28 @@ assert.equal(engine.evaluate('MATCH(13,A1:A2,0)'),2,'MATCH returns matching inde
 assert.equal(engine.evaluate('TEXTJOIN("-",TRUE,"North","South")'),'North-South');
 assert.equal(engine.evaluate('MEDIAN(A1:A2)'),10,'Pinned Formula.js fallback computes additional Excel functions');
 
+// Grouped QUERY aggregates, filtering, sorting, offsets and header awareness.
+const grouped=new F.FormulaEngine(new Map([
+ ['A1',{raw_value:'Region'}],['B1',{raw_value:'Revenue'}],
+ ['A2',{raw_value:'East'}],['B2',{raw_value:'10'}],
+ ['A3',{raw_value:'West'}],['B3',{raw_value:'20'}],
+ ['A4',{raw_value:'East'}],['B4',{raw_value:'5'}]
+]));
+const aggregate=grouped.evaluate('QUERY(A1:B4,"select Col1,sum(Col2) group by Col1 order by sum(Col2) desc",1)');
+assert.deepEqual(Array.from(aggregate.matrix, row=>Array.from(row)),[['West',20],['East',15]],
+ 'Grouped QUERY computes grouped sums and sorts');
+const filtered=grouped.evaluate('QUERY(A1:B4,"select Col1,Col2 where Col2 >= 10 order by Col2 desc limit 1",1)');
+assert.deepEqual(Array.from(filtered.matrix[0]),['West',20],'QUERY filters, sorts and limits');
+const spilled=new F.FormulaEngine(new Map([
+ ['C1',{raw_value:'1'}],['C2',{raw_value:'2'}],['C3',{raw_value:'3'}],
+ ['D1',{raw_value:'4'}],['E1',{raw_value:'5'}],
+ ['B1',{raw_value:'=ARRAYFORMULA(C1:C3*2)'}],
+ ['A2',{raw_value:'=ARRAYFORMULA(D1:E1*3)'}]
+]));
+assert.equal(spilled.displayCell('B2'),4,'First array output remains visible');
+assert.equal(spilled.displayCell('A2'),'#REF!','Overlapping spill blocked atomically');
+
+
 
  // Advanced formula operations on bounded arrays and approved linked-sheet maps.
  const advanced=new F.FormulaEngine(new Map([
