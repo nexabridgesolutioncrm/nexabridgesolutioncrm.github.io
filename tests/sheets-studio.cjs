@@ -101,6 +101,27 @@ const wait=async(fn,description)=>{for(let i=0;i<180;i++){if(fn())return;await n
  await wait(()=>root.querySelector('[data-sheet-action=new]'),'return to sheet library');
  assert.ok(root.textContent.includes('Team Revenue Sheet'),'saved workbook in library');
  win.NexaSheetStudio.leave();
+ // The same browser may be used by another employee: cached sheets/cell edit state must not leak.
+ const viewerRoot=doc.createElement('div');doc.body.appendChild(viewerRoot);
+ const readCountBefore=calls.filter(x=>x.path==='sheets'&&x.method==='GET').length;
+ await win.NexaSheetStudio.mount(viewerRoot,api,{id:'viewer-2',role:'viewer',username:'viewer@example.test'});
+ assert.ok(calls.filter(x=>x.path==='sheets'&&x.method==='GET').length>readCountBefore,
+   'New user must fetch the sheet library instead of using previous session cache');
+ assert.equal(viewerRoot.querySelector('[data-sheet-action=new]'),null,'Viewer cannot create spreadsheets');
+ assert.equal(viewerRoot.querySelector('[data-sheet-action=import]'),null,'Viewer cannot import files');
+ viewerRoot.querySelector('[data-sheet-action=open]').click();
+ await wait(()=>viewerRoot.querySelector('#studioGrid'),'Viewer opens existing sheet');
+ assert.equal(viewerRoot.querySelector('#studioFormulaBar').readOnly,true,'Viewer formula bar is read-only');
+ assert.equal(viewerRoot.querySelector('[data-sheet-action=save]'),null,'Viewer cannot save cells');
+ assert.equal(viewerRoot.querySelector('[data-sheet-action=pasteCells]'),null,'Viewer cannot bulk paste');
+ assert.equal(viewerRoot.querySelector('[data-sheet-action=chart]'),null,'Viewer cannot create charts');
+ const writesBefore=calls.filter(x=>x.path.endsWith('/cell')).length;
+ viewerRoot.querySelector('[data-sheet-address=A1]').dispatchEvent(new win.MouseEvent('dblclick',{bubbles:true}));
+ assert.equal(viewerRoot.querySelector('.studio-in-cell-editor'),null,'Viewer cannot inline-edit a cell');
+ const forged=doc.createElement('button');forged.dataset.sheetAction='save';viewerRoot.appendChild(forged);forged.click();
+ await new Promise(resolve=>setTimeout(resolve,40));
+ assert.equal(calls.filter(x=>x.path.endsWith('/cell')).length,writesBefore,'Forged save action cannot write as Viewer');
+ win.NexaSheetStudio.leave();
  assert.equal(errors.length,0,'No DOM script errors: '+errors.join('\n'));
  console.log('PASS Sheets Studio — common formulas, circular refs, sheet create/open, cell version saves, chart editor, multi-cell TSV paste, range copy and back navigation');
  dom.window.close();
