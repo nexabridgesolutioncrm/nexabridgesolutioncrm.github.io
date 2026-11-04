@@ -18,6 +18,26 @@ win.confirm=()=>true;
 let clipboard='';Object.defineProperty(win.navigator,'clipboard',{value:{writeText:async text=>{clipboard=text}}});
 win.formulajs=require('@formulajs/formulajs');
 win.eval(formula);win.eval(features);win.eval(offline);win.eval(studio);
+
+const channelMocks=[];
+win.nexaSheetsRealtimeCredentials=()=>({url:'https://supabase.example',key:'public-test-key',token:'jwt-test',orgId:'org-test'});
+win.supabase={createClient:()=>{
+ const c={realtime:{setAuth(token){assert.equal(token,'jwt-test','Realtime uses signed-in session token')}},
+  removeChannel:()=>Promise.resolve(),
+  channel(name,options){
+   const entry={name,options,callbacks:[],tracked:[],subscribed:false};
+   const channel={
+    on(type,filter,fn){entry.callbacks.push({type,filter,fn});return channel},
+    subscribe(handler){entry.subscribed=true;handler('SUBSCRIBED');return channel},
+    track(payload){entry.tracked.push(payload);return Promise.resolve('ok')},
+    presenceState(){return {}}
+   };
+   entry.channel=channel;channelMocks.push(entry);
+   return channel;
+  }};
+ return c;
+}};
+
 const F=win.NexaFormula;
 assert.ok(F,'Formula engine is exposed');
 const raw=new Map([['A1',{raw_value:'7'}],['A2',{raw_value:'13'}],['B1',{raw_value:'=SUM(A1:A2)'}],
@@ -116,6 +136,14 @@ const wait=async(fn,description)=>{for(let i=0;i<180;i++){if(fn())return;await n
  root.querySelector('[data-sheet-action=new]').click();
  await wait(()=>root.querySelector('#studioGrid'),'new spreadsheet opens');
  assert.equal(sheets.length,1);
+ await wait(()=>channelMocks.length>0,'Realtime channel created');
+ const firstChannel=channelMocks[0];
+ assert.equal(firstChannel.options.config.private,true,'Spreadsheet presence uses a private channel');
+ assert.ok(firstChannel.callbacks.some(x=>x.filter?.table==='crm_sheet_cells'),'Cell changes subscribed');
+ assert.ok(firstChannel.callbacks.some(x=>x.filter?.table==='crm_sheet_comments'),'Live comments subscribed');
+ assert.ok(firstChannel.callbacks.some(x=>x.filter?.table==='crm_spreadsheets'),'Metadata updates subscribed');
+ await wait(()=>firstChannel.tracked.length>0,'Presence tracked after subscription');
+
  const name=root.querySelector('#studioNameBox');
  assert.equal(name.textContent,'A1');
  let bar=root.querySelector('#studioFormulaBar');bar.value='7';root.querySelector('[data-sheet-action=save]').click();
@@ -170,6 +198,13 @@ const wait=async(fn,description)=>{for(let i=0;i<180;i++){if(fn())return;await n
  await wait(()=>root.querySelector('.sf-comment')?.textContent.includes('Call lead after five'),'comment rendered');
  root.querySelector('[data-sheet-action=dismiss]').click();
  assert.ok(root.querySelector('[data-sheet-address=A1]')?.classList.contains('commented-cell'),'Cell displays a comment marker');
+ const remoteComment={id:'33333333-3333-4333-8333-333333333333',address:'B4',
+  body:'Remote team note',author_id:'peer',parent_id:null,resolved:false,created_at:new Date().toISOString()};
+ comments.push(remoteComment);
+ firstChannel.callbacks.find(x=>x.filter?.table==='crm_sheet_comments').fn({eventType:'INSERT',new:remoteComment});
+ await wait(()=>root.querySelector('[data-sheet-address=B4]')?.classList.contains('commented-cell'),
+  'Remote comment reflected without browser refresh');
+
  root.querySelector('[data-sheet-action="sf-history"]').click();
  await wait(()=>root.querySelector('.sf-revision'),'audit history rendered');
  assert.ok(root.querySelector('.sf-revision').textContent.includes('Revision 1'));
