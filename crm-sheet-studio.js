@@ -6,7 +6,7 @@
  const esc=v=>String(v??'').replace(/[&<>"']/g,x=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[x]));
  const uid=()=>Math.random().toString(36).slice(2,10);
  const state={root:null,api:null,user:null,list:[],active:null,cells:new Map(),selected:'A1',anchor:'A1',range:false,editing:null,rowStart:0,
-  channel:null,client:null,timer:null,generation:0,serial:0,busy:false,pending:[],realtime:false,presence:[],status:'',lastRemote:null,conflictDraft:null,modal:null,undoStack:[],redoStack:[],historyReplay:false};
+  channel:null,client:null,timer:null,generation:0,serial:0,busy:false,pending:[],realtime:false,presence:[],status:'',lastRemote:null,conflictDraft:null,modal:null,undoStack:[],redoStack:[],historyReplay:false,googleLinks:[],googleLoaded:false,googleError:''};
  const canCreate=()=>['owner','admin','agent'].includes(state.user?.role);
  const canManage=()=>['owner','admin'].includes(state.user?.role);
  const validAddress=v=>/^[A-Z]{1,3}[1-9][0-9]{0,4}$/.test(v);
@@ -26,7 +26,7 @@
  function leave(){
   global.NexaSheetOffline?.leave?.();global.NexaSheetFeatures?.reset?.();
   state.generation++;removeRemote();
-  state.root=null;state.user=null;state.api=null;state.list=[];state.active=null;
+  state.root=null;state.user=null;state.api=null;state.list=[];state.active=null;state.googleLinks=[];state.googleLoaded=false;state.googleError='';
   state.cells.clear();state.selected='A1';state.anchor='A1';state.range=false;
   state.rowStart=0;state.editing=null;state.pending=[];state.busy=false;
   state.status='';state.lastRemote=null;state.conflictDraft=null;state.importBook=null;state.modal=null;state.undoStack=[];state.redoStack=[];
@@ -35,11 +35,69 @@
   return '<div class="sheet-studio-head"><div><div class="studio-eyebrow">NEXABRIDGE / LIVE DATA WORKSPACE</div><h1>Sheets Studio</h1><p>Spreadsheet formulas, shared cells, Excel imports and data-driven charts.</p></div>'+
    '<div class="studio-head-actions"><span id="sheetStatus" aria-live="polite">'+esc(state.status)+'</span>'+(state.active?'<span class="studio-peer-status" id="studioPeerStatus">'+(state.realtime?'● Live':'○ Sync')+'</span>':'')+
    (state.active?'<button class="btn" data-sheet-action="back">← All sheets</button>':'')+
-   '<button class="btn" data-sheet-action="script">Apps Script ↗</button></div></div>';
+   '<button class="btn" data-sheet-action="googleCreate">Google Sheets ↗</button><button class="btn" data-sheet-action="script">Apps Script ↗</button></div></div>';
  }
+
+ function googleSection(){
+  const links=state.googleLinks||[];
+  return '<section class="nexa-google-sheets"><div class="nexa-google-title">'+
+   '<div><span class="studio-eyebrow">GOOGLE WORKSPACE</span><h2>Full Google Sheets editor</h2>'+
+   '<p>Open the official Google Sheets editor for all Google features. Google sign-in and file sharing remain managed by Google. NexaBridge stores only links.</p></div>'+
+   '<div class="actions"><button class="btn primary" data-sheet-action="googleCreate">＋ New in Google Sheets ↗</button>'+
+   (canCreate()?'<button class="btn" data-sheet-action="googleLink">Link existing file</button>':'')+
+   '<button class="btn" data-sheet-action="googleReload" title="Refresh linked files">↻</button></div></div>'+
+   (state.googleError?'<p class="sheet-hint">Linked files unavailable: '+esc(state.googleError)+'</p>':'')+
+   '<div class="nexa-google-links">'+(links.length?links.map(item=>
+    '<div class="nexa-google-file"><div><strong>'+esc(item.title)+'</strong>'+
+    '<small>Google sharing permissions apply · linked '+esc(String(item.createdAt||'').slice(0,10))+'</small></div>'+
+    '<div class="actions"><button class="btn primary" data-sheet-action="googleOpen" data-id="'+esc(item.id)+'">Open in Google ↗</button>'+
+    (canManage()||item.addedBy===state.user?.id?'<button class="btn danger" data-sheet-action="googleUnlink" data-id="'+esc(item.id)+'">Unlink</button>':'')+
+    '</div></div>').join(''):'<p class="sheet-hint">No Google files linked yet. Create a Google Sheet, copy its URL, then select “Link existing file”.</p>')+'</div></section>';
+ }
+ async function refreshGoogleLinks(){
+  const generation=state.generation;
+  try{
+   const list=await api('google-sheets');
+   if(generation!==state.generation||!state.root)return;
+   state.googleLinks=Array.isArray(list)?list:[];state.googleLoaded=true;state.googleError='';
+  }catch(err){
+   if(generation!==state.generation||!state.root)return;
+   state.googleError=err.message||'Could not load linked Google Sheets';state.googleLoaded=true;
+  }
+  if(!state.active)paint();
+ }
+ function googleLinkDialog(){
+  if(!canCreate())throw Error('Your account cannot link files');
+  showModal('<h2>Link Google Sheet</h2><p>Create or open your spreadsheet in Google Sheets, copy its address, and link it here. This does not copy the file or change Google sharing permissions.</p>'+
+   '<label class="studio-input-label">Display name</label><input id="googleLinkTitle" class="select" maxlength="120" placeholder="e.g. Sales planning" required>'+
+   '<label class="studio-input-label">Google Sheets URL</label><input id="googleLinkURL" class="select" type="url" placeholder="https://docs.google.com/spreadsheets/d/.../edit" required>'+
+   '<div class="studio-modal-foot"><button class="btn" data-sheet-action="dismiss">Cancel</button><button class="btn primary" data-sheet-action="googleSave">Save link</button></div>');
+ }
+ async function saveGoogleLink(){
+  const title=state.root?.querySelector('#googleLinkTitle')?.value?.trim()||'';
+  const url=state.root?.querySelector('#googleLinkURL')?.value?.trim()||'';
+  if(!title||!url)throw Error('Enter a name and a Google Sheets URL');
+  await api('google-sheets',{method:'POST',body:{title,url}});
+  state.root.querySelector('.studio-modal-layer')?.remove();
+  await refreshGoogleLinks();
+  notice('Google Sheets link added. Access still depends on Google file sharing.');
+ }
+ function openOfficialGoogle(url){
+  if(!/^https:\/\/docs\.google\.com\/spreadsheets\/(?:create|d\/[A-Za-z0-9_-]{20,150}\/edit)$/.test(url))throw Error('Invalid official Google Sheets URL');
+  global.open(url,'_blank','noopener,noreferrer');
+ }
+ async function unlinkGoogle(id){
+  const item=state.googleLinks.find(x=>x.id===id);
+  if(!item)throw Error('Link not found');
+  if(!canManage()&&item.addedBy!==state.user?.id)throw Error('Only an administrator or link owner can unlink this file');
+  if(!global.confirm('Remove this Google Sheets shortcut from NexaBridge? The Google file will NOT be deleted.'))return;
+  await api('google-sheets/'+encodeURIComponent(id),{method:'DELETE'});
+  await refreshGoogleLinks();notice('Shortcut removed; Google file unchanged.');
+ }
+
  function listView(){
   const sheets=(state.list||[]).filter(x=>!x.parent_id);
-  return header()+'<div class="sheet-action-row">'+
+  return header()+googleSection()+'<div class="sheet-action-row">'+
    (canCreate()?'<button class="btn primary" data-sheet-action="new">＋ Create spreadsheet</button>':'')+
    (canCreate()?'<button class="btn" data-sheet-action="import">↑ Import Excel (.xlsx)</button>':'')+
    '<span class="sheet-hint">'+(canCreate()?'Only authorized NexaBridge members can access these sheets.':'Read-only access · contact an administrator to create or edit spreadsheets.')+'</span></div>'+
@@ -226,6 +284,7 @@
   if(!state.list.length){
    try{await listRefresh()}catch(e){state.status='Unable to load spreadsheets: '+e.message;paint()}
   }else paint();
+  if(!state.googleLoaded)await refreshGoogleLinks();
  }
  async function openSheet(id){
   removeRemote();const generation=state.generation;
@@ -590,7 +649,17 @@
   const el=ev.target.closest('[data-sheet-action]');
   if(el){ev.preventDefault();const action=el.dataset.sheetAction;
    try{
-    if(action==='open')await openSheet(el.dataset.id);
+    if(action==='googleCreate')openOfficialGoogle('https://docs.google.com/spreadsheets/create');
+    else if(action==='googleLink')googleLinkDialog();
+    else if(action==='googleSave')await saveGoogleLink();
+    else if(action==='googleReload')await refreshGoogleLinks();
+    else if(action==='googleOpen'){
+     const target=state.googleLinks.find(x=>x.id===el.dataset.id);
+     if(!target)throw Error('Google spreadsheet link not found');
+     openOfficialGoogle(target.url);
+    }
+    else if(action==='googleUnlink')await unlinkGoogle(el.dataset.id);
+    else if(action==='open')await openSheet(el.dataset.id);
     else if(action==='tabSwitch')await openSheet(el.dataset.id);
     else if(action==='tabCreate')await createTab();
     else if(action==='tabRename')await renameTab();
