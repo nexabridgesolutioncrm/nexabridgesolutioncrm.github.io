@@ -229,3 +229,10 @@ body.dark .sheet-grid td.offline-draft{background:#59472d!important;outline-colo
 .sx-freeze-cols .sheet-grid td:nth-child(2){background:var(--surface)}
 .sx-freeze-cols .sheet-grid td:nth-child(2)[style]{background:inherit}
 .sx-freeze-cols .sheet-grid td:nth-child(2).selected{background:var(--surface2)}
+
+/* Workbook worksheet tabs */
+.sheet-tab-bar{display:flex;align-items:center;gap:5px;flex-wrap:wrap;padding:7px 11px;margin:0 0 11px;border:1px solid var(--stroke);border-radius:11px;background:var(--surface)}
+.sheet-tab{font:inherit;font-size:12px;font-weight:700;padding:8px 13px;max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border:1px solid transparent;border-radius:8px;color:var(--muted);background:transparent;cursor:pointer}
+.sheet-tab:hover{background:var(--surface2);color:var(--ink)}
+.sheet-tab.active{color:var(--brand);border-color:var(--stroke);background:var(--surface2);box-shadow:inset 0 -2px 0 var(--brand)}
+.sheet-tab-bar .btn{min-height:31px;padding:6px 9px}
