@@ -140,6 +140,9 @@
   if(!element||!transport||!user)return;
   const isNew=element!==state.root;
   state.root=element;state.api=transport;state.user=user;
+  const extensions={state,F,api:(path,opts)=>transport(path,opts),showModal,paint,notice};
+  global.NexaSheetFeatures?.bind?.(extensions);
+  global.NexaSheetOffline?.bind?.(extensions);
   if(isNew){
    element.addEventListener('click',onClick);
    element.addEventListener('dblclick',onDouble);
@@ -155,16 +158,19 @@
   const data=await api('sheets/'+encodeURIComponent(id));
   if(generation!==state.generation)return;
   state.active=data.sheet;state.selected='A1';state.anchor='A1';state.range=false;state.rowStart=0;setCells(data.cells);
-  paint();await connect();
+  await global.NexaSheetOffline?.afterOpen?.();
+  paint();await global.NexaSheetFeatures?.afterOpen?.();await connect();
  }
  async function back(){
   removeRemote();state.active=null;state.cells.clear();state.selected='A1';state.anchor='A1';state.range=false;state.rowStart=0;
-  await listRefresh();
+  await global.NexaSheetOffline?.afterOpen?.();
+  await global.NexaSheetFeatures?.afterOpen?.();await listRefresh();
  }
  async function saveCell(address,value){
   const generation=state.generation,sheetId=state.active?.id;
   if(!sheetId)return;
   if(!canCreate()){notice('Read-only account cannot save cells',true);return}
+  if(global.NexaSheetFeatures?.lock?.(address)){notice('Protected range — administrator access required',true);return}
   if(state.busy){
    state.pending=state.pending.filter(item=>item.address!==address);
    state.pending.push({address,value});
@@ -176,9 +182,9 @@
   if(String(value).length>4000){notice('Cell values cannot exceed 4,000 characters',true);return}
   state.busy=true;notice('Saving '+address+'…');
   try{
-   const saved=await api('sheets/'+state.active.id+'/cell',{method:'POST',body:{address,value,revision:previous.revision||0}});
+   const saved=global.NexaSheetOffline?.write?await global.NexaSheetOffline.write(address,value,previous.revision||0):await api('sheets/'+state.active.id+'/cell',{method:'POST',body:{address,value,revision:previous.revision||0}});
    if(generation!==state.generation||state.active?.id!==sheetId)return;
-   state.conflictDraft=null;state.cells.set(address,saved);paint();notice('Saved '+address);
+   state.conflictDraft=null;state.cells.set(address,saved);paint();notice(saved.queued?'Offline draft saved (not synchronized)':'Saved '+address,!!saved.queued);
   }catch(e){
    if(generation!==state.generation||state.active?.id!==sheetId)return;
    notice(e.message,true);
@@ -226,12 +232,13 @@
   const generation=state.generation,sheetId=state.active.id;
   const data=await api('sheets/'+sheetId);
   if(generation!==state.generation||state.active?.id!==sheetId)return;
-  state.active=data.sheet;setCells(data.cells);
+  state.active=data.sheet;setCells(data.cells);global.NexaSheetOffline?.overlay?.();
   if(!state.editing)paint();
   if(!quiet)notice('Sheet refreshed');
  }
  async function editCell(address){
   if(!canCreate())return;
+  if(global.NexaSheetFeatures?.lock?.(address))return notice('Protected range — administrator access required',true);
   const node=state.root?.querySelector('[data-sheet-address="'+address+'"]');
   if(!node||state.editing)return;
   selectCell(address);state.editing=address;
@@ -381,7 +388,7 @@
       if(!row?.address)return;
       const old=dataCell(row.address);
       if(old.revision>=row.revision)return;
-      state.cells.set(row.address,row);state.lastRemote=row.updated_by;
+      state.cells.set(row.address,row);global.NexaSheetOffline?.overlay?.();state.lastRemote=row.updated_by;
       if(state.editing===row.address||state.busy||state.root?.querySelector('.studio-modal-layer')){notice('Remote change received; reload after finishing your edit.',true);return}
       state.status='Live update received';
       paint();
@@ -466,7 +473,9 @@
     if(action==='open')await openSheet(el.dataset.id);
     else if(action==='new')await createSheet();
     else if(action==='back')await back();
-    else if(action==='refresh')await refreshSheet();
+    else if(action==='refresh'){await refreshSheet();await global.NexaSheetFeatures?.preloadLinks?.();await global.NexaSheetOffline?.flush?.()}
+    else if(action.startsWith('sf-'))await global.NexaSheetFeatures?.action?.(action,el);
+    else if(action.startsWith('so-'))await global.NexaSheetOffline?.action?.(action,el);
     else if(action==='copyCells')await copyCells();
     else if(action==='copyDraft'){
      if(!state.conflictDraft)throw Error('No draft to copy');
