@@ -67,16 +67,34 @@
      const op=eat(),priority=prec[op],right=expr(op==='^'?priority:priority+1);
      if(typeof left==='string'&&left[0]==='#')throw Error(left);
      if(typeof right==='string'&&right[0]==='#')throw Error(right);
-     if(op==='&'){left=String(left??'')+String(right??'');continue}
-     if(['=','<>','!=','>','<','>=','<='].includes(op)){
-      const a=Number(left),b=Number(right);
-      const l=Number.isFinite(a)&&Number.isFinite(b)?a:String(left).toLowerCase();
-      const r=Number.isFinite(a)&&Number.isFinite(b)?b:String(right).toLowerCase();
-      left=op==='='?l===r:op==='!='||op==='<>'?l!==r:op==='>'?l>r:op==='<'?l<r:op==='>='?l>=r:l<=r;continue;
-     }
-     const a=numeric(left),b=numeric(right);
-     if(!Number.isFinite(a)||!Number.isFinite(b))throw Error(ERR.value);
-     left=op==='+'?a+b:op==='-'?a-b:op==='*'?a*b:op==='/'?(b===0?ERR.div:a/b):Math.pow(a,b);
+     const calculate=(x,y)=>{
+      if(typeof x==='string'&&x[0]==='#')throw Error(x);
+      if(typeof y==='string'&&y[0]==='#')throw Error(y);
+      if(op==='&')return String(x??'')+String(y??'');
+      if(['=','<>','!=','>','<','>=','<='].includes(op)){
+       const a=Number(x),b=Number(y),both=Number.isFinite(a)&&Number.isFinite(b);
+       const l=both?a:String(x).toLowerCase(),r=both?b:String(y).toLowerCase();
+       return op==='='?l===r:op==='!='||op==='<>'?l!==r:op==='>'?l>r:op==='<'?l<r:op==='>='?l>=r:l<=r;
+      }
+      const a=numeric(x),b=numeric(y);
+      if(!Number.isFinite(a)||!Number.isFinite(b))throw Error(ERR.value);
+      return op==='+'?a+b:op==='-'?a-b:op==='*'?a*b:op==='/'?(b===0?ERR.div:a/b):Math.pow(a,b);
+     };
+     const L=left?.matrix,R=right?.matrix;
+     if(L||R){
+      const rows=Math.max(L?.length||1,R?.length||1);
+      const cols=Math.max(L?.[0]?.length||1,R?.[0]?.length||1);
+      if(rows*cols>3000)throw Error(ERR.value);
+      if(L?.length>1&&R?.length>1&&L.length!==R.length)throw Error(ERR.value);
+      if(L?.[0]?.length>1&&R?.[0]?.length>1&&L[0].length!==R[0].length)throw Error(ERR.value);
+      const matrix=[];
+      for(let r=0;r<rows;r++){
+       const line=[];
+       for(let c=0;c<cols;c++)line.push(calculate(L?L[r%L.length][c%L[0].length]:left,R?R[r%R.length][c%R[0].length]:right));
+       matrix.push(line);
+      }
+      left={matrix,values:matrix.flat()};
+     }else left=calculate(left,right);
     }
     return left;
    }
@@ -117,6 +135,41 @@
    if(m[5])records=records.slice(0,Math.min(10000,Number(m[5])));
    const output=records.map(x=>select.map(i=>x.row[i]));
    return {matrix:output.length?output:[['']],values:output.flat()};
+  }
+  computeSpills(){
+   if(this._spills)return this._spills;
+   this._spills=new Map();
+   const occupied=new Set([...this.cells].filter(([_,entry])=>{
+    const raw=typeof entry==='object'&&entry?entry.raw_value:entry;
+    return raw!=null&&String(raw)!=='';
+   }).map(([key])=>key));
+   for(const [start,entry] of this.cells){
+    const raw=typeof entry==='object'&&entry?entry.raw_value:entry;
+    if(typeof raw!=='string'||raw[0]!=='=')continue;
+    const value=this.evaluateCell(start);
+    if(!value?.matrix)continue;
+    const point=coordinates(start),matrix=value.matrix;
+    if(!point||!matrix.length||!matrix[0].length||matrix.length*matrix[0].length>3000)continue;
+    let blocked=false;
+    for(let r=0;r<matrix.length;r++)for(let c=0;c<matrix[r].length;c++){
+     const row=point.row+r,col=point.col+c;
+     if(row>=10000||col>=26||((r||c)&&occupied.has(address(row,col))))blocked=true;
+    }
+    if(blocked){this.cache.set(start,ERR.ref);continue}
+    for(let r=0;r<matrix.length;r++)for(let c=0;c<matrix[r].length;c++){
+     const loc=address(point.row+r,point.col+c);
+     if((r||c)&&this._spills.has(loc)){blocked=true;break}
+     this._spills.set(loc,matrix[r][c]);
+    }
+    if(blocked)this.cache.set(start,ERR.ref);
+   }
+   return this._spills;
+  }
+  displayCell(addr){
+   const value=this.computeSpills().get(addr);
+   if(value!==undefined)return value;
+   const result=this.evaluateCell(addr);
+   return result?.matrix?result.matrix[0]?.[0]??'':result;
   }
   func(name,args){
    const vals=flatten(args.map(v=>v&&v.matrix?v.values:v));
