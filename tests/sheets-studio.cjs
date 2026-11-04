@@ -1,6 +1,7 @@
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const {JSDOM,VirtualConsole}=require('jsdom');
+const {indexedDB}=require('fake-indexeddb');
 const formula=fs.readFileSync('crm-formulas.js','utf8');
 const studio=fs.readFileSync('crm-sheet-studio.js','utf8');
 const features=fs.readFileSync('crm-sheet-features.js','utf8');
@@ -11,6 +12,7 @@ const dom=new JSDOM('<!doctype html><html><body><div id="sheetApp"></div></body>
  url:'https://crm.test/',runScripts:'dangerously',pretendToBeVisual:true,virtualConsole:vc
 });
 const win=dom.window,doc=win.document;
+Object.defineProperty(win,'indexedDB',{configurable:true,value:indexedDB});
 win.prompt=()=> 'Team Revenue Sheet';
 win.confirm=()=>true;
 let clipboard='';Object.defineProperty(win.navigator,'clipboard',{value:{writeText:async text=>{clipboard=text}}});
@@ -177,6 +179,33 @@ const wait=async(fn,description)=>{for(let i=0;i<180;i++){if(fn())return;await n
  root.querySelector('[data-sheet-action=copyDraft]').click();
  await wait(()=>clipboard==='My unsaved calculation','rejected edit copied');
  root.querySelector('[data-sheet-action=dismiss]').click();
+
+
+ // Device-local offline draft queue: opt-in, preserve local text, then sync with revisions.
+ root.querySelector('[data-sheet-action="so-toggle"]').click();
+ await wait(()=>win.NexaSheetOffline.enabled(),'offline drafts enabled');
+ Object.defineProperty(win.navigator,'onLine',{configurable:true,value:false});
+ root.querySelector('[data-sheet-address=A6]').click();
+ let offlineInput=root.querySelector('#studioFormulaBar');offlineInput.value='Offline saved draft';
+ root.querySelector('[data-sheet-action=save]').click();
+ await wait(()=>win.NexaSheetOffline.pending().has('A6'),'draft safely stored in IndexedDB');
+ assert.equal(cells.has('A6'),false,'Offline draft does not falsely claim backend persistence');
+ await wait(()=>root.querySelector('[data-sheet-address=A6]')?.textContent==='Offline saved draft','offline draft appears in grid');
+ Object.defineProperty(win.navigator,'onLine',{configurable:true,value:true});
+ await win.NexaSheetOffline.flush();
+ await wait(()=>cells.get('A6')?.raw_value==='Offline saved draft','offline draft synchronized on reconnect');
+ assert.equal(win.NexaSheetOffline.pending().size,0,'Confirmed draft removed from local queue');
+ // Concurrent update must never silently overwrite a newer server revision.
+ Object.defineProperty(win.navigator,'onLine',{configurable:true,value:false});
+ root.querySelector('[data-sheet-address=A7]').click();
+ offlineInput=root.querySelector('#studioFormulaBar');offlineInput.value='Unsent work';
+ root.querySelector('[data-sheet-action=save]').click();
+ await wait(()=>win.NexaSheetOffline.pending().has('A7'),'second offline draft queued');
+ cells.set('A7',{address:'A7',raw_value:'Team version',revision:1,updated_by:'peer'});
+ Object.defineProperty(win.navigator,'onLine',{configurable:true,value:true});
+ await win.NexaSheetOffline.flush();
+ assert.equal(cells.get('A7').raw_value,'Team version','Server value survives conflicting offline draft');
+ assert.equal(win.NexaSheetOffline.pending().get('A7')?.conflict,true,'Conflicting draft remains for user review');
 
  root.querySelector('[data-sheet-action=back]').click();
  await wait(()=>root.querySelector('[data-sheet-action=new]'),'return to sheet library');
