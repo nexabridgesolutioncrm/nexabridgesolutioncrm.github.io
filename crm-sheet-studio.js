@@ -71,7 +71,7 @@
    (canCreate()?'<button class="btn" data-sheet-action="import">↑ Import XLSX</button>':'')+'</div></section>'+
    (global.NexaSheetFeatures?.banner?.()||'')+'<div class="sheet-formula-bar"><span id="studioNameBox">'+esc(selected)+'</span>'+
    '<span class="sheet-fx">ƒx</span><input id="studioFormulaBar" aria-label="Cell formula or value" '+(canCreate()?'':'readonly ')+'value="'+escapeAttr(dataCell(selected).raw_value)+'" placeholder="'+(canCreate()?'Enter text or =SUM(A1:A10)':'Read-only cell · select to inspect')+'">'+
-   (canCreate()?'<button class="btn primary" data-sheet-action="save">Save cell</button>':'<span class="sheet-readonly-note">Read-only workspace</span>')+'</div>'+
+   (canCreate()?'<button class="btn" data-sheet-action="edit">Edit cell</button><button class="btn primary" data-sheet-action="save">Save cell</button>':'<span class="sheet-readonly-note">Read-only workspace</span>')+'</div>'+
    '<div class="sheet-grid-scroller"><table id="studioGrid" class="sheet-grid">'+head+body+'</table></div>'+ '<div class="sheet-rowpager"><span>Rows '+(state.rowStart+1)+'–'+(state.rowStart+50)+' · 26 columns</span><div class="actions"><button class="btn small" data-sheet-action="rowPrev" '+(state.rowStart===0?'disabled':'')+'>← Previous 50</button><button class="btn small" data-sheet-action="rowNext" '+(state.rowStart>=9950?'disabled':'')+'>Next 50 →</button></div></div>'+
    '<p class="sheet-studio-instructions">'+(canCreate()?'Select any cell, then type in the formula bar or double-click it. Formulas begin with =. Updates are saved with revision checks, so conflicting edits cannot overwrite silently.':'This account can browse, calculate and export cells. Only authorized members can edit.')+'</p>'+
    '<div class="sheet-chart-section"><div class="sheet-section-title"><h2>Charts</h2><span>Live calculations from the sheet</span></div>'+
@@ -263,21 +263,21 @@
   if(!state.editing)paint();
   if(!quiet)notice('Sheet refreshed');
  }
- async function editCell(address){
+ async function editCell(address,initialValue){
   if(!canCreate())return;
   if(global.NexaSheetFeatures?.lock?.(address))return notice('Protected range — administrator access required',true);
   const node=state.root?.querySelector('[data-sheet-address="'+address+'"]');
   if(!node||state.editing)return;
   selectCell(address);state.editing=address;
   const input=document.createElement('input');
-  input.className='studio-in-cell-editor';input.value=dataCell(address).raw_value;input.setAttribute('aria-label','Edit cell '+address);
-  node.replaceChildren(input);input.focus();input.select();
+  input.className='studio-in-cell-editor';input.value=initialValue===undefined?dataCell(address).raw_value:initialValue;input.setAttribute('aria-label','Edit cell '+address);
+  node.replaceChildren(input);input.focus();if(initialValue===undefined)input.select();else input.setSelectionRange(input.value.length,input.value.length);
   let finished=false;
   async function finish(save){
    if(finished)return;finished=true;
    const value=input.value;
    state.editing=null;
-   if(save)await saveCell(address,value);
+   if(save){await saveCell(address,value);if(state.active&&state.root?.contains(node))paint()}
    else paint();
   }
   input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();finish(true)}if(e.key==='Escape'){e.preventDefault();finish(false)}});
@@ -526,6 +526,7 @@
     else if(action==='pasteSave')await pasteCellsSave();
     else if(action==='rowPrev'){state.rowStart=Math.max(0,state.rowStart-50);state.selected=F.address(state.rowStart,0);paint()}
     else if(action==='rowNext'){state.rowStart=Math.min(9950,state.rowStart+50);state.selected=F.address(state.rowStart,0);paint()}
+    else if(action==='edit')await editCell(state.selected);
     else if(action==='save')await saveCell(state.selected,state.root.querySelector('#studioFormulaBar').value);
     else if(action==='chart')chartEditor();
     else if(action==='editChart')chartEditor(Number(el.dataset.index));
@@ -547,13 +548,22 @@
    return;
   }
   const cell=ev.target.closest('[data-sheet-address]');
-  if(cell&&state.active)selectCell(cell.dataset.sheetAddress,ev.shiftKey);
+  if(cell&&state.active){
+   const address=cell.dataset.sheetAddress;
+   if(ev.target.closest('.studio-in-cell-editor'))return;
+   if(state.selected===address&&canCreate()&&!ev.shiftKey&&!state.editing){editCell(address);return}
+   selectCell(address,ev.shiftKey);
+  }
  }
- function onDouble(ev){const cell=ev.target.closest('[data-sheet-address]');if(cell)editCell(cell.dataset.sheetAddress)}
+ function onDouble(ev){const cell=ev.target.closest('[data-sheet-address]');if(cell&&!ev.target.closest('.studio-in-cell-editor'))editCell(cell.dataset.sheetAddress)}
  function onKey(ev){
   if((ev.ctrlKey||ev.metaKey)&&ev.key.toLowerCase()==='c'&&ev.target?.matches('.sheet-studio-cell')){ev.preventDefault();copyCells().catch(e=>notice(e.message,true));return}
   if(ev.target?.id==='studioFormulaBar'&&ev.key==='Enter'){ev.preventDefault();saveCell(state.selected,ev.target.value);return}
-  if(ev.target?.matches?.('.sheet-studio-cell')&&ev.key==='Enter'){ev.preventDefault();editCell(ev.target.dataset.sheetAddress)}
+  if(ev.target?.matches?.('.sheet-studio-cell')){
+   const address=ev.target.dataset.sheetAddress;
+   if(ev.key==='Enter'||ev.key==='F2'){ev.preventDefault();editCell(address);return}
+   if(canCreate()&&!ev.ctrlKey&&!ev.metaKey&&!ev.altKey&&ev.key.length===1){ev.preventDefault();editCell(address,ev.key);return}
+  }
  }
  function onChange(ev){}
  global.NexaSheetStudio={mount,leave,formulaEngine:F,buildChart:chartCard};
