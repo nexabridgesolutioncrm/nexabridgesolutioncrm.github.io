@@ -399,6 +399,7 @@
    }catch(e){notice('Live connection unavailable; fallback sync active',true)}
   }
   state.timer=setInterval(async()=>{
+   if(global.navigator.onLine&&global.NexaSheetOffline?.pending?.().size)await global.NexaSheetOffline?.flush?.();
    if(!state.active||state.editing||state.busy||document.hidden||state.root?.querySelector('.studio-modal-layer')||document.activeElement?.id==='studioFormulaBar')return;
    try{await refreshSheet(true)}catch(_){}
   },15000);
@@ -446,7 +447,8 @@
     const previous=dataCell(x.address);
     if(x.value===previous.raw_value)continue;
     try{
-     const row=await api('sheets/'+state.active.id+'/cell',{method:'POST',body:{address:x.address,value:x.value,revision:previous.revision||0}});
+     if(global.NexaSheetFeatures?.lock?.(x.address))throw Error('Protected cell');
+     const row=global.NexaSheetOffline?.write?await global.NexaSheetOffline.write(x.address,x.value,previous.revision||0):await api('sheets/'+state.active.id+'/cell',{method:'POST',body:{address:x.address,value:x.value,revision:previous.revision||0}});
      state.cells.set(x.address,row);saved++;
     }catch(e){errors.push(x.address+': '+e.message)}
    }
