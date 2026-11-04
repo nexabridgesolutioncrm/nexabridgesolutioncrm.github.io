@@ -65,7 +65,7 @@
   ).join('')+'</tbody>';
   return header()+'<section class="sheet-studio-toolbar">'+
    '<div class="sheet-studio-title"><strong>▦ '+esc(name)+'</strong><small>'+state.cells.size+' saved cells</small></div>'+
-   '<div class="actions"><button class="btn" data-sheet-action="refresh">↻ Refresh</button>'+(canCreate()?'<button class="btn" data-sheet-action="undo" title="Undo Ctrl+Z">↶ Undo</button><button class="btn" data-sheet-action="redo" title="Redo Ctrl+Y">↷ Redo</button><button class="btn" data-sheet-action="clear" title="Clear selected cells">Clear</button>':'')+(global.NexaSheetOffline?.toolbar?.()||'')+(global.NexaSheetFeatures?.toolbar?.()||'')+'<button class="btn" data-sheet-action="copyCells">Copy range</button>'+(canCreate()?'<button class="btn" data-sheet-action="pasteCells">Paste cells</button>':'')+
+   '<div class="actions"><button class="btn" data-sheet-action="refresh">↻ Refresh</button>'+(canCreate()?'<button class="btn" data-sheet-action="undo" title="Undo Ctrl+Z">↶ Undo</button><button class="btn" data-sheet-action="redo" title="Redo Ctrl+Y">↷ Redo</button><button class="btn" data-sheet-action="clear" title="Clear selected cells">Clear</button><button class="btn" data-sheet-action="fillDown" title="Fill selected range down">Fill down</button>':'')+(global.NexaSheetOffline?.toolbar?.()||'')+(global.NexaSheetFeatures?.toolbar?.()||'')+'<button class="btn" data-sheet-action="find">Find / Replace</button><button class="btn" data-sheet-action="copyCells">Copy range</button>'+(canCreate()?'<button class="btn" data-sheet-action="pasteCells">Paste cells</button>':'')+
    (canManage()?'<button class="btn" data-sheet-action="chart">＋ New chart</button>':'')+
    '<button class="btn" data-sheet-action="export">↓ Export CSV</button>'+'<button class="btn" data-sheet-action="exportXLSX">↓ Export XLSX</button>'+
    (canCreate()?'<button class="btn" data-sheet-action="import">↑ Import XLSX</button>':'')+'</div></section>'+
@@ -554,6 +554,10 @@
     else if(action==='undo')await replayHistory(false);
     else if(action==='redo')await replayHistory(true);
     else if(action==='clear')await clearSelection();
+    else if(action==='fillDown')await fillDown();
+    else if(action==='find')findDialog();
+    else if(action==='findNext')findNext();
+    else if(action==='replaceAll')await replaceAll();
     else if(action==='save')await saveCell(state.selected,state.root.querySelector('#studioFormulaBar').value);
     else if(action==='chart')chartEditor();
     else if(action==='editChart')chartEditor(Number(el.dataset.index));
@@ -668,6 +672,53 @@
   if(text!==undefined){ev.preventDefault();pasteClipboard(text).catch(e=>notice(e.message,true))}
  }
 
+
+ function findDialog(){
+  showModal('<h2>Find and replace</h2><p>Search values and formulas in the active sheet.</p>'+
+   '<label class="studio-input-label">Find</label><input class="select" id="studioFindText" autocomplete="off">'+
+   '<label class="studio-input-label">Replace with</label><input class="select" id="studioReplaceText" autocomplete="off" '+(canCreate()?'':'disabled')+'>'+
+   '<div class="studio-modal-foot"><button class="btn" data-sheet-action="findNext">Find next</button>'+
+   (canCreate()?'<button class="btn primary" data-sheet-action="replaceAll">Replace all</button>':'')+
+   '<button class="btn" data-sheet-action="dismiss">Close</button></div>');
+  state.root.querySelector('#studioFindText')?.focus();
+ }
+ function findNext(){
+  const needle=state.root?.querySelector('#studioFindText')?.value||'';
+  if(!needle)throw Error('Enter a search term');
+  const matches=[...state.cells.values()].filter(row=>String(row.raw_value||'').toLowerCase().includes(needle.toLowerCase()))
+   .sort((a,b)=>{const x=F.coordinates(a.address),y=F.coordinates(b.address);return x.row-y.row||x.col-y.col});
+  if(!matches.length)return notice('No matches found',true);
+  const here=matches.findIndex(x=>x.address===state.selected);
+  const next=matches[(here+1)%matches.length].address;
+  state.root.querySelector('.studio-modal-layer')?.remove();
+  visibleCell(next);notice('Found '+needle+' in '+next+' ('+matches.length+' matches)');
+ }
+ async function replaceAll(){
+  if(!canCreate())throw Error('Read-only account');
+  const needle=state.root?.querySelector('#studioFindText')?.value||'';
+  if(!needle)throw Error('Enter a search term');
+  const replacement=state.root?.querySelector('#studioReplaceText')?.value||'';
+  const pattern=new RegExp(needle.replace(/[-/\\^$*+?.()|[\]{}]/g,'\\ function onDouble(ev){'),'gi');
+  const entries=[...state.cells.values()].filter(row=>String(row.raw_value||'').toLowerCase().includes(needle.toLowerCase()))
+   .map(row=>({address:row.address,value:String(row.raw_value).replace(pattern,()=>replacement)}));
+  if(!entries.length)return notice('No matching cells',true);
+  if(entries.length>500)throw Error('Replace up to 500 matching cells at a time');
+  if(!global.confirm('Replace '+entries.length+' matching cells?'))return;
+  state.root.querySelector('.studio-modal-layer')?.remove();
+  await applyValues(entries,'Replaced matches');
+ }
+ async function fillDown(){
+  if(!state.range)throw Error('Select a range using Shift+Arrow keys first');
+  const r=rangeLimits();
+  if(!r||r.bottom===r.top)throw Error('Select at least two rows');
+  const entries=[];
+  for(let col=r.left;col<=r.right;col++){
+   const source=String(dataCell(F.address(r.top,col)).raw_value||'');
+   for(let row=r.top+1;row<=r.bottom;row++)entries.push({address:F.address(row,col),value:source});
+  }
+  if(entries.length>500)throw Error('Fill down limited to 500 cells');
+  await applyValues(entries,'Filled down');
+ }
  function onDouble(ev){const cell=ev.target.closest('[data-sheet-address]');if(cell&&!ev.target.closest('.studio-in-cell-editor'))editCell(cell.dataset.sheetAddress)}
  function onKey(ev){
   if(!state.active)return;
@@ -675,6 +726,7 @@
   const key=ev.key?.toLowerCase?.()||'';
   if((ev.ctrlKey||ev.metaKey)&&cell){
    if(key==='c'){ev.preventDefault();copyCells().catch(e=>notice(e.message,true));return}
+   if(key==='f'){ev.preventDefault();findDialog();return}
    if(key==='z'||key==='y'){ev.preventDefault();replayHistory(key==='y'||(key==='z'&&ev.shiftKey)).catch(e=>notice(e.message,true));return}
   }
   if(ev.target?.id==='studioFormulaBar'&&ev.key==='Enter'){ev.preventDefault();saveCell(state.selected,ev.target.value);return}
