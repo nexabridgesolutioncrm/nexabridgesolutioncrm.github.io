@@ -6,7 +6,7 @@
  const esc=v=>String(v??'').replace(/[&<>"']/g,x=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[x]));
  const uid=()=>Math.random().toString(36).slice(2,10);
  const state={root:null,api:null,user:null,list:[],active:null,cells:new Map(),selected:'A1',anchor:'A1',range:false,editing:null,rowStart:0,
-  channel:null,client:null,timer:null,generation:0,serial:0,busy:false,pending:[],realtime:false,presence:[],status:'',lastRemote:null,conflictDraft:null,modal:null};
+  channel:null,client:null,timer:null,generation:0,serial:0,busy:false,pending:[],realtime:false,presence:[],status:'',lastRemote:null,conflictDraft:null,modal:null,undoStack:[],redoStack:[],historyReplay:false};
  const canCreate=()=>['owner','admin','agent'].includes(state.user?.role);
  const canManage=()=>['owner','admin'].includes(state.user?.role);
  const validAddress=v=>/^[A-Z]{1,3}[1-9][0-9]{0,4}$/.test(v);
@@ -29,7 +29,7 @@
   state.root=null;state.user=null;state.api=null;state.list=[];state.active=null;
   state.cells.clear();state.selected='A1';state.anchor='A1';state.range=false;
   state.rowStart=0;state.editing=null;state.pending=[];state.busy=false;
-  state.status='';state.lastRemote=null;state.conflictDraft=null;state.importBook=null;state.modal=null;
+  state.status='';state.lastRemote=null;state.conflictDraft=null;state.importBook=null;state.modal=null;state.undoStack=[];state.redoStack=[];
  }
  function header(){
   return '<div class="sheet-studio-head"><div><div class="studio-eyebrow">NEXABRIDGE / LIVE DATA WORKSPACE</div><h1>Sheets Studio</h1><p>Spreadsheet formulas, shared cells, Excel imports and data-driven charts.</p></div>'+
@@ -65,7 +65,7 @@
   ).join('')+'</tbody>';
   return header()+'<section class="sheet-studio-toolbar">'+
    '<div class="sheet-studio-title"><strong>▦ '+esc(name)+'</strong><small>'+state.cells.size+' saved cells</small></div>'+
-   '<div class="actions"><button class="btn" data-sheet-action="refresh">↻ Refresh</button>'+(global.NexaSheetOffline?.toolbar?.()||'')+(global.NexaSheetFeatures?.toolbar?.()||'')+'<button class="btn" data-sheet-action="copyCells">Copy range</button>'+(canCreate()?'<button class="btn" data-sheet-action="pasteCells">Paste cells</button>':'')+
+   '<div class="actions"><button class="btn" data-sheet-action="refresh">↻ Refresh</button>'+(canCreate()?'<button class="btn" data-sheet-action="undo" title="Undo Ctrl+Z">↶ Undo</button><button class="btn" data-sheet-action="redo" title="Redo Ctrl+Y">↷ Redo</button><button class="btn" data-sheet-action="clear" title="Clear selected cells">Clear</button>':'')+(global.NexaSheetOffline?.toolbar?.()||'')+(global.NexaSheetFeatures?.toolbar?.()||'')+'<button class="btn" data-sheet-action="copyCells">Copy range</button>'+(canCreate()?'<button class="btn" data-sheet-action="pasteCells">Paste cells</button>':'')+
    (canManage()?'<button class="btn" data-sheet-action="chart">＋ New chart</button>':'')+
    '<button class="btn" data-sheet-action="export">↓ Export CSV</button>'+
    (canCreate()?'<button class="btn" data-sheet-action="import">↑ Import XLSX</button>':'')+'</div></section>'+
@@ -174,6 +174,7 @@
    element.addEventListener('click',onClick);
    element.addEventListener('dblclick',onDouble);
    element.addEventListener('keydown',onKey);
+   element.addEventListener('paste',onPaste);
    element.addEventListener('change',onChange);
   }
   if(!state.list.length){
@@ -184,16 +185,17 @@
   removeRemote();const generation=state.generation;
   const data=await api('sheets/'+encodeURIComponent(id));
   if(generation!==state.generation)return;
-  state.active=data.sheet;state.selected='A1';state.anchor='A1';state.range=false;state.rowStart=0;setCells(data.cells);
+  state.active=data.sheet;state.selected='A1';state.anchor='A1';state.range=false;state.rowStart=0;state.undoStack=[];state.redoStack=[];setCells(data.cells);
   await global.NexaSheetOffline?.afterOpen?.();
   paint();await global.NexaSheetFeatures?.afterOpen?.();await connect();
  }
  async function back(){
-  removeRemote();state.active=null;state.cells.clear();state.selected='A1';state.anchor='A1';state.range=false;state.rowStart=0;
+  removeRemote();state.active=null;state.cells.clear();state.undoStack=[];state.redoStack=[];state.selected='A1';state.anchor='A1';state.range=false;state.rowStart=0;
   await global.NexaSheetOffline?.afterOpen?.();
   await global.NexaSheetFeatures?.afterOpen?.();await listRefresh();
  }
- async function saveCell(address,value){
+ function remember(changes){if(!changes.length||state.historyReplay)return;state.undoStack.push(changes);if(state.undoStack.length>70)state.undoStack.shift();state.redoStack=[]}
+ async function saveCell(address,value,rememberEdit=true){
   const generation=state.generation,sheetId=state.active?.id;
   if(!sheetId)return;
   if(!canCreate()){notice('Read-only account cannot save cells',true);return}
@@ -205,15 +207,15 @@
    return;
   }
   const previous=dataCell(address);
-  if(previous.raw_value===value)return;
+  if(previous.raw_value===value)return true;
   if(String(value).length>4000){notice('Cell values cannot exceed 4,000 characters',true);return}
   state.busy=true;notice('Saving '+address+'…');
   try{
    const saved=global.NexaSheetOffline?.write?await global.NexaSheetOffline.write(address,value,previous.revision||0):await api('sheets/'+state.active.id+'/cell',{method:'POST',body:{address,value,revision:previous.revision||0}});
    if(generation!==state.generation||state.active?.id!==sheetId)return;
-   state.conflictDraft=null;state.cells.set(address,saved);paint();notice(saved.queued?'Offline draft saved (not synchronized)':'Saved '+address,!!saved.queued);
+   state.conflictDraft=null;state.cells.set(address,saved);if(rememberEdit&&!saved.queued)remember([{address,before:previous.raw_value,after:value}]);paint();notice(saved.queued?'Offline draft saved (not synchronized)':'Saved '+address,!!saved.queued);return true;
   }catch(e){
-   if(generation!==state.generation||state.active?.id!==sheetId)return;
+   if(generation!==state.generation||state.active?.id!==sheetId)return false;
    notice(e.message,true);
    if(/another session|conflict|revision|409/i.test(e.message)){
     const draft={address,value,reason:String(e.message||'Revision conflict')};
@@ -228,6 +230,7 @@
      notice('Conflict in '+address+' · your unsaved value has been preserved',true);
     }
    }
+   return false;
   }finally{
    state.busy=false;
    if(generation!==state.generation||state.active?.id!==sheetId)return;
@@ -479,7 +482,7 @@
   if(entries.length>500)throw Error('Limit 500 cells per paste');
   if(entries.length>1&&!global.confirm('Update '+entries.length+' spreadsheet cells?'))return;
   if(state.busy)throw Error('Save in progress, retry after completion');
-  state.busy=true;let saved=0,errors=[];
+  state.busy=true;let saved=0,errors=[],changes=[];
   try{
    for(const x of entries){
     const previous=dataCell(x.address);
@@ -487,11 +490,11 @@
     try{
      if(global.NexaSheetFeatures?.lock?.(x.address))throw Error('Protected cell');
      const row=global.NexaSheetOffline?.write?await global.NexaSheetOffline.write(x.address,x.value,previous.revision||0):await api('sheets/'+state.active.id+'/cell',{method:'POST',body:{address:x.address,value:x.value,revision:previous.revision||0}});
-     state.cells.set(x.address,row);saved++;
+     state.cells.set(x.address,row);saved++;if(!row.queued)changes.push({address:x.address,before:previous.raw_value,after:x.value});
     }catch(e){errors.push(x.address+': '+e.message)}
    }
   }finally{state.busy=false}
-  state.root.querySelector('.studio-modal-layer')?.remove();paint();
+  remember(changes);state.root.querySelector('.studio-modal-layer')?.remove();paint();
   notice('Saved '+saved+' cells'+(errors.length?', '+errors.length+' conflicts/errors':''),errors.length>0);
   if(errors.length)global.alert('Some cells were not saved:\n'+errors.slice(0,10).join('\n'));
  }
@@ -527,6 +530,9 @@
     else if(action==='rowPrev'){state.rowStart=Math.max(0,state.rowStart-50);state.selected=F.address(state.rowStart,0);paint()}
     else if(action==='rowNext'){state.rowStart=Math.min(9950,state.rowStart+50);state.selected=F.address(state.rowStart,0);paint()}
     else if(action==='edit')await editCell(state.selected);
+    else if(action==='undo')await replayHistory(false);
+    else if(action==='redo')await replayHistory(true);
+    else if(action==='clear')await clearSelection();
     else if(action==='save')await saveCell(state.selected,state.root.querySelector('#studioFormulaBar').value);
     else if(action==='chart')chartEditor();
     else if(action==='editChart')chartEditor(Number(el.dataset.index));
@@ -555,14 +561,114 @@
    selectCell(address,ev.shiftKey);
   }
  }
+
+ function visibleCell(address){
+  const p=F.coordinates(address);if(!p)return;
+  const start=Math.floor(p.row/50)*50;
+  if(start!==state.rowStart){state.rowStart=start;paint()}
+  selectCell(address);
+  state.root?.querySelector('[data-sheet-address="'+address+'"]')?.focus({preventScroll:true});
+ }
+ function moveSelection(dx,dy,extend=false){
+  const p=F.coordinates(state.selected);if(!p)return;
+  const a=F.address(Math.max(0,Math.min(9999,p.row+dy)),Math.max(0,Math.min(25,p.col+dx)));
+  if(!a)return;
+  const start=Math.floor(F.coordinates(a).row/50)*50;
+  if(start!==state.rowStart){state.rowStart=start;paint()}
+  selectCell(a,extend);state.root?.querySelector('[data-sheet-address="'+a+'"]')?.focus({preventScroll:true});
+ }
+ function selectionAddresses(){
+  const p=F.coordinates(state.selected);if(!p)return [];
+  const r=state.range?rangeLimits():{top:p.row,bottom:p.row,left:p.col,right:p.col};
+  if(!r||(r.bottom-r.top+1)*(r.right-r.left+1)>500)throw Error('Select up to 500 cells');
+  const out=[];
+  for(let row=r.top;row<=r.bottom;row++)for(let col=r.left;col<=r.right;col++)out.push(F.address(row,col));
+  return out;
+ }
+ async function applyValues(entries,label){
+  if(!canCreate())throw Error('Read-only account');if(state.busy)throw Error('Save in progress');
+  state.busy=true;const changes=[];const errors=[];
+  try{
+   for(const x of entries){
+    const previous=dataCell(x.address);
+    if(previous.raw_value===x.value)continue;
+    if(global.NexaSheetFeatures?.lock?.(x.address)){errors.push(x.address+' protected');continue}
+    try{
+     const row=await (global.NexaSheetOffline?.write?global.NexaSheetOffline.write(x.address,x.value,previous.revision||0):api('sheets/'+state.active.id+'/cell',{method:'POST',body:{address:x.address,value:x.value,revision:previous.revision||0}}));
+     state.cells.set(x.address,row);
+     if(!row.queued)changes.push({address:x.address,before:previous.raw_value,after:x.value});
+    }catch(e){errors.push(x.address+': '+e.message)}
+   }
+  }finally{state.busy=false}
+  remember(changes);paint();
+  notice(label+': '+changes.length+' saved'+(errors.length?', '+errors.length+' errors':''),!!errors.length);
+  if(errors.length)global.alert('Some changes were not saved:\\n'+errors.slice(0,10).join('\\n'));
+  return !errors.length;
+ }
+ async function clearSelection(){
+  const addresses=selectionAddresses();await applyValues(addresses.map(address=>({address,value:''})),'Cleared cells');
+ }
+ async function replayHistory(redo){
+  if(state.busy)throw Error('Save in progress');
+  const source=redo?state.redoStack:state.undoStack;
+  if(!source.length){notice('Nothing to '+(redo?'redo':'undo'));return}
+  const changes=source[source.length-1];
+  for(const change of changes)if(dataCell(change.address).raw_value!==(redo?change.before:change.after))throw Error('A cell changed since this action; refresh and review before undoing');
+  if(changes.some(change=>global.NexaSheetFeatures?.lock?.(change.address)))throw Error('Selection includes protected cells');
+  const entries=changes.map(change=>({address:change.address,value:redo?change.after:change.before}));
+  source.pop();state.historyReplay=true;
+  try{
+   const ok=await applyValues(entries,redo?'Redo':'Undo');
+   if(ok)(redo?state.undoStack:state.redoStack).push(changes);
+   else{source.push(changes);state.undoStack=[];state.redoStack=[]}
+  }finally{state.historyReplay=false}
+ }
+ async function pasteClipboard(text){
+  if(!canCreate())return;
+  const p=F.coordinates(state.selected);if(!p||!text)return;
+  const lines=text.replaceAll('\\r\\n','\\n').replaceAll('\\r','\\n').replace(/\\n$/,'').split('\\n');
+  if(lines.length>100)throw Error('Paste limited to 100 rows');
+  const entries=[];
+  for(let i=0;i<lines.length;i++){
+   const columns=lines[i].split('\\t');
+   for(let j=0;j<columns.length;j++){
+    if(p.row+i>=10000||p.col+j>=26)throw Error('Paste exceeds sheet boundaries');
+    entries.push({address:F.address(p.row+i,p.col+j),value:columns[j]});
+   }
+  }
+  if(entries.length>500)throw Error('Paste limited to 500 cells');
+  await applyValues(entries,'Pasted cells');
+ }
+ function onPaste(ev){
+  if(!state.active||!ev.target?.matches?.('.sheet-studio-cell'))return;
+  if(!canCreate())return;
+  const text=ev.clipboardData?.getData('text/plain');
+  if(text!==undefined){ev.preventDefault();pasteClipboard(text).catch(e=>notice(e.message,true))}
+ }
+
  function onDouble(ev){const cell=ev.target.closest('[data-sheet-address]');if(cell&&!ev.target.closest('.studio-in-cell-editor'))editCell(cell.dataset.sheetAddress)}
  function onKey(ev){
-  if((ev.ctrlKey||ev.metaKey)&&ev.key.toLowerCase()==='c'&&ev.target?.matches('.sheet-studio-cell')){ev.preventDefault();copyCells().catch(e=>notice(e.message,true));return}
+  if(!state.active)return;
+  const cell=ev.target?.closest?.('.sheet-studio-cell');
+  const key=ev.key?.toLowerCase?.()||'';
+  if((ev.ctrlKey||ev.metaKey)&&cell){
+   if(key==='c'){ev.preventDefault();copyCells().catch(e=>notice(e.message,true));return}
+   if(key==='z'||key==='y'){ev.preventDefault();replayHistory(key==='y'||(key==='z'&&ev.shiftKey)).catch(e=>notice(e.message,true));return}
+  }
   if(ev.target?.id==='studioFormulaBar'&&ev.key==='Enter'){ev.preventDefault();saveCell(state.selected,ev.target.value);return}
-  if(ev.target?.matches?.('.sheet-studio-cell')){
-   const address=ev.target.dataset.sheetAddress;
-   if(ev.key==='Enter'||ev.key==='F2'){ev.preventDefault();editCell(address);return}
-   if(canCreate()&&!ev.ctrlKey&&!ev.metaKey&&!ev.altKey&&ev.key.length===1){ev.preventDefault();editCell(address,ev.key);return}
+  if(!cell||ev.target.closest('.studio-in-cell-editor'))return;
+  const address=cell.dataset.sheetAddress;
+  if(ev.key==='Enter'||ev.key==='F2'){ev.preventDefault();editCell(address);return}
+  if(ev.key==='ArrowDown'||ev.key==='ArrowUp'||ev.key==='ArrowLeft'||ev.key==='ArrowRight'||ev.key==='Tab'){
+   ev.preventDefault();
+   const delta={ArrowDown:[0,1],ArrowUp:[0,-1],ArrowLeft:[-1,0],ArrowRight:[1,0],Tab:[ev.shiftKey?-1:1,0]}[ev.key];
+   moveSelection(delta[0],delta[1],ev.shiftKey&&ev.key!=='Tab');return;
+  }
+  if((ev.key==='Delete'||ev.key==='Backspace')&&canCreate()){
+   ev.preventDefault();clearSelection().catch(e=>notice(e.message,true));return;
+  }
+  if(canCreate()&&!ev.ctrlKey&&!ev.metaKey&&!ev.altKey&&ev.key.length===1){
+   ev.preventDefault();editCell(address,ev.key);return;
   }
  }
  function onChange(ev){}
