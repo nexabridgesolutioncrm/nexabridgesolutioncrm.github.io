@@ -431,9 +431,9 @@
         paint();global.NexaSheetFeatures?.refreshComments?.().catch(()=>{});
        }else notice('Spreadsheet settings changed by a colleague; review after your edit');
       });
+    state.client=client;state.channel=channel;
     channel.subscribe(status=>{if(status==='SUBSCRIBED'){state.realtime=true;trackPresence();notice('Live collaboration connected')}
      if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'){state.realtime=false;notice('Live connection interrupted; fallback sync active',true)}});
-    state.client=client;state.channel=channel;
    }catch(e){notice('Live connection unavailable; fallback sync active',true)}
   }
   state.timer=setInterval(async()=>{
