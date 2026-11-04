@@ -88,7 +88,11 @@
     if(a!==''&&b!==''&&Number.isFinite(na)&&Number.isFinite(nb))return na-nb;
     return a.localeCompare(b,undefined,{numeric:true,sensitivity:'base'});
    };
-   rows.sort((a,b)=>direction*compare(value(a,sort.column),value(b,sort.column))||a-b);
+   rows.sort((a,b)=>{
+    const va=value(a,sort.column),vb=value(b,sort.column);
+    if(!va&&vb)return 1;if(!vb&&va)return -1;
+    return direction*compare(va,vb)||a-b;
+   });
   }
   return {rows:rows.slice(start,start+count),total:rows.length,limited:true};
  }
