@@ -62,3 +62,13 @@ Tests use a simulated backend; true multi-person collaborative acceptance testin
 - CSV export prefixes dangerous spreadsheet-leading characters with a literal apostrophe to mitigate CSV formula injection.
 - CI now tests a viewer switching onto the same device and preserves unsaved values during concurrent edits.
 - This patch does not alter existing production CRM or Sheets data.
+
+## v4.3.1 expansion — November 4, 2026
+
+The current release introduces server-backed cell comments and replies, immutable per-cell audit history (from the date auditing was enabled), protected ranges enforced by PostgreSQL triggers, and conditional formatting rules. Pivot tables now support grouped rows, an optional column dimension, and SUM/COUNT/AVERAGE/MIN/MAX. Charts support bar, horizontal, line, area, scatter, pie and doughnut with editable colors and labels.
+
+Formula support includes a bounded QUERY subset, ARRAYFORMULA spill/vector arithmetic, same-organization IMPORTRANGE with explicit authorized links, and extra Excel-like functions via pinned MIT Formula.js. It does **not** implement every proprietary Google Sheets formula.
+
+A consent-based IndexedDB offline draft queue stores unsynced edits **unencrypted on the current device**; enable only on a trusted device. The static service worker caches only public frontend assets. Offline drafts can be synced with revision conflict detection when connectivity returns during an authorized session. Offline login/reload and full offline data replication are **not supported**.
+
+Google Apps Script backend integration exists but each Google account still must install the script and grant OAuth consent. Simulated automated tests do not establish real multiuser or Google OAuth acceptance. Existing customer, lead and deal records are unchanged. An archived pre-upgrade copy exists for rollback.
