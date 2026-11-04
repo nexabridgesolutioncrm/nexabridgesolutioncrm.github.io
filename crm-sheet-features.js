@@ -74,6 +74,9 @@
   if(!sheet())return;
   const address=ctx.state.selected;
   comments=await api('sheets/'+sheet().id+'/comments');
+  ctx.state.root.querySelectorAll('[data-sheet-address]').forEach(node=>{
+   node.classList.toggle('commented-cell',comments.some(c=>c.address===node.dataset.sheetAddress&&!c.resolved));
+  });
   const rows=comments.filter(x=>x.address===address);
   const root=rows.filter(x=>!x.parent_id);
   const nested=(comment)=>{
