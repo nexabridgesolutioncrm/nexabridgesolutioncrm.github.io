@@ -132,7 +132,7 @@ const wait=async(fn,description)=>{for(let i=0;i<180;i++){if(fn())return;await n
  root.querySelector('#sfPivotValue').value='B';
  root.querySelector('[data-sheet-action="sf-pivot-save"]').click();
  await wait(()=>sheets[0].pivot_configs.length===1,'pivot metadata saved');
- assert.ok(root.querySelector('.sf-pivot'),'Pivot table generated');
+ await wait(()=>root.querySelector('.sf-pivot'),'Pivot table generated after async persistence');
  // Threaded cell comments and audit history load via scoped API.
  root.querySelector('[data-sheet-address=A1]').click();
  root.querySelector('[data-sheet-action="sf-comments"]').click();
