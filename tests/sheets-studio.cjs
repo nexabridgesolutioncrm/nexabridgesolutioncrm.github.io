@@ -226,6 +226,16 @@ const wait=async(fn,description)=>{for(let i=0;i<180;i++){if(fn())return;await n
  await wait(()=>clipboard.includes('South\t250'),'TSV range copied to clipboard');
  assert.match(clipboard,/North\t120/);
 
+ // Weighted averages must use the combined underlying rows, not add two averages.
+ sheets[0].pivot_configs.push({...sheets[0].pivot_configs[0],id:'average-test',title:'Average audit',aggregate:'average'});
+ root.querySelector('[data-sheet-action=refresh]').click();
+ await wait(()=>[...root.querySelectorAll('.sf-pivot')].some(x=>x.textContent.includes('Average audit')),
+  'Average pivot recalculated');
+ const averagePanel=[...root.querySelectorAll('.sf-pivot')].find(x=>x.textContent.includes('Average audit'));
+ assert.equal(Number(averagePanel.querySelector('.sf-pivot-grand td strong').textContent),185,
+  'Grand average uses 120 and 250 across two actual rows');
+
+
  // Simulate another editor saving the same cell before our current revision.
  const otherRow=cells.get('A1');cells.set('A1',{...otherRow,raw_value:'Updated remotely',revision:otherRow.revision+1});
  root.querySelector('[data-sheet-address=A1]').click();
