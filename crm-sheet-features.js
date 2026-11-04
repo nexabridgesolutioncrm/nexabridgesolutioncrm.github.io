@@ -277,14 +277,27 @@
    try{const data=await api('sheets/'+id);if(data?.cells)external.set(id,new Map(data.cells.map(x=>[x.address,x])))}catch(_){}
   }
  }
+ async function refreshComments(){
+  if(!ctx||!sheet())return;
+  const id=sheet().id;
+  try{
+   const result=await api('sheets/'+id+'/comments');
+   if(!ctx||sheet()?.id!==id)return;
+   comments=result||[];
+   const root=ctx.state.root;
+   if(!root)return;
+   if(!ctx.state.editing&&!root.querySelector('.studio-modal-layer')&&
+      document.activeElement?.id!=='studioFormulaBar')ctx.paint();
+   else root.querySelectorAll('[data-sheet-address]').forEach(node=>{
+    node.classList.toggle('commented-cell',comments.some(c=>c.address===node.dataset.sheetAddress&&!c.resolved));
+   });
+  }catch(_){}
+ }
  async function afterOpen(){
   comments=[];external.clear();
   if(!sheet())return;
   const id=sheet().id;
-  try{
-   const results=await api('sheets/'+id+'/comments');
-   if(sheet()?.id===id){comments=results;ctx.paint()}
-  }catch(_){}
+  await refreshComments();
   if(sheet()?.id===id)await preloadLinks();
  }
  function reset(){ctx=null;comments=[];external.clear();historyAddress='';historyOffset=0}
@@ -328,5 +341,5 @@
   }
   return false;
  }
- global.NexaSheetFeatures={bind(context){ctx=context},toolbar,banner,panels,cellDecoration,lock,afterOpen,reset,action,external:()=>external,preloadLinks};
+ global.NexaSheetFeatures={bind(context){ctx=context},toolbar,banner,panels,cellDecoration,lock,afterOpen,reset,action,external:()=>external,preloadLinks,refreshComments};
 })(window);
