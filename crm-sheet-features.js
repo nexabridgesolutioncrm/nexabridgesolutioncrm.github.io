@@ -142,16 +142,39 @@
  }
  function pivotTable(cfg){
   const result=pivotRows(cfg),columns=result.columns;
-  const rowNames=[...new Set(result.rows.map(x=>x.row))].sort().slice(0,200);
-  const map=new Map(result.rows.map(x=>[x.row+'∎'+x.column,x]));
-  const rowText=rowNames.map(label=>{
-   const cells=columns.map(column=>pivotValue(map.get(label+'∎'+column)||{count:0,sum:0,min:Infinity,max:-Infinity},cfg.aggregate));
-   return '<tr><th>'+e(label)+'</th>'+cells.map(n=>'<td>'+e(Number(n.toFixed(2)))+'</td>').join('')+
-    '<td><strong>'+e(Number(cells.reduce((a,b)=>a+b,0).toFixed(2)))+'</strong></td></tr>';
+  const groups=new Map();
+  for(const item of result.rows){
+   if(!groups.has(item.row))groups.set(item.row,new Map());
+   groups.get(item.row).set(item.column,item);
+  }
+  const rowNames=[...groups.keys()].sort().slice(0,200);
+  const empty=()=>({count:0,sum:0,min:Infinity,max:-Infinity});
+  const combine=entries=>{
+   const total=empty();
+   for(const part of entries){
+    total.count+=part.count;total.sum+=part.sum;
+    total.min=Math.min(total.min,part.min);total.max=Math.max(total.max,part.max);
+   }
+   return total;
+  };
+  const visibleRows=rowNames.map(name=>({name,items:groups.get(name)}));
+  const rowText=visibleRows.map(({name,items})=>{
+   const cells=columns.map(column=>items.get(column)||empty());
+   const total=combine(cells);
+   return '<tr><th>'+e(name)+'</th>'+cells.map(item=>'<td>'+e(Number(pivotValue(item,cfg.aggregate).toFixed(2)))+'</td>').join('')+
+    '<td><strong>'+e(Number(pivotValue(total,cfg.aggregate).toFixed(2)))+'</strong></td></tr>';
   }).join('');
-  return '<div class="card sf-pivot"><div class="sf-pivot-header"><strong>'+e(cfg.title)+'</strong><small>'+e(cfg.aggregate)+' by '+e(cfg.rowColumn)+(cfg.columnColumn?' & '+e(cfg.columnColumn):'')+'</small></div>'+
+  const colTotals=columns.map(column=>combine(visibleRows.map(({items})=>items.get(column)||empty())));
+  const grand=combine(colTotals);
+  const footer='<tr class="sf-pivot-grand"><th>Grand total</th>'+colTotals.map(item=>
+   '<td><strong>'+e(Number(pivotValue(item,cfg.aggregate).toFixed(2)))+'</strong></td>').join('')+
+   '<td><strong>'+e(Number(pivotValue(grand,cfg.aggregate).toFixed(2)))+'</strong></td></tr>';
+  return '<div class="card sf-pivot"><div class="sf-pivot-header"><strong>'+e(cfg.title)+'</strong><small>'+
+   e(cfg.aggregate)+' by '+e(cfg.rowColumn)+(cfg.columnColumn?' & '+e(cfg.columnColumn):'')+
+   ' · '+visibleRows.length+' groups</small></div>'+
    '<div class="tablewrap"><table class="table"><thead><tr><th>'+e(cfg.rowColumn)+'</th>'+
-   columns.map(c=>'<th>'+e(c)+'</th>').join('')+'<th>Total</th></tr></thead><tbody>'+rowText+'</tbody></table></div></div>';
+   columns.map(c=>'<th>'+e(c)+'</th>').join('')+'<th>Total</th></tr></thead><tbody>'+
+   rowText+footer+'</tbody></table></div></div>';
  }
  function panels(){
   const pivots=sheet()?.pivot_configs||[];
