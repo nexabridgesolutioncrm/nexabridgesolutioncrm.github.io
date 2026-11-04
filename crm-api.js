@@ -102,7 +102,7 @@ async function adapter(input,init={}){
  if(path==='data'&&method==='GET')return reply(await getData());
  // Sheets Studio: independently stored spreadsheet cells. Every row is org-scoped and RLS-protected.
  if(path==='sheets'&&method==='GET'){
-  const sheets=await secured('/rest/v1/crm_spreadsheets?select=id,name,created_at,updated_at,charts&org_id=eq.'+encodeURIComponent(orgId)+'&order=updated_at.desc&limit=100');
+  const sheets=await secured('/rest/v1/crm_spreadsheets?select=id,name,created_at,updated_at,charts,formatting_rules,pivot_configs,protected_ranges&org_id=eq.'+encodeURIComponent(orgId)+'&order=updated_at.desc&limit=100');
   return reply(sheets);
  }
  if(path==='sheets'&&method==='POST'){
@@ -111,9 +111,9 @@ async function adapter(input,init={}){
   const rows=await secured('/rest/v1/crm_spreadsheets?select=*&org_id=eq.'+encodeURIComponent(orgId),{method:'POST',body:{org_id:orgId,name,created_by:member.id},prefer:'return=representation'});
   return reply(rows[0],201);
  }
- const sheetMatch=/^sheets\/([a-f0-9-]{36})(?:\/(cell|bulk))?$/.exec(path);
+ const sheetMatch=/^sheets\/([a-f0-9-]{36})(?:\/(cell|bulk|comments|history)(?:\/([A-Z]{1,3}[1-9][0-9]{0,4}))?)?$/.exec(path);
  if(sheetMatch){
-  const id=sheetMatch[1],action=sheetMatch[2]||'',filter='&org_id=eq.'+encodeURIComponent(orgId);
+  const id=sheetMatch[1],action=sheetMatch[2]||'',addressParam=sheetMatch[3]||'',filter='&org_id=eq.'+encodeURIComponent(orgId);
   const base='/rest/v1/crm_spreadsheets?select=*&id=eq.'+encodeURIComponent(id)+filter;
   const sheets=await secured(base);
   if(!sheets.length)return err('Spreadsheet not found or access denied',404);
@@ -126,13 +126,96 @@ async function adapter(input,init={}){
    return reply({sheet:sheets[0],cells});
   }
   if(!action&&method==='PATCH'){
-   if(!['owner','admin'].includes(member?.role))return err('Only Owner/Admin may modify chart definitions',403);
-   const charts=Array.isArray(b.charts)?b.charts:[];
-   if(charts.length>30||JSON.stringify(charts).length>16000)return err('Chart configuration exceeds limits');
-   const allowed=['bar','line','pie','doughnut'];
-   const safe=charts.map(c=>({id:String(c.id||'').slice(0,45),title:String(c.title||'Chart').slice(0,80),type:allowed.includes(c.type)?c.type:'bar',category:String(c.category||'A').slice(0,3),measure:String(c.measure||'B').slice(0,3),aggregate:['sum','count','average'].includes(c.aggregate)?c.aggregate:'sum'}));
-   const rows=await secured('/rest/v1/crm_spreadsheets?select=*&id=eq.'+encodeURIComponent(id)+filter,{method:'PATCH',body:{charts:safe,updated_at:new Date().toISOString()},prefer:'return=representation'});
+   if(!['owner','admin'].includes(member?.role))return err('Only Owner/Admin can edit spreadsheet configurations',403);
+   const changes={},allowedCharts=['bar','line','pie','doughnut'];
+   if(Object.prototype.hasOwnProperty.call(b,'charts')){
+    if(!Array.isArray(b.charts)||b.charts.length>30||JSON.stringify(b.charts).length>16000)return err('Invalid chart definitions');
+    changes.charts=b.charts.map(c=>({id:String(c.id||'').slice(0,45),title:String(c.title||'Chart').slice(0,80),
+     type:allowedCharts.includes(c.type)?c.type:'bar',category:String(c.category||'A').slice(0,3),
+     measure:String(c.measure||'B').slice(0,3),aggregate:['sum','count','average'].includes(c.aggregate)?c.aggregate:'sum'}));
+   }
+   if(Object.prototype.hasOwnProperty.call(b,'formatting_rules')){
+    if(!Array.isArray(b.formatting_rules)||b.formatting_rules.length>40)return err('Maximum 40 conditional formatting rules');
+    const ops=['greater','less','equals','contains','notEmpty','empty','between'];
+    const range=/^[A-Z]{1,3}[1-9][0-9]{0,4}:[A-Z]{1,3}[1-9][0-9]{0,4}$/;
+    changes.formatting_rules=b.formatting_rules.map((x,i)=>{
+     if(!range.test(x.range)||!ops.includes(x.operator)||!/^#[a-f0-9]{6}$/i.test(x.background||''))throw Error('Invalid formatting rule '+(i+1));
+     return {id:String(x.id||'').slice(0,48),range:x.range,operator:x.operator,
+      value:String(x.value||'').slice(0,120),value2:String(x.value2||'').slice(0,120),
+      background:x.background,foreground:/^#[a-f0-9]{6}$/i.test(x.foreground||'')?x.foreground:'#27334d'};
+    });
+   }
+   if(Object.prototype.hasOwnProperty.call(b,'pivot_configs')){
+    if(!Array.isArray(b.pivot_configs)||b.pivot_configs.length>20)return err('Maximum 20 pivot tables');
+    changes.pivot_configs=b.pivot_configs.map((x,i)=>{
+     if(!/^[A-Z]{1,2}$/.test(x.rowColumn)||!/^[A-Z]{1,2}$/.test(x.valueColumn)||!['sum','count','average','min','max'].includes(x.aggregate))throw Error('Invalid pivot configuration '+(i+1));
+     const col=x.columnColumn||'';
+     if(col&&!/^[A-Z]{1,2}$/.test(col))throw Error('Invalid pivot column');
+     return {id:String(x.id||'').slice(0,48),title:String(x.title||'Pivot summary').slice(0,80),
+      rowColumn:x.rowColumn,columnColumn:col,valueColumn:x.valueColumn,aggregate:x.aggregate,skipHeader:x.skipHeader!==false};
+    });
+   }
+   if(Object.prototype.hasOwnProperty.call(b,'protected_ranges')){
+    if(!Array.isArray(b.protected_ranges)||b.protected_ranges.length>30)return err('Maximum 30 protected ranges');
+    const range=/^[A-Z]{1,3}[1-9][0-9]{0,4}:[A-Z]{1,3}[1-9][0-9]{0,4}$/;
+    changes.protected_ranges=b.protected_ranges.map((x,i)=>{
+     if(!range.test(x.range))throw Error('Invalid protected range '+(i+1));
+     return {id:String(x.id||'').slice(0,48),range:x.range,description:String(x.description||'Restricted range').slice(0,160)};
+    });
+   }
+   if(!Object.keys(changes).length)return err('No supported configuration supplied');
+   changes.updated_at=new Date().toISOString();
+   const rows=await secured('/rest/v1/crm_spreadsheets?select=*&id=eq.'+encodeURIComponent(id)+filter,
+     {method:'PATCH',body:changes,prefer:'return=representation'});
    return reply(rows[0]||{ok:false});
+  }
+  if(action==='comments'){
+   const url='/rest/v1/crm_sheet_comments';
+   const scope='&sheet_id=eq.'+encodeURIComponent(id)+filter;
+   if(method==='GET'){
+    const address=parsed.searchParams.get('address');
+    const addr=address&&/^[A-Z]{1,3}[1-9][0-9]{0,4}$/.test(address)?'&address=eq.'+address:'';
+    const rows=await secured(url+'?select=id,address,body,parent_id,resolved,created_at,updated_at,author_id'+scope+addr+'&order=created_at.asc&limit=500');
+    return reply(rows);
+   }
+   if(method==='POST'){
+    if(!['owner','admin','agent'].includes(member?.role))return err('Read-only access',403);
+    const address=String(b.address||'').toUpperCase(),body=String(b.body||'').trim();
+    if(!/^[A-Z]{1,3}[1-9][0-9]{0,4}$/.test(address)||!body||body.length>4000)return err('Invalid comment address or text');
+    let parent_id=null;
+    if(b.parent_id){
+     if(!/^[a-f0-9-]{36}$/i.test(String(b.parent_id)))return err('Invalid parent');
+     const parents=await secured(url+'?select=id,address&id=eq.'+encodeURIComponent(b.parent_id)+scope+'&limit=1');
+     if(!parents.length||parents[0].address!==address)return err('Parent must belong to the same sheet cell');
+     parent_id=String(b.parent_id);
+    }
+    const saved=await secured(url+'?select=*&sheet_id=eq.'+encodeURIComponent(id)+filter,
+     {method:'POST',body:{org_id:orgId,sheet_id:id,address,body,parent_id,author_id:member.id},prefer:'return=representation'});
+    return reply(saved[0],201);
+   }
+   if(method==='PATCH'){
+    const commentId=String(b.id||'');
+    if(!/^[a-f0-9-]{36}$/i.test(commentId))return err('Invalid comment ID');
+    const rows=await secured(url+'?select=*&id=eq.'+commentId+scope);
+    if(!rows.length)return err('Comment not found',404);
+    if(member.id!==rows[0].author_id&&!['owner','admin'].includes(member?.role))return err('Only the author or administrator can update this comment',403);
+    const updates={updated_at:new Date().toISOString()};
+    if(typeof b.resolved==='boolean')updates.resolved=b.resolved;
+    if(Object.prototype.hasOwnProperty.call(b,'body')){
+     const value=String(b.body||'').trim();if(!value||value.length>4000)return err('Invalid comment text');
+     updates.body=value;
+    }
+    const saved=await secured(url+'?select=*&id=eq.'+commentId+scope,{method:'PATCH',body:updates,prefer:'return=representation'});
+    return reply(saved[0]||{ok:false});
+   }
+   return err('Unsupported comment action',405);
+  }
+  if(action==='history'&&method==='GET'){
+   if(!addressParam)return err('A cell address is required');
+   const offset=Math.max(0,Math.min(100000,Number.parseInt(parsed.searchParams.get('offset')||'0',10)||0));
+   const rows=await secured('/rest/v1/crm_sheet_cell_history?select=id,address,old_value,new_value,revision,changed_by,changed_at&sheet_id=eq.'+
+    encodeURIComponent(id)+filter+'&address=eq.'+addressParam+'&order=changed_at.desc,id.desc&offset='+offset+'&limit=100');
+   return reply(rows);
   }
   if(!action&&method==='DELETE'){
    if(!['owner','admin'].includes(member?.role))return err('Only Owner/Admin can remove sheets',403);
