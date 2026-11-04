@@ -173,3 +173,40 @@ body.dark .sheet-grid td.range-selected:not(.selected){background:#42365b!import
 .sheet-readonly-note{display:inline-flex;align-items:center;padding:8px 12px;border-radius:9px;font-size:12px;font-weight:760;white-space:nowrap;color:#52607b;background:var(--surface2);border:1px solid var(--stroke)}
 .sheet-formula-bar #studioFormulaBar[readonly]{background:var(--surface2);color:var(--muted);cursor:text}
 .studio-modal #studioConflictDraft{width:100%;resize:vertical;white-space:pre-wrap;overflow-wrap:anywhere;background:var(--surface2);color:var(--ink)}
+
+/* Sheets Studio 4.3: Pivot, conditional rules, locked cells, comments and offline drafts */
+.sheet-feature-status{display:flex;align-items:center;flex-wrap:wrap;gap:8px 18px;background:var(--surface2);border:1px solid var(--stroke);border-top:0;padding:9px 15px;color:var(--muted);font-size:11px;font-weight:760}
+.sheet-grid td.protected-cell{box-shadow:inset 0 0 0 1px #da9b42}
+.sheet-grid td.commented-cell{position:relative}
+.sheet-grid td.commented-cell::after{position:absolute;content:"";right:0;top:0;border-top:9px solid #7c5de2;border-left:9px solid transparent}
+.sheet-grid td.offline-draft{background:#fff1d3!important;outline:2px dashed #dfac47;outline-offset:-2px}
+body.dark .sheet-grid td.offline-draft{background:#59472d!important;outline-color:#e6b868}
+.sf-comments,.sf-history,.sf-conditions,.sf-offline-list{max-height:47vh;overflow-y:auto;display:grid;gap:10px;margin:15px 0}
+.sf-comment,.sf-revision,.sf-rule,.sf-offline-item{padding:13px 14px;background:var(--surface2);border:1px solid var(--stroke);border-radius:11px;min-width:0}
+.sf-comment .sf-comment{margin-top:10px;margin-left:14px;border-left:3px solid #9579e8}
+.sf-comment.sf-resolved{opacity:.7}
+.sf-comment-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.sf-comment-head strong{font-size:12px;color:var(--ink);font-weight:800}
+.sf-comment-head small{font-size:11px;color:var(--muted)}
+.sf-comment p,.sf-revision p{font-size:13px;color:var(--ink);margin:8px 0;white-space:pre-wrap;overflow-wrap:anywhere}
+.sf-revision p span{color:var(--muted);font-weight:770}
+.sf-comment .actions{margin-top:8px}
+.sf-empty{color:var(--muted);font-size:12px;margin:15px 0}
+.sf-rule{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.sf-rule span{font-size:12px;font-weight:700;overflow-wrap:anywhere;flex:1}
+.sf-swatch{width:30px;height:30px;border-radius:7px;border:1px solid var(--stroke);flex:none}
+.sf-textarea{width:100%;min-height:104px;resize:vertical}
+.sf-pivot-section{margin-top:23px}
+.sf-pivot-grid{display:grid;gap:15px;grid-template-columns:repeat(auto-fit,minmax(310px,1fr))}
+.sf-pivot{padding:16px;min-width:0}
+.sf-pivot-header{display:flex;gap:6px;justify-content:space-between;align-items:center;flex-wrap:wrap;margin-bottom:13px}
+.sf-pivot-header strong{font-size:14px;color:var(--ink)}
+.sf-pivot-header small{font-size:11px;color:var(--muted)}
+.sf-pivot .table{min-width:380px}
+.sf-pivot .table td,.sf-pivot .table th{padding:10px 12px;font-size:11px}
+.sf-offline-item{display:flex;justify-content:space-between;gap:13px;align-items:center}
+.sf-offline-item strong{font-size:13px}
+.sf-offline-item small{font-size:11px;display:block;color:var(--muted)}
+.sf-offline-item pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px;margin:7px 0;max-height:70px;overflow:auto}
+.sf-offline-item .actions{flex-wrap:nowrap}
+@media(max-width:650px){.sf-offline-item{flex-direction:column;align-items:stretch}.sf-pivot-grid{grid-template-columns:1fr}.sheet-feature-status{gap:5px 12px}}
