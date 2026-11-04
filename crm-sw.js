@@ -1,8 +1,8 @@
 /* NexaBridge CRM: offline static-shell cache only, never caches Supabase/CRM API data.
    Sheet data/drafts are separately opt-in through IndexedDB in Sheets Studio. */
-const VERSION='nexa-crm-shell-4.5.1';
+const VERSION='nexa-crm-shell-4.6.0';
 const ASSETS=['./','./index.html','./crm-v3.css','./crm-api.js','./crm-v3.js',
- './crm-formulas.js','./crm-sheet-features.js','./crm-sheet-offline.js','./crm-sheet-studio.js'];
+ './crm-formulas.js','./crm-sheet-features.js','./crm-sheet-offline.js','./crm-sheet-tools.js','./crm-sheet-studio.js'];
 self.addEventListener('install',event=>{
  event.waitUntil((async()=>{
   const cache=await caches.open(VERSION);
@@ -25,7 +25,7 @@ self.addEventListener('fetch',event=>{
  if(url.origin!==self.location.origin)return;
  if(url.pathname.includes('/api/')||url.pathname.includes('/functions/')||url.pathname.includes('/auth/'))return;
  const path=url.pathname.split('/').pop()||'index.html';
- if(!/^(index\.html|crm-v3\.css|crm-api\.js|crm-v3\.js|crm-formulas\.js|crm-sheet-features\.js|crm-sheet-offline\.js|crm-sheet-studio\.js)$/.test(path))return;
+ if(!/^(index\.html|crm-v3\.css|crm-api\.js|crm-v3\.js|crm-formulas\.js|crm-sheet-features\.js|crm-sheet-offline\.js|crm-sheet-tools\.js|crm-sheet-studio\.js)$/.test(path))return;
  event.respondWith((async()=>{
   const cache=await caches.open(VERSION);
   try{
