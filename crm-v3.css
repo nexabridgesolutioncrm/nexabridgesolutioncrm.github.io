@@ -236,3 +236,7 @@ body.dark .sheet-grid td.offline-draft{background:#59472d!important;outline-colo
 .sheet-tab:hover{background:var(--surface2);color:var(--ink)}
 .sheet-tab.active{color:var(--brand);border-color:var(--stroke);background:var(--surface2);box-shadow:inset 0 -2px 0 var(--brand)}
 .sheet-tab-bar .btn{min-height:31px;padding:6px 9px}
+
+/* Respect the workbook freeze toggle; normal header scrolling is not frozen. */
+.sheet-grid-scroller:not(.sx-freeze-rows) .sheet-grid thead th{position:static}
+.sheet-grid-scroller:not(.sx-freeze-rows) .sheet-grid thead .sheet-grid-corner{position:sticky;left:0;top:auto}
