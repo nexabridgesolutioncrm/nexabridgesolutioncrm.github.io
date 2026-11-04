@@ -7,6 +7,8 @@
  const uid=()=>Math.random().toString(36).slice(2,10);
  const state={root:null,api:null,user:null,list:[],active:null,cells:new Map(),selected:'A1',anchor:'A1',range:false,editing:null,rowStart:0,
   channel:null,client:null,timer:null,serial:0,busy:false,pending:[],realtime:false,presence:[],status:'',lastRemote:null,modal:null};
+ const canCreate=()=>['owner','admin','agent'].includes(state.user?.role);
+ const canManage=()=>['owner','admin'].includes(state.user?.role);
  const validAddress=v=>/^[A-Z]{1,3}[1-9][0-9]{0,4}$/.test(v);
  const display=v=>typeof v==='boolean'?(v?'TRUE':'FALSE'):v==null?'':String(v);
  const api=(path,opts)=>state.api(path,opts||{});
@@ -31,15 +33,15 @@
  function listView(){
   const sheets=state.list||[];
   return header()+'<div class="sheet-action-row">'+
-   '<button class="btn primary" data-sheet-action="new">＋ Create spreadsheet</button>'+
-   '<button class="btn" data-sheet-action="import">↑ Import Excel (.xlsx)</button>'+
-   '<span class="sheet-hint">Only members of your NexaBridge workspace can access these sheets.</span></div>'+
+   (canCreate()?'<button class="btn primary" data-sheet-action="new">＋ Create spreadsheet</button>':'')+
+   (canCreate()?'<button class="btn" data-sheet-action="import">↑ Import Excel (.xlsx)</button>':'')+
+   '<span class="sheet-hint">'+(canCreate()?'Only authorized NexaBridge members can access these sheets.':'Read-only access · contact an administrator to create or edit spreadsheets.')+'</span></div>'+
    '<div class="sheet-studio-cards">'+(sheets.length?sheets.map(sheet=>
     '<div class="card sheet-studio-tile"><span class="studio-file-icon">▦</span><strong>'+esc(sheet.name)+'</strong>'+
     '<small>Updated '+esc(String(sheet.updated_at||'').slice(0,10))+'</small>'+
     '<div class="actions"><button class="btn primary" data-sheet-action="open" data-id="'+escapeAttr(sheet.id)+'">Open sheet</button>'+
-    (['owner','admin'].includes(state.user?.role)?'<button class="btn danger" data-sheet-action="remove" data-id="'+escapeAttr(sheet.id)+'">Delete</button>':'')+'</div></div>'
-   ).join(''):'<div class="card sheet-studio-empty"><h3>No spreadsheets yet</h3><p>Create your first sheet or import an Excel workbook.</p><button class="btn primary" data-sheet-action="new">Create new sheet</button></div>')+'</div>';
+    (canManage()?'<button class="btn danger" data-sheet-action="remove" data-id="'+escapeAttr(sheet.id)+'">Delete</button>':'')+'</div></div>'
+   ).join(''):'<div class="card sheet-studio-empty"><h3>No spreadsheets yet</h3><p>'+(canCreate()?'Create your first sheet or import an Excel workbook.':'Your account can view existing spreadsheets but cannot create them.')+'</p>'+(canCreate()?'<button class="btn primary" data-sheet-action="new">Create new sheet</button>':'')+'</div>')+'</div>';
  }
  function grid(){
   const rows=50,cols=26,calc=engine(),name=state.active?.name||'Spreadsheet',selected=state.selected;
@@ -55,15 +57,15 @@
   ).join('')+'</tbody>';
   return header()+'<section class="sheet-studio-toolbar">'+
    '<div class="sheet-studio-title"><strong>▦ '+esc(name)+'</strong><small>'+state.cells.size+' saved cells</small></div>'+
-   '<div class="actions"><button class="btn" data-sheet-action="refresh">↻ Refresh</button><button class="btn" data-sheet-action="copyCells">Copy range</button><button class="btn" data-sheet-action="pasteCells">Paste cells</button>'+
-   '<button class="btn" data-sheet-action="chart">＋ New chart</button>'+
+   '<div class="actions"><button class="btn" data-sheet-action="refresh">↻ Refresh</button><button class="btn" data-sheet-action="copyCells">Copy range</button>'+(canCreate()?'<button class="btn" data-sheet-action="pasteCells">Paste cells</button>':'')+
+   (canManage()?'<button class="btn" data-sheet-action="chart">＋ New chart</button>':'')+
    '<button class="btn" data-sheet-action="export">↓ Export CSV</button>'+
-   '<button class="btn" data-sheet-action="import">↑ Import XLSX</button></div></section>'+
+   (canCreate()?'<button class="btn" data-sheet-action="import">↑ Import XLSX</button>':'')+'</div></section>'+
    '<div class="sheet-formula-bar"><span id="studioNameBox">'+esc(selected)+'</span>'+
-   '<span class="sheet-fx">ƒx</span><input id="studioFormulaBar" aria-label="Cell formula or value" value="'+escapeAttr(dataCell(selected).raw_value)+'" placeholder="Enter text or =SUM(A1:A10)">'+
-   '<button class="btn primary" data-sheet-action="save">Save cell</button></div>'+
+   '<span class="sheet-fx">ƒx</span><input id="studioFormulaBar" aria-label="Cell formula or value" '+(canCreate()?'':'readonly ')+'value="'+escapeAttr(dataCell(selected).raw_value)+'" placeholder="'+(canCreate()?'Enter text or =SUM(A1:A10)':'Read-only cell · select to inspect')+'">'+
+   (canCreate()?'<button class="btn primary" data-sheet-action="save">Save cell</button>':'<span class="sheet-readonly-note">Read-only workspace</span>')+'</div>'+
    '<div class="sheet-grid-scroller"><table id="studioGrid" class="sheet-grid">'+head+body+'</table></div>'+ '<div class="sheet-rowpager"><span>Rows '+(state.rowStart+1)+'–'+(state.rowStart+50)+' · 26 columns</span><div class="actions"><button class="btn small" data-sheet-action="rowPrev" '+(state.rowStart===0?'disabled':'')+'>← Previous 50</button><button class="btn small" data-sheet-action="rowNext" '+(state.rowStart>=9950?'disabled':'')+'>Next 50 →</button></div></div>'+
-   '<p class="sheet-studio-instructions">Select any cell, then type in the formula bar or double-click it. Formulas begin with =. Updates are saved with revision checks, so conflicting edits cannot overwrite silently.</p>'+
+   '<p class="sheet-studio-instructions">'+(canCreate()?'Select any cell, then type in the formula bar or double-click it. Formulas begin with =. Updates are saved with revision checks, so conflicting edits cannot overwrite silently.':'This account can browse, calculate and export cells. Only authorized members can edit.')+'</p>'+
    '<div class="sheet-chart-section"><div class="sheet-section-title"><h2>Charts</h2><span>Live calculations from the sheet</span></div>'+
    '<div class="sheet-chart-grid" id="sheetCharts">'+chartsHTML()+'</div></div>'+
    '<div id="studioModalHost"></div>';
@@ -107,7 +109,7 @@
    }
   }
   return '<div class="card sheet-chart"><div class="sheet-chart-header"><div><strong>'+esc(def.title||'Chart')+'</strong><small>'+esc(def.type)+' · '+esc(def.aggregate)+' · '+esc(def.category)+' / '+esc(def.measure)+'</small></div>'+
-   '<div class="actions"><button class="btn small" data-sheet-action="editChart" data-index="'+index+'">Edit</button><button class="btn small danger" data-sheet-action="deleteChart" data-index="'+index+'">Remove</button></div></div>'+
+   (canManage()?'<div class="actions"><button class="btn small" data-sheet-action="editChart" data-index="'+index+'">Edit</button><button class="btn small danger" data-sheet-action="deleteChart" data-index="'+index+'">Remove</button></div>':'')+'</div>'+
    '<svg viewBox="0 0 640 270" role="img" aria-label="'+esc(def.title||'Data chart')+'" class="sheet-chart-svg">'+inner+'</svg></div>';
  }
  function paint(){
@@ -147,6 +149,7 @@
   await listRefresh();
  }
  async function saveCell(address,value){
+  if(!canCreate()){notice('Read-only account cannot save cells',true);return}
   if(state.busy){
    state.pending=state.pending.filter(item=>item.address!==address);
    state.pending.push({address,value});
@@ -195,6 +198,7 @@
   if(!quiet)notice('Sheet refreshed');
  }
  async function editCell(address){
+  if(!canCreate())return;
   const node=state.root?.querySelector('[data-sheet-address="'+address+'"]');
   if(!node||state.editing)return;
   selectCell(address);state.editing=address;
@@ -213,6 +217,7 @@
   input.addEventListener('blur',()=>finish(true),{once:true});
  }
  async function createSheet(){
+  if(!canCreate())throw Error('Only an authorized staff member can create a spreadsheet');
   const name=global.prompt('Name your spreadsheet','Untitled sheet');
   if(name==null)return;const title=name.trim().slice(0,120);if(!title){notice('Enter a sheet name',true);return}
   const saved=await api('sheets',{method:'POST',body:{name:title}});
@@ -226,6 +231,7 @@
   root.appendChild(host);
  }
  async function importFile(file){
+  if(!canCreate())throw Error('Read-only account cannot import files');
   if(!file)return;
   if(!global.XLSX){notice('Excel reader is unavailable. Check your connection and reload.',true);return}
   if(file.size>3*1024*1024){notice('Excel files are limited to 3 MB per import',true);return}
@@ -251,6 +257,7 @@
   return cells;
  }
  async function runImport(){
+  if(!canCreate())throw Error('Read-only account cannot import files');
   const name=state.root.querySelector('#studioImportSheet')?.value;
   if(!state.importBook||!name)return;
   const cells=parseWorkbookSheet(state.importBook,name);
@@ -268,6 +275,7 @@
   await listRefresh();await openSheet(saved.id);notice('Imported '+n+' cells from Excel');
  }
  function chartEditor(index=-1){
+  if(!canManage())return notice('Only Owner or Admin can modify chart definitions',true);
   const def=index<0?{title:'Sales overview',type:'bar',category:'A',measure:'B',aggregate:'sum'}:state.active?.charts[index];
   if(!def)return;
   const opts=(values,current)=>values.map(v=>'<option value="'+esc(v)+'"'+(v===current?' selected':'')+'>'+esc(v[0].toUpperCase()+v.slice(1))+'</option>').join('');
@@ -281,6 +289,7 @@
    '<button class="btn primary" data-sheet-action="saveChart" data-index="'+index+'">Save chart</button></div>');
  }
  async function saveChart(index){
+  if(!canManage())throw Error('Only Owner or Admin can save chart settings');
   const $=selector=>state.root.querySelector(selector);
   const config={id:uid(),title:$('#studioChartTitle').value.trim()||'Chart',type:$('#studioChartType').value,
    category:$('#studioChartCategory').value,measure:$('#studioChartMeasure').value,aggregate:$('#studioChartAggregate').value};
@@ -291,16 +300,18 @@
   state.active=result;paint();notice('Chart saved');
  }
  async function removeChart(index){
+  if(!canManage())throw Error('Only Owner or Admin can remove charts');
   if(!global.confirm('Remove this chart? Sheet cells are preserved.'))return;
   const charts=(state.active.charts||[]).filter((_,i)=>i!==index);
   state.active=await api('sheets/'+state.active.id,{method:'PATCH',body:{charts}});
   paint();notice('Chart removed');
  }
  function exportCSV(){
+  const protectCSV=value=>{const raw=String(value??'');return /^[\s]*[=+@\-\t\r]/.test(raw)?"'"+raw:raw};
   const formula=engine(),rows=[];
   for(let r=0;r<Math.min(10000,Math.max(50,...[...state.cells.keys()].map(key=>(F.coordinates(key)?.row||0)+1)));r++){
    const values=[];for(let c=0;c<26;c++)values.push(cellText(F.address(r,c),formula));
-   rows.push(values.map(x=>'"'+String(x??'').replaceAll('"','""')+'"').join(','));
+   rows.push(values.map(x=>'"'+protectCSV(x).replaceAll('"','""')+'"').join(','));
   }
   const blob=new Blob(['\uFEFF'+rows.join('\r\n')],{type:'text/csv;charset=utf-8'});
   const url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;
@@ -375,6 +386,7 @@
    '<div class="studio-modal-foot"><button class="btn" data-sheet-action="dismiss">Cancel</button><button class="btn primary" data-sheet-action="pasteSave">Save cells</button></div>');
  }
  async function pasteCellsSave(){
+  if(!canCreate())throw Error('Read-only account cannot paste cells');
   const start=F.coordinates(state.root.querySelector('#studioPasteStart')?.value?.toUpperCase()),text=state.root.querySelector('#studioPasteData')?.value||'';
   if(!start||!text.trim())throw Error('Enter a valid start address and data');
   const entries=[];
@@ -439,6 +451,7 @@
     else if(action==='script')showScriptInfo();
     else if(action==='export')exportCSV();
     else if(action==='remove'){
+     if(!canManage())throw Error('Only Owner or Admin can delete spreadsheets');
      if(global.confirm('Permanently delete this spreadsheet and its cells?')){
       await api('sheets/'+el.dataset.id,{method:'DELETE'});await listRefresh();notice('Spreadsheet deleted');
      }
