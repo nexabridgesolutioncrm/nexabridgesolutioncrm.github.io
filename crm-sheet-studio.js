@@ -419,7 +419,18 @@
       if(state.editing===row.address||state.busy||state.root?.querySelector('.studio-modal-layer')){notice('Remote change received; reload after finishing your edit.',true);return}
       state.status='Live update received';
       paint();
-     });
+     }).on('postgres_changes',
+      {event:'*',schema:'public',table:'crm_sheet_comments',filter:'sheet_id=eq.'+id},
+      ()=>{if(state.active?.id===id)global.NexaSheetFeatures?.refreshComments?.().catch(()=>{})}
+     ).on('postgres_changes',
+      {event:'UPDATE',schema:'public',table:'crm_spreadsheets',filter:'id=eq.'+id},
+      payload=>{
+       if(state.active?.id!==id||!payload.new?.id)return;
+       state.active={...state.active,...payload.new};
+       if(!state.editing&&!state.busy&&!state.root?.querySelector('.studio-modal-layer')&&document.activeElement?.id!=='studioFormulaBar'){
+        paint();global.NexaSheetFeatures?.refreshComments?.().catch(()=>{});
+       }else notice('Spreadsheet settings changed by a colleague; review after your edit');
+      });
     channel.subscribe(status=>{if(status==='SUBSCRIBED'){state.realtime=true;trackPresence();notice('Live collaboration connected')}
      if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'){state.realtime=false;notice('Live connection interrupted; fallback sync active',true)}});
     state.client=client;state.channel=channel;
