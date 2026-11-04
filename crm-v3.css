@@ -216,3 +216,16 @@ body.dark .sheet-grid td.offline-draft{background:#59472d!important;outline-colo
 .nav-sheet-shortcut:hover{background:#7a5cdf45}
 .sheet-top-shortcut{white-space:nowrap;min-height:36px;padding:7px 12px;font-weight:780}
 @media(max-width:760px){.sheet-top-shortcut{padding:7px 9px;font-size:12px;min-height:34px}.top-actions .top-search-wrap{display:none}}
+
+/* Sheets Studio 4.6: compact editing tools, independent freeze controls and readable range styles. */
+.sx-options{display:flex;flex-wrap:wrap;gap:16px;margin:12px 0}
+.sx-options label{display:inline-flex;align-items:center;gap:7px;font-size:13px}
+.sx-color{width:68px;height:34px;border:1px solid var(--stroke);border-radius:8px;background:var(--surface);padding:3px}
+.sx-freeze-rows .sheet-grid thead th{position:sticky;top:0;z-index:7;background:var(--surface2)}
+.sx-freeze-rows .sheet-grid thead .sheet-grid-corner{z-index:10}
+.sx-freeze-cols .sheet-grid td:nth-child(2),
+.sx-freeze-cols .sheet-grid thead th:nth-child(2){position:sticky;left:51px;z-index:5;box-shadow:2px 0 4px #151b301a}
+.sx-freeze-rows.sx-freeze-cols .sheet-grid thead th:nth-child(2){z-index:9}
+.sx-freeze-cols .sheet-grid td:nth-child(2){background:var(--surface)}
+.sx-freeze-cols .sheet-grid td:nth-child(2)[style]{background:inherit}
+.sx-freeze-cols .sheet-grid td:nth-child(2).selected{background:var(--surface2)}
