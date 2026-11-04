@@ -51,28 +51,36 @@
    ).join(''):'<div class="card sheet-studio-empty"><h3>No spreadsheets yet</h3><p>'+(canCreate()?'Create your first sheet or import an Excel workbook.':'Your account can view existing spreadsheets but cannot create them.')+'</p>'+(canCreate()?'<button class="btn primary" data-sheet-action="new">Create new sheet</button>':'')+'</div>')+'</div>';
  }
  function grid(){
-  const rows=50,cols=26,calc=engine(),name=state.active?.name||'Spreadsheet',selected=state.selected;
+  const page=global.NexaSheetTools?.view?.(state.rowStart,50)||{rows:Array.from({length:50},(_,i)=>state.rowStart+i),total:10000};
+  const rows=page.rows.length,cols=26,calc=engine(),name=state.active?.name||'Spreadsheet',selected=state.selected;
   const head='<thead><tr><th class="sheet-grid-corner">#</th>'+Array.from({length:cols},(_,c)=>
    '<th class="sheet-grid-column">'+F.colName(c)+'</th>').join('')+'</tr></thead>';
-  const body='<tbody>'+Array.from({length:rows},(_,r)=>
-   '<tr><th class="sheet-grid-row-head">'+(state.rowStart+r+1)+'</th>'+
-   Array.from({length:cols},(_,c)=>{const address=F.address(state.rowStart+r,c),entry=dataCell(address),value=cellText(address,calc);
-    const decor=global.NexaSheetFeatures?.cellDecoration?.(address,value)||{className:'',style:''};
-    return '<td data-sheet-address="'+address+'" tabindex="0" class="sheet-studio-cell'+
-     (address===selected?' selected':'')+(rangeIncludes(address)?' range-selected':'')+(state.presence.some(p=>p.cell===address&&p.id!==state.user?.id)?' peer-active':'')+(entry.raw_value.startsWith('=')?' formula':'')+decor.className+(entry.offline?' offline-draft':'')+'"'+decor.style+'>'+
-     '<span>'+esc(value).slice(0,800)+'</span></td>';
-   }).join('')+'</tr>'
-  ).join('')+'</tbody>';
+  const body='<tbody>'+Array.from({length:rows},(_,r)=>{
+   const actualRow=page.rows[r];
+   return '<tr><th class="sheet-grid-row-head">'+(actualRow+1)+'</th>'+
+    Array.from({length:cols},(_,c)=>{
+     const address=F.address(actualRow,c),entry=dataCell(address),value=cellText(address,calc);
+     const decor=global.NexaSheetFeatures?.cellDecoration?.(address,value)||{className:'',style:''};
+     const css=(global.NexaSheetTools?.style?.(address)||'')+String(decor.style||'').replace(/^ style="/,'').replace(/"$/,'');
+     const formatted=global.NexaSheetTools?.format?.(address,value)??value;
+     return '<td data-sheet-address="'+address+'" tabindex="0" class="sheet-studio-cell'+
+      (address===selected?' selected':'')+(rangeIncludes(address)?' range-selected':'')+
+      (state.presence.some(p=>p.cell===address&&p.id!==state.user?.id)?' peer-active':'')+
+      (String(entry.raw_value||'').startsWith('=')?' formula':'')+decor.className+
+      (entry.offline?' offline-draft':'')+'"'+(css?' style="'+css+'"':'')+'><span>'+
+      esc(formatted).slice(0,800)+'</span></td>';
+    }).join('')+'</tr>';
+  }).join('')+'</tbody>';
   return header()+'<section class="sheet-studio-toolbar">'+
    '<div class="sheet-studio-title"><strong>▦ '+esc(name)+'</strong><small>'+state.cells.size+' saved cells</small></div>'+
-   '<div class="actions"><button class="btn" data-sheet-action="refresh">↻ Refresh</button>'+(canCreate()?'<button class="btn" data-sheet-action="undo" title="Undo Ctrl+Z">↶ Undo</button><button class="btn" data-sheet-action="redo" title="Redo Ctrl+Y">↷ Redo</button><button class="btn" data-sheet-action="clear" title="Clear selected cells">Clear</button><button class="btn" data-sheet-action="fillDown" title="Fill selected range down">Fill down</button>':'')+(global.NexaSheetOffline?.toolbar?.()||'')+(global.NexaSheetFeatures?.toolbar?.()||'')+'<button class="btn" data-sheet-action="find">Find / Replace</button><button class="btn" data-sheet-action="copyCells">Copy range</button>'+(canCreate()?'<button class="btn" data-sheet-action="pasteCells">Paste cells</button>':'')+
+   '<div class="actions"><button class="btn" data-sheet-action="refresh">↻ Refresh</button>'+(canCreate()?'<button class="btn" data-sheet-action="undo" title="Undo Ctrl+Z">↶ Undo</button><button class="btn" data-sheet-action="redo" title="Redo Ctrl+Y">↷ Redo</button><button class="btn" data-sheet-action="clear" title="Clear selected cells">Clear</button><button class="btn" data-sheet-action="fillDown" title="Fill selected range down">Fill down</button>':'')+(global.NexaSheetOffline?.toolbar?.()||'')+(global.NexaSheetFeatures?.toolbar?.()||'')+(global.NexaSheetTools?.toolbar?.()||'')+'<button class="btn" data-sheet-action="find">Find / Replace</button><button class="btn" data-sheet-action="copyCells">Copy range</button>'+(canCreate()?'<button class="btn" data-sheet-action="pasteCells">Paste cells</button>':'')+
    (canManage()?'<button class="btn" data-sheet-action="chart">＋ New chart</button>':'')+
    '<button class="btn" data-sheet-action="export">↓ Export CSV</button>'+'<button class="btn" data-sheet-action="exportXLSX">↓ Export XLSX</button>'+
    (canCreate()?'<button class="btn" data-sheet-action="import">↑ Import XLSX</button>':'')+'</div></section>'+
    (global.NexaSheetFeatures?.banner?.()||'')+'<div class="sheet-formula-bar"><span id="studioNameBox">'+esc(selected)+'</span>'+
    '<span class="sheet-fx">ƒx</span><input id="studioFormulaBar" aria-label="Cell formula or value" '+(canCreate()?'':'readonly ')+'value="'+escapeAttr(dataCell(selected).raw_value)+'" placeholder="'+(canCreate()?'Enter text or =SUM(A1:A10)':'Read-only cell · select to inspect')+'">'+
    (canCreate()?'<button class="btn" data-sheet-action="edit">Edit cell</button><button class="btn primary" data-sheet-action="save">Save cell</button>':'<span class="sheet-readonly-note">Read-only workspace</span>')+'</div>'+
-   '<div class="sheet-grid-scroller"><table id="studioGrid" class="sheet-grid">'+head+body+'</table></div>'+ '<div class="sheet-rowpager"><span>Rows '+(state.rowStart+1)+'–'+(state.rowStart+50)+' · 26 columns</span><div class="actions"><button class="btn small" data-sheet-action="rowPrev" '+(state.rowStart===0?'disabled':'')+'>← Previous 50</button><button class="btn small" data-sheet-action="rowNext" '+(state.rowStart>=9950?'disabled':'')+'>Next 50 →</button></div></div>'+
+   '<div class="sheet-grid-scroller'+(global.NexaSheetTools?.settings?.().freezeRows?' sx-freeze-rows':'')+(global.NexaSheetTools?.settings?.().freezeColumns?' sx-freeze-cols':'')+'"><table id="studioGrid" class="sheet-grid">'+head+body+'</table></div>'+ '<div class="sheet-rowpager"><span>'+(page.total?'Rows '+(state.rowStart+1)+'–'+Math.min(page.total,state.rowStart+50):'No matching rows')+' of '+page.total+' · 26 columns</span><div class="actions"><button class="btn small" data-sheet-action="rowPrev" '+(state.rowStart===0?'disabled':'')+'>← Previous 50</button><button class="btn small" data-sheet-action="rowNext" '+(state.rowStart+50>=page.total?'disabled':'')+'>Next 50 →</button></div></div>'+
    '<p class="sheet-studio-instructions">'+(canCreate()?'Select any cell, then type in the formula bar or double-click it. Formulas begin with =. Updates are saved with revision checks, so conflicting edits cannot overwrite silently.':'This account can browse, calculate and export cells. Only authorized members can edit.')+'</p>'+
    '<div class="sheet-chart-section"><div class="sheet-section-title"><h2>Charts</h2><span>Live calculations from the sheet</span></div>'+
    '<div class="sheet-chart-grid" id="sheetCharts">'+chartsHTML()+'</div></div>'+(global.NexaSheetFeatures?.panels?.()||'')+
@@ -170,6 +178,7 @@
   const extensions={state,F,api:(path,opts)=>transport(path,opts),showModal,paint,notice};
   global.NexaSheetFeatures?.bind?.(extensions);
   global.NexaSheetOffline?.bind?.(extensions);
+  global.NexaSheetTools?.bind?.(extensions);
   if(isNew){
    element.addEventListener('click',onClick);
    element.addEventListener('dblclick',onDouble);
@@ -185,6 +194,7 @@
   removeRemote();const generation=state.generation;
   const data=await api('sheets/'+encodeURIComponent(id));
   if(generation!==state.generation)return;
+  global.NexaSheetTools?.reset?.();
   state.active=data.sheet;state.selected='A1';state.anchor='A1';state.range=false;state.rowStart=0;state.undoStack=[];state.redoStack=[];setCells(data.cells);
   await global.NexaSheetOffline?.afterOpen?.();
   paint();await global.NexaSheetFeatures?.afterOpen?.();await connect();
@@ -200,6 +210,7 @@
   if(!sheetId)return;
   if(!canCreate()){notice('Read-only account cannot save cells',true);return}
   if(global.NexaSheetFeatures?.lock?.(address)){notice('Protected range — administrator access required',true);return}
+  const validationError=global.NexaSheetTools?.validate?.(address,value);if(validationError){notice(validationError,true);return false}
   if(state.busy){
    state.pending=state.pending.filter(item=>item.address!==address);
    state.pending.push({address,value});
@@ -509,6 +520,7 @@
     const previous=dataCell(x.address);
     if(x.value===previous.raw_value)continue;
     try{
+     const error=global.NexaSheetTools?.validate?.(x.address,x.value);if(error)throw Error(error);
      if(global.NexaSheetFeatures?.lock?.(x.address))throw Error('Protected cell');
      const row=global.NexaSheetOffline?.write?await global.NexaSheetOffline.write(x.address,x.value,previous.revision||0):await api('sheets/'+state.active.id+'/cell',{method:'POST',body:{address:x.address,value:x.value,revision:previous.revision||0}});
      state.cells.set(x.address,row);saved++;if(!row.queued)changes.push({address:x.address,before:previous.raw_value,after:x.value});
@@ -539,6 +551,7 @@
     else if(action==='back')await back();
     else if(action==='refresh'){await refreshSheet();await global.NexaSheetFeatures?.preloadLinks?.();await global.NexaSheetOffline?.flush?.()}
     else if(action.startsWith('sf-'))await global.NexaSheetFeatures?.action?.(action,el);
+    else if(action.startsWith('sx-'))await global.NexaSheetTools?.action?.(action,el);
     else if(action.startsWith('so-'))await global.NexaSheetOffline?.action?.(action,el);
     else if(action==='copyCells')await copyCells();
     else if(action==='copyDraft'){
@@ -549,7 +562,7 @@
     else if(action==='pasteCells')pasteCellsDialog();
     else if(action==='pasteSave')await pasteCellsSave();
     else if(action==='rowPrev'){state.rowStart=Math.max(0,state.rowStart-50);state.selected=F.address(state.rowStart,0);paint()}
-    else if(action==='rowNext'){state.rowStart=Math.min(9950,state.rowStart+50);state.selected=F.address(state.rowStart,0);paint()}
+    else if(action==='rowNext'){const total=global.NexaSheetTools?.view?.(0,0)?.total||10000;state.rowStart=Math.min(Math.floor((Math.max(1,total)-1)/50)*50,state.rowStart+50);paint()}
     else if(action==='edit')await editCell(state.selected);
     else if(action==='undo')await replayHistory(false);
     else if(action==='redo')await replayHistory(true);
@@ -619,6 +632,7 @@
     const previous=dataCell(x.address);
     if(previous.raw_value===x.value)continue;
     if(global.NexaSheetFeatures?.lock?.(x.address)){errors.push(x.address+' protected');continue}
+    const validationError=global.NexaSheetTools?.validate?.(x.address,x.value);if(validationError){errors.push(validationError);continue}
     try{
      const row=await (global.NexaSheetOffline?.write?global.NexaSheetOffline.write(x.address,x.value,previous.revision||0):api('sheets/'+state.active.id+'/cell',{method:'POST',body:{address:x.address,value:x.value,revision:previous.revision||0}}));
      state.cells.set(x.address,row);
