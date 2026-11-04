@@ -67,7 +67,7 @@
    '<div class="sheet-studio-title"><strong>▦ '+esc(name)+'</strong><small>'+state.cells.size+' saved cells</small></div>'+
    '<div class="actions"><button class="btn" data-sheet-action="refresh">↻ Refresh</button>'+(canCreate()?'<button class="btn" data-sheet-action="undo" title="Undo Ctrl+Z">↶ Undo</button><button class="btn" data-sheet-action="redo" title="Redo Ctrl+Y">↷ Redo</button><button class="btn" data-sheet-action="clear" title="Clear selected cells">Clear</button>':'')+(global.NexaSheetOffline?.toolbar?.()||'')+(global.NexaSheetFeatures?.toolbar?.()||'')+'<button class="btn" data-sheet-action="copyCells">Copy range</button>'+(canCreate()?'<button class="btn" data-sheet-action="pasteCells">Paste cells</button>':'')+
    (canManage()?'<button class="btn" data-sheet-action="chart">＋ New chart</button>':'')+
-   '<button class="btn" data-sheet-action="export">↓ Export CSV</button>'+
+   '<button class="btn" data-sheet-action="export">↓ Export CSV</button>'+'<button class="btn" data-sheet-action="exportXLSX">↓ Export XLSX</button>'+
    (canCreate()?'<button class="btn" data-sheet-action="import">↑ Import XLSX</button>':'')+'</div></section>'+
    (global.NexaSheetFeatures?.banner?.()||'')+'<div class="sheet-formula-bar"><span id="studioNameBox">'+esc(selected)+'</span>'+
    '<span class="sheet-fx">ƒx</span><input id="studioFormulaBar" aria-label="Cell formula or value" '+(canCreate()?'':'readonly ')+'value="'+escapeAttr(dataCell(selected).raw_value)+'" placeholder="'+(canCreate()?'Enter text or =SUM(A1:A10)':'Read-only cell · select to inspect')+'">'+
@@ -388,6 +388,27 @@
   link.download='NexaBridge_'+String(state.active.name||'Sheet').replace(/[^a-z0-9_-]/gi,'_')+'.csv';link.click();
   setTimeout(()=>URL.revokeObjectURL(url),1000);
  }
+
+ function exportXLSX(){
+  if(!global.XLSX)throw Error('Excel export library unavailable. Check internet connection and reload.');
+  const rows=Math.min(10000,Math.max(50,...[...state.cells.keys()].map(key=>(F.coordinates(key)?.row||0)+1)));
+  const values=[];
+  for(let row=0;row<rows;row++){
+   const line=[];
+   for(let col=0;col<26;col++){
+    const cell=dataCell(F.address(row,col)),raw=String(cell.raw_value||'');
+    if(raw.startsWith('='))line.push({t:'n',f:raw.slice(1)});
+    else if(/^-?(?:0|[1-9]\d*)(?:\.\d+)?$/.test(raw.trim()))line.push(Number(raw));
+    else line.push(raw);
+   }
+   values.push(line);
+  }
+  const sheet=global.XLSX.utils.aoa_to_sheet(values);
+  const workbook=global.XLSX.utils.book_new();
+  const title=String(state.active?.name||'Sheet').replace(/[^a-z0-9 _-]/gi,' ').slice(0,31)||'Sheet';
+  global.XLSX.utils.book_append_sheet(workbook,sheet,title);
+  global.XLSX.writeFile(workbook,'NexaBridge_'+String(state.active?.name||'Sheet').replace(/[^a-z0-9_-]/gi,'_')+'.xlsx');
+ }
  function trackPresence(){
   if(!state.channel||!state.realtime||!state.user)return;
   try{Promise.resolve(state.channel.track({id:state.user.id,username:String(state.user.username||'Team member').slice(0,80),cell:state.selected,at:Date.now()})).catch(()=>{})}catch(_){}
@@ -544,6 +565,7 @@
     else if(action==='dismiss'){state.root.querySelector('.studio-modal-layer')?.remove();}
     else if(action==='script')showScriptInfo();
     else if(action==='export')exportCSV();
+    else if(action==='exportXLSX')exportXLSX();
     else if(action==='remove'){
      if(!canManage())throw Error('Only Owner or Admin can delete spreadsheets');
      if(global.confirm('Permanently delete this spreadsheet and its cells?')){
@@ -602,7 +624,7 @@
   }finally{state.busy=false}
   remember(changes);paint();
   notice(label+': '+changes.length+' saved'+(errors.length?', '+errors.length+' errors':''),!!errors.length);
-  if(errors.length)global.alert('Some changes were not saved:\\n'+errors.slice(0,10).join('\\n'));
+  if(errors.length)global.alert('Some changes were not saved:\n'+errors.slice(0,10).join('\n'));
   return !errors.length;
  }
  async function clearSelection(){
@@ -626,11 +648,11 @@
  async function pasteClipboard(text){
   if(!canCreate())return;
   const p=F.coordinates(state.selected);if(!p||!text)return;
-  const lines=text.replaceAll('\\r\\n','\\n').replaceAll('\\r','\\n').replace(/\\n$/,'').split('\\n');
+  const lines=text.replaceAll('\r\n','\n').replaceAll('\r','\n').replace(/\n$/,'').split('\n');
   if(lines.length>100)throw Error('Paste limited to 100 rows');
   const entries=[];
   for(let i=0;i<lines.length;i++){
-   const columns=lines[i].split('\\t');
+   const columns=lines[i].split('\t');
    for(let j=0;j<columns.length;j++){
     if(p.row+i>=10000||p.col+j>=26)throw Error('Paste exceeds sheet boundaries');
     entries.push({address:F.address(p.row+i,p.col+j),value:columns[j]});
