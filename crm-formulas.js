@@ -300,7 +300,20 @@
      return match?match[col-1]:'#N/A';
     }
     case 'TODAY':return new Date().toISOString().slice(0,10);
-    default:return ERR.name;
+    default:{
+     // Optional MIT Formula.js library provides hundreds of Excel-compatible functions.
+     // Function names are explicitly restricted; formulas never run arbitrary JavaScript.
+     const standard=global.formulajs?.[name];
+     if(/^[A-Z][A-Z0-9_.]{1,40}$/.test(name)&&typeof standard==='function'){
+      try{
+       const values=args.map(x=>x?.matrix?x.matrix:x);
+       const result=standard(...values);
+       if(result instanceof Error)return '#VALUE!';
+       return result;
+      }catch(_){return ERR.value}
+     }
+     return ERR.name;
+    }
    }
   }
  }
