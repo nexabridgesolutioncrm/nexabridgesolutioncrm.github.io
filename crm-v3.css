@@ -210,3 +210,9 @@ body.dark .sheet-grid td.offline-draft{background:#59472d!important;outline-colo
 .sf-offline-item pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px;margin:7px 0;max-height:70px;overflow:auto}
 .sf-offline-item .actions{flex-wrap:nowrap}
 @media(max-width:650px){.sf-offline-item{flex-direction:column;align-items:stretch}.sf-pivot-grid{grid-template-columns:1fr}.sheet-feature-status{gap:5px 12px}}
+
+/* Sheets Studio recovery: a discoverable entry in both desktop and mobile CRM. */
+.nav-sheet-shortcut{margin:4px 0 10px;border:1px solid #8062e080;background:#7a5cdf29;color:#fff;font-weight:800}
+.nav-sheet-shortcut:hover{background:#7a5cdf45}
+.sheet-top-shortcut{white-space:nowrap;min-height:36px;padding:7px 12px;font-weight:780}
+@media(max-width:760px){.sheet-top-shortcut{padding:7px 9px;font-size:12px;min-height:34px}.top-actions .top-search-wrap{display:none}}
