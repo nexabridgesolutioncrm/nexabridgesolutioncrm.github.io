@@ -38,7 +38,7 @@
    '<button class="btn" data-sheet-action="script">Apps Script ↗</button></div></div>';
  }
  function listView(){
-  const sheets=state.list||[];
+  const sheets=(state.list||[]).filter(x=>!x.parent_id);
   return header()+'<div class="sheet-action-row">'+
    (canCreate()?'<button class="btn primary" data-sheet-action="new">＋ Create spreadsheet</button>':'')+
    (canCreate()?'<button class="btn" data-sheet-action="import">↑ Import Excel (.xlsx)</button>':'')+
@@ -50,6 +50,43 @@
     (canManage()?'<button class="btn danger" data-sheet-action="remove" data-id="'+escapeAttr(sheet.id)+'">Delete</button>':'')+'</div></div>'
    ).join(''):'<div class="card sheet-studio-empty"><h3>No spreadsheets yet</h3><p>'+(canCreate()?'Create your first sheet or import an Excel workbook.':'Your account can view existing spreadsheets but cannot create them.')+'</p>'+(canCreate()?'<button class="btn primary" data-sheet-action="new">Create new sheet</button>':'')+'</div>')+'</div>';
  }
+ function tabBar(){
+  if(!state.active)return '';
+  const root=state.active.parent_id||state.active.id;
+  const siblings=(state.list||[]).filter(x=>x.id===root||x.parent_id===root);
+  if(!siblings.some(x=>x.id===state.active.id))siblings.push(state.active);
+  siblings.sort((a,b)=>(a.id===root?-1:b.id===root?1:String(a.created_at||'').localeCompare(String(b.created_at||''))));
+  return '<div class="sheet-tab-bar" role="tablist" aria-label="Workbook tabs">'+
+   siblings.map(x=>'<button class="sheet-tab'+(x.id===state.active.id?' active':'')+'" data-sheet-action="tabSwitch" data-id="'+esc(x.id)+'" role="tab" aria-selected="'+(x.id===state.active.id?'true':'false')+'">'+esc(x.name)+'</button>').join('')+
+   (canCreate()?'<button class="btn small" data-sheet-action="tabCreate" title="Add workbook tab">＋ Tab</button>':'')+
+   (canManage()?'<button class="btn small" data-sheet-action="tabRename">Rename</button>':'')+
+   (canManage()&&state.active.parent_id?'<button class="btn small danger" data-sheet-action="tabRemove">Delete tab</button>':'')+
+   '</div>';
+ }
+ async function createTab(){
+  if(!canCreate()||!state.active)throw Error('No active spreadsheet or edit permission');
+  const title=global.prompt('New worksheet tab name','Sheet '+((state.list||[]).length+1));
+  if(title===null)return;if(!title.trim())throw Error('Enter a tab name');
+  const parentId=state.active.parent_id||state.active.id;
+  const created=await api('sheets',{method:'POST',body:{name:title.trim().slice(0,120),parentId}});
+  await listRefresh();await openSheet(created.id);
+ }
+ async function renameTab(){
+  if(!canManage()||!state.active)throw Error('Only Owner/Admin can rename tabs');
+  const title=global.prompt('Rename worksheet',state.active.name);
+  if(title===null)return;if(!title.trim())throw Error('Enter a tab name');
+  const saved=await api('sheets/'+state.active.id,{method:'PATCH',body:{name:title.trim().slice(0,120)}});
+  state.active={...state.active,...saved};
+  await listRefresh();notice('Tab renamed');
+ }
+ async function removeTab(){
+  if(!canManage()||!state.active?.parent_id)throw Error('Cannot remove the main tab here');
+  const root=state.active.parent_id;
+  if(!global.confirm('Permanently delete this worksheet tab and its cells?'))return;
+  await api('sheets/'+state.active.id,{method:'DELETE'});
+  await listRefresh();await openSheet(root);notice('Worksheet tab removed');
+ }
+
  function grid(){
   const page=global.NexaSheetTools?.view?.(state.rowStart,50)||{rows:Array.from({length:50},(_,i)=>state.rowStart+i),total:10000};
   const rows=page.rows.length,cols=26,calc=engine(),name=state.active?.name||'Spreadsheet',selected=state.selected;
@@ -71,7 +108,7 @@
       esc(formatted).slice(0,800)+'</span></td>';
     }).join('')+'</tr>';
   }).join('')+'</tbody>';
-  return header()+'<section class="sheet-studio-toolbar">'+
+  return header()+tabBar()+'<section class="sheet-studio-toolbar">'+
    '<div class="sheet-studio-title"><strong>▦ '+esc(name)+'</strong><small>'+state.cells.size+' saved cells</small></div>'+
    '<div class="actions"><button class="btn" data-sheet-action="refresh">↻ Refresh</button>'+(canCreate()?'<button class="btn" data-sheet-action="undo" title="Undo Ctrl+Z">↶ Undo</button><button class="btn" data-sheet-action="redo" title="Redo Ctrl+Y">↷ Redo</button><button class="btn" data-sheet-action="clear" title="Clear selected cells">Clear</button><button class="btn" data-sheet-action="fillDown" title="Fill selected range down">Fill down</button>':'')+(global.NexaSheetOffline?.toolbar?.()||'')+(global.NexaSheetFeatures?.toolbar?.()||'')+(global.NexaSheetTools?.toolbar?.()||'')+'<button class="btn" data-sheet-action="find">Find / Replace</button><button class="btn" data-sheet-action="copyCells">Copy range</button>'+(canCreate()?'<button class="btn" data-sheet-action="pasteCells">Paste cells</button>':'')+
    (canManage()?'<button class="btn" data-sheet-action="chart">＋ New chart</button>':'')+
@@ -554,6 +591,10 @@
   if(el){ev.preventDefault();const action=el.dataset.sheetAction;
    try{
     if(action==='open')await openSheet(el.dataset.id);
+    else if(action==='tabSwitch')await openSheet(el.dataset.id);
+    else if(action==='tabCreate')await createTab();
+    else if(action==='tabRename')await renameTab();
+    else if(action==='tabRemove')await removeTab();
     else if(action==='new')await createSheet();
     else if(action==='back')await back();
     else if(action==='refresh'){await refreshSheet();await global.NexaSheetFeatures?.preloadLinks?.();await global.NexaSheetOffline?.flush?.()}
