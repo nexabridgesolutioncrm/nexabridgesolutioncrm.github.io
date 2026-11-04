@@ -343,15 +343,15 @@
  }
  function chartEditor(index=-1){
   if(!canManage())return notice('Only Owner or Admin can modify chart definitions',true);
-  const def=index<0?{title:'Sales overview',type:'bar',category:'A',measure:'B',aggregate:'sum'}:state.active?.charts[index];
+  const def=index<0?{title:'Sales overview',type:'bar',category:'A',measure:'B',aggregate:'sum',color:'#8268e8',showValues:false,maxRows:500}:state.active?.charts[index];
   if(!def)return;
   const opts=(values,current)=>values.map(v=>'<option value="'+esc(v)+'"'+(v===current?' selected':'')+'>'+esc(v[0].toUpperCase()+v.slice(1))+'</option>').join('');
-  showModal('<h2>'+((index<0)?'New chart':'Edit chart')+'</h2><p>Create a chart with grouped calculations from rows 2–50. Row 1 can hold headers.</p>'+
+  showModal('<h2>'+((index<0)?'New chart':'Edit chart')+'</h2><p>Build charts from up to 10,000 rows; choose categories, aggregations, labels, and a color.</p>'+
    '<div class="studio-chart-fields"><label>Chart name<input class="select" id="studioChartTitle" maxlength="80" value="'+esc(def.title)+'"></label>'+
-   '<label>Chart type<select class="select" id="studioChartType">'+opts(['bar','line','pie','doughnut'],def.type)+'</select></label>'+
+   '<label>Chart type<select class="select" id="studioChartType">'+opts(['bar','line','area','scatter','horizontal','pie','doughnut'],def.type)+'</select></label>'+
    '<label>Category column<select class="select" id="studioChartCategory">'+opts(Array.from({length:26},(_,i)=>F.colName(i)),def.category)+'</select></label>'+
    '<label>Value column<select class="select" id="studioChartMeasure">'+opts(Array.from({length:26},(_,i)=>F.colName(i)),def.measure)+'</select></label>'+
-   '<label>Aggregate<select class="select" id="studioChartAggregate">'+opts(['sum','average','count'],def.aggregate)+'</select></label></div>'+
+   '<label>Aggregate<select class="select" id="studioChartAggregate">'+opts(['sum','average','count'],def.aggregate)+'</select></label>'+ '<label>Accent color<input type="color" class="select" id="studioChartColor" value="'+esc(/^#[0-9a-f]{6}$/i.test(def.color||'')?def.color:'#8268e8')+'"></label>'+ '<label>Maximum source rows<input class="select" id="studioChartRows" type="number" min="10" max="10000" value="'+esc(def.maxRows||500)+'"></label>'+ '<label class="studio-chart-check"><input type="checkbox" id="studioChartLabels" '+(def.showValues?'checked':'')+'>Show values on chart</label></div>'+
    '<div class="studio-modal-foot"><button class="btn" data-sheet-action="dismiss">Cancel</button>'+
    '<button class="btn primary" data-sheet-action="saveChart" data-index="'+index+'">Save chart</button></div>');
  }
@@ -359,7 +359,7 @@
   if(!canManage())throw Error('Only Owner or Admin can save chart settings');
   const $=selector=>state.root.querySelector(selector);
   const config={id:uid(),title:$('#studioChartTitle').value.trim()||'Chart',type:$('#studioChartType').value,
-   category:$('#studioChartCategory').value,measure:$('#studioChartMeasure').value,aggregate:$('#studioChartAggregate').value};
+   category:$('#studioChartCategory').value,measure:$('#studioChartMeasure').value,aggregate:$('#studioChartAggregate').value,color:$('#studioChartColor').value,showValues:$('#studioChartLabels').checked,maxRows:Math.min(10000,Math.max(10,Number($('#studioChartRows').value)||500))};
   const charts=[...(state.active.charts||[])];
   if(index>=0){config.id=charts[index]?.id||config.id;charts[index]=config}else charts.push(config);
   if(charts.length>30)throw Error('Maximum 30 charts per sheet');
