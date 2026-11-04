@@ -197,5 +197,9 @@
   if(name==='sx-freeze'){await toggleFreeze();return true}
   return false;
  }
- global.NexaSheetTools={bind(context){ctx=context;localView=null},toolbar,style,format,validate,view,settings,action};
+ function choices(address){
+  for(const rule of rules())if(rule.type==='list'&&inRange(address,rule.range))return rule.values||[];
+  return [];
+ }
+ global.NexaSheetTools={bind(context){ctx=context;localView=null},reset(){localView=null},toolbar,style,format,validate,choices,view,settings,action};
 })(window);
