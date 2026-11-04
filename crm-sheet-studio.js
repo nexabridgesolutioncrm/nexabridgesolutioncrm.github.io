@@ -6,7 +6,7 @@
  const esc=v=>String(v??'').replace(/[&<>"']/g,x=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[x]));
  const uid=()=>Math.random().toString(36).slice(2,10);
  const state={root:null,api:null,user:null,list:[],active:null,cells:new Map(),selected:'A1',anchor:'A1',range:false,editing:null,rowStart:0,
-  channel:null,client:null,timer:null,serial:0,busy:false,pending:[],realtime:false,presence:[],status:'',lastRemote:null,modal:null};
+  channel:null,client:null,timer:null,generation:0,serial:0,busy:false,pending:[],realtime:false,presence:[],status:'',lastRemote:null,modal:null};
  const canCreate=()=>['owner','admin','agent'].includes(state.user?.role);
  const canManage=()=>['owner','admin'].includes(state.user?.role);
  const validAddress=v=>/^[A-Z]{1,3}[1-9][0-9]{0,4}$/.test(v);
@@ -23,7 +23,13 @@
   if(state.channel){try{state.client?.removeChannel(state.channel)}catch(_){}state.channel=null}
   state.client=null;state.realtime=false;state.presence=[];
  }
- function leave(){removeRemote();state.root=null;state.modal=null;state.editing=null;state.pending=[]}
+ function leave(){
+  state.generation++;removeRemote();
+  state.root=null;state.user=null;state.api=null;state.list=[];state.active=null;
+  state.cells.clear();state.selected='A1';state.anchor='A1';state.range=false;
+  state.rowStart=0;state.editing=null;state.pending=[];state.busy=false;
+  state.status='';state.lastRemote=null;state.importBook=null;state.modal=null;
+ }
  function header(){
   return '<div class="sheet-studio-head"><div><div class="studio-eyebrow">NEXABRIDGE / LIVE DATA WORKSPACE</div><h1>Sheets Studio</h1><p>Spreadsheet formulas, shared cells, Excel imports and data-driven charts.</p></div>'+
    '<div class="studio-head-actions"><span id="sheetStatus" aria-live="polite">'+esc(state.status)+'</span>'+(state.active?'<span class="studio-peer-status" id="studioPeerStatus">'+(state.realtime?'● Live':'○ Sync')+'</span>':'')+
@@ -122,7 +128,11 @@
   notice(state.status);
  }
  function listRefresh(){
-  return api('sheets').then(list=>{state.list=list||[];paint();return list});
+  const generation=state.generation;
+  return api('sheets').then(list=>{
+   if(generation!==state.generation)return [];
+   state.list=list||[];paint();return list;
+  });
  }
  async function mount(element,transport,user){
   if(!element||!transport||!user)return;
@@ -139,8 +149,9 @@
   }else paint();
  }
  async function openSheet(id){
-  removeRemote();
+  removeRemote();const generation=state.generation;
   const data=await api('sheets/'+encodeURIComponent(id));
+  if(generation!==state.generation)return;
   state.active=data.sheet;state.selected='A1';state.anchor='A1';state.range=false;state.rowStart=0;setCells(data.cells);
   paint();await connect();
  }
@@ -149,6 +160,8 @@
   await listRefresh();
  }
  async function saveCell(address,value){
+  const generation=state.generation,sheetId=state.active?.id;
+  if(!sheetId)return;
   if(!canCreate()){notice('Read-only account cannot save cells',true);return}
   if(state.busy){
    state.pending=state.pending.filter(item=>item.address!==address);
@@ -162,11 +175,14 @@
   state.busy=true;notice('Saving '+address+'…');
   try{
    const saved=await api('sheets/'+state.active.id+'/cell',{method:'POST',body:{address,value,revision:previous.revision||0}});
+   if(generation!==state.generation||state.active?.id!==sheetId)return;
    state.cells.set(address,saved);paint();notice('Saved '+address);
   }catch(e){
+   if(generation!==state.generation||state.active?.id!==sheetId)return;
    notice(e.message,true);if(/another session|conflict|revision|409/i.test(e.message)){await refreshSheet(true)}
   }finally{
    state.busy=false;
+   if(generation!==state.generation||state.active?.id!==sheetId)return;
    const next=state.pending.shift();if(next&&state.active)Promise.resolve().then(()=>saveCell(next.address,next.value));
   }
  }
@@ -192,7 +208,9 @@
  }
  async function refreshSheet(quiet){
   if(!state.active)return;
-  const data=await api('sheets/'+state.active.id);
+  const generation=state.generation,sheetId=state.active.id;
+  const data=await api('sheets/'+sheetId);
+  if(generation!==state.generation||state.active?.id!==sheetId)return;
   state.active=data.sheet;setCells(data.cells);
   if(!state.editing)paint();
   if(!quiet)notice('Sheet refreshed');
