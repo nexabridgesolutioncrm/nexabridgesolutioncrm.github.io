@@ -127,12 +127,12 @@ async function adapter(input,init={}){
   }
   if(!action&&method==='PATCH'){
    if(!['owner','admin'].includes(member?.role))return err('Only Owner/Admin can edit spreadsheet configurations',403);
-   const changes={},allowedCharts=['bar','line','pie','doughnut'];
+   const changes={},allowedCharts=['bar','line','pie','doughnut','area','scatter','horizontal'];
    if(Object.prototype.hasOwnProperty.call(b,'charts')){
     if(!Array.isArray(b.charts)||b.charts.length>30||JSON.stringify(b.charts).length>16000)return err('Invalid chart definitions');
     changes.charts=b.charts.map(c=>({id:String(c.id||'').slice(0,45),title:String(c.title||'Chart').slice(0,80),
      type:allowedCharts.includes(c.type)?c.type:'bar',category:String(c.category||'A').slice(0,3),
-     measure:String(c.measure||'B').slice(0,3),aggregate:['sum','count','average'].includes(c.aggregate)?c.aggregate:'sum'}));
+     measure:String(c.measure||'B').slice(0,3),aggregate:['sum','count','average'].includes(c.aggregate)?c.aggregate:'sum',color:/^#[0-9a-f]{6}$/i.test(c.color||'')?c.color:'#8268e8',showValues:c.showValues===true,maxRows:Math.max(10,Math.min(10000,Math.floor(Number(c.maxRows)||500)))}));
    }
    if(Object.prototype.hasOwnProperty.call(b,'formatting_rules')){
     if(!Array.isArray(b.formatting_rules)||b.formatting_rules.length>40)return err('Maximum 40 conditional formatting rules');
