@@ -67,7 +67,7 @@ async function api(path,options={}){
   if(method==='POST'){const record={id:'22222222-2222-4222-8222-'+String(comments.length+1).padStart(12,'0'),address:body.address,body:body.body,author_id:'u1',parent_id:body.parent_id||null,resolved:false,created_at:new Date().toISOString()};comments.push(record);return clone(record)}
   if(method==='PATCH'){const row=comments.find(x=>x.id===body.id);Object.assign(row,body);return clone(row)}
  }
- if(path.startsWith('sheets/'+uuid+'/history/'))return clone(revisions.filter(x=>x.address===path.split('/')[3]));
+ if(path.startsWith('sheets/'+uuid+'/history/'))return clone(revisions.filter(x=>x.address===path.split('/')[3].split('?')[0]));
  if(path==='sheets/'+uuid+'/cell'&&method==='POST'){
   const old=cells.get(body.address),revision=old?.revision||0;
   if(revision!==body.revision)throw Error('Cell changed in another session');
