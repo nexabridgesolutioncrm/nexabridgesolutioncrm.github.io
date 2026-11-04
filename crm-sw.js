@@ -1,6 +1,6 @@
 /* NexaBridge CRM: offline static-shell cache only, never caches Supabase/CRM API data.
    Sheet data/drafts are separately opt-in through IndexedDB in Sheets Studio. */
-const VERSION='nexa-crm-shell-4.6.1';
+const VERSION='nexa-crm-shell-4.6.2';
 const ASSETS=['./','./index.html','./crm-v3.css','./crm-api.js','./crm-v3.js',
  './crm-formulas.js','./crm-sheet-features.js','./crm-sheet-offline.js','./crm-sheet-tools.js','./crm-sheet-studio.js'];
 self.addEventListener('install',event=>{
