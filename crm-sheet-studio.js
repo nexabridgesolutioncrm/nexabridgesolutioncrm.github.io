@@ -83,41 +83,68 @@
   return defs.length?defs.map((d,i)=>chartCard(d,i)).join(''):'<div class="sheet-chart-empty">No charts yet. Use New chart to build a data visualization from spreadsheet columns.</div>';
  }
  function chartCard(def,index){
-  const rows=Math.min(10000,Math.max(50,...[...state.cells.keys()].map(key=>(F.coordinates(key)?.row||0)+1))),category=F.colIndex(def.category),value=F.colIndex(def.measure);
+  const populated=Math.max(50,...[...state.cells.keys()].map(key=>(F.coordinates(key)?.row||0)+1));
+  const rows=Math.min(10000,populated,Math.max(10,Math.floor(Number(def.maxRows)||500)));
+  const category=F.colIndex(def.category),value=F.colIndex(def.measure);
   if(category<0||category>25||value<0||value>25)return '';
   const calc=engine(),groups=new Map();
-  for(let r=1;r<rows;r++){
-   const label=cellText(F.address(r,category),calc);if(!label||String(label).startsWith('#'))continue;
-   const val=Number(cellText(F.address(r,value),calc));
-   const key=String(label).slice(0,35),entry=groups.get(key)||{sum:0,count:0};
-   if(def.aggregate==='count'||Number.isFinite(val)){entry.sum+=Number.isFinite(val)?val:0;entry.count++;groups.set(key,entry)}
+  for(let row=1;row<rows;row++){
+   const label=String(cellText(F.address(row,category),calc)||'').trim();
+   if(!label||label.startsWith('#'))continue;
+   const raw=Number(cellText(F.address(row,value),calc));
+   if(def.aggregate!=='count'&&!Number.isFinite(raw))continue;
+   const key=label.slice(0,45),entry=groups.get(key)||{sum:0,count:0};
+   entry.sum+=Number.isFinite(raw)?raw:0;entry.count++;groups.set(key,entry);
   }
-  const data=[...groups].slice(0,12).map(([name,v])=>({name,value:def.aggregate==='count'?v.count:def.aggregate==='average'?v.sum/v.count:v.sum}));
-  const colors=['#8268e8','#56b9a0','#73a7ec','#edb86f','#df859e','#8a85da','#75c9cf','#b7a2ef','#e0a4bf','#85b59c','#b7a4c8','#94b1ed'];
-  let inner='<text x="320" y="125" text-anchor="middle" fill="#7d88a0" font-size="15">Add column values to see the chart</text>';
+  const data=[...groups].slice(0,12).map(([name,v])=>({
+   name,value:def.aggregate==='count'?v.count:def.aggregate==='average'?(v.count?v.sum/v.count:0):v.sum
+  }));
+  const palette=['#8268e8','#56b9a0','#73a7ec','#edb86f','#df859e','#8a85da','#75c9cf','#b7a2ef','#e0a4bf','#85b59c','#b7a4c8','#94b1ed'];
+  if(/^#[0-9a-f]{6}$/i.test(def.color||''))palette[0]=def.color;
+  const numericLabel=(v)=>Number(v.toFixed(1));
+  let inner='<text x="320" y="125" text-anchor="middle" fill="#7d88a0" font-size="15">Add category and numeric values to see the chart</text>';
   if(data.length){
+   const lo=Math.min(0,...data.map(d=>d.value)),hi=Math.max(0,...data.map(d=>d.value));
+   const span=Math.max(1,hi-lo),position=v=>210-(v-lo)/span*150,zero=position(0);
+   const width=510/Math.max(1,data.length),x=i=>83+(i+.5)*width;
+   const labels=data.map((d,i)=>'<text x="'+x(i)+'" y="238" font-size="9.5" fill="currentColor" text-anchor="middle">'+esc(d.name.slice(0,9))+'</text>').join('');
    if(def.type==='pie'||def.type==='doughnut'){
     const positive=data.map(d=>Math.max(0,d.value)),total=positive.reduce((a,b)=>a+b,0);
     let acc=0;
     if(total>0){
      inner=data.map((d,i)=>{const fraction=positive[i]/total,from=acc;acc+=fraction;
-      return '<circle cx="230" cy="145" r="88" fill="none" stroke="'+colors[i%colors.length]+'" stroke-width="'+(def.type==='pie'?88:34)+'" stroke-dasharray="'+(fraction*552.92)+' '+552.92+'" stroke-dashoffset="'+(-from*552.92)+'" transform="rotate(-90 230 145)"/>';
+      return '<circle cx="225" cy="137" r="88" fill="none" stroke="'+palette[i%palette.length]+'" stroke-width="'+(def.type==='pie'?88:36)+'" stroke-dasharray="'+(fraction*552.92)+' '+552.92+'" stroke-dashoffset="'+(-from*552.92)+'" transform="rotate(-90 225 137)"/>';
      }).join('')+
-     data.map((d,i)=>'<rect x="370" y="'+(28+i*20)+'" width="10" height="10" fill="'+colors[i%colors.length]+'"/>'+
-      '<text x="387" y="'+(38+i*20)+'" font-size="10.5" fill="currentColor">'+esc(d.name.slice(0,18))+' ('+esc(d.value.toFixed(1))+')</text>').join('');
+     data.map((d,i)=>'<rect x="372" y="'+(18+i*20)+'" width="10" height="10" fill="'+palette[i%palette.length]+'"/>'+
+      '<text x="388" y="'+(28+i*20)+'" font-size="10.5" fill="currentColor">'+esc(d.name.slice(0,15))+' ('+esc(numericLabel(d.value))+')</text>').join('');
     }
+   }else if(def.type==='horizontal'){
+    const max=Math.max(1,...data.map(d=>Math.abs(d.value))),rowHeight=Math.min(22,220/Math.max(1,data.length));
+    inner=data.map((d,i)=>'<text x="8" y="'+(18+i*rowHeight+rowHeight/2)+'" font-size="10" fill="currentColor">'+esc(d.name.slice(0,15))+'</text>'+
+     '<rect x="125" y="'+(12+i*rowHeight)+'" width="'+(400*Math.abs(d.value)/max)+'" height="'+(rowHeight-4)+'" rx="3" fill="'+palette[i%palette.length]+'"/>'+
+     (def.showValues?'<text x="'+(130+400*Math.abs(d.value)/max)+'" y="'+(20+i*rowHeight)+'" font-size="10" fill="currentColor">'+esc(numericLabel(d.value))+'</text>':'')).join('');
    }else{
-    const max=Math.max(1,...data.map(x=>Math.abs(x.value))),width=520/(Math.max(1,data.length)),base=215;
-    inner='<line x1="65" y1="'+base+'" x2="613" y2="'+base+'" stroke="#aab4c5" stroke-width="1"/>'+
-      (def.type==='line'?
-       '<polyline fill="none" stroke="#785ae7" stroke-width="3" points="'+data.map((d,i)=>(85+i*width)+','+(base-155*Math.max(0,d.value)/max)).join(' ')+'"/>'+
-       data.map((d,i)=>'<circle cx="'+(85+i*width)+'" cy="'+(base-155*Math.max(0,d.value)/max)+'" r="5" fill="'+colors[i%colors.length]+'"/>').join(''):
-       data.map((d,i)=>'<rect x="'+(75+i*width)+'" y="'+(base-155*Math.max(0,d.value)/max)+'" width="'+Math.max(8,width-14)+'" height="'+(155*Math.max(0,d.value)/max)+'" rx="5" fill="'+colors[i%colors.length]+'"/>').join(''))+
-      data.map((d,i)=>'<text x="'+(85+i*width)+'" y="234" font-size="9.2" fill="currentColor" text-anchor="middle">'+esc(d.name.slice(0,9))+'</text>').join('');
+    inner='<line x1="64" y1="'+zero+'" x2="619" y2="'+zero+'" stroke="#9ba5ba" stroke-width="1"/>';
+    const pts=data.map((d,i)=>x(i)+','+position(d.value));
+    if(def.type==='area'){
+     inner+='<polygon points="'+x(0)+','+zero+' '+pts.join(' ')+' '+x(data.length-1)+','+zero+'" fill="'+palette[0]+'" opacity="0.2"/>';
+    }
+    if(def.type==='line'||def.type==='area'){
+     inner+='<polyline fill="none" stroke="'+palette[0]+'" stroke-width="3" stroke-linejoin="round" points="'+pts.join(' ')+'"/>';
+    }
+    inner+=data.map((d,i)=>{
+     const y=position(d.value),xx=x(i);
+     const shape=(def.type==='line'||def.type==='area'||def.type==='scatter')?
+      '<circle cx="'+xx+'" cy="'+y+'" r="'+(def.type==='scatter'?6:4)+'" fill="'+palette[i%palette.length]+'"/>':
+      '<rect x="'+(xx-width*.32)+'" y="'+Math.min(y,zero)+'" width="'+Math.max(7,width*.64)+'" height="'+Math.abs(y-zero)+'" rx="3" fill="'+palette[i%palette.length]+'"/>';
+     return shape+(def.showValues?'<text x="'+xx+'" y="'+(y-8)+'" font-size="9.5" text-anchor="middle" fill="currentColor">'+esc(numericLabel(d.value))+'</text>':'');
+    }).join('')+labels;
    }
   }
-  return '<div class="card sheet-chart"><div class="sheet-chart-header"><div><strong>'+esc(def.title||'Chart')+'</strong><small>'+esc(def.type)+' · '+esc(def.aggregate)+' · '+esc(def.category)+' / '+esc(def.measure)+'</small></div>'+
-   (canManage()?'<div class="actions"><button class="btn small" data-sheet-action="editChart" data-index="'+index+'">Edit</button><button class="btn small danger" data-sheet-action="deleteChart" data-index="'+index+'">Remove</button></div>':'')+'</div>'+
+  return '<div class="card sheet-chart"><div class="sheet-chart-header"><div><strong>'+esc(def.title||'Chart')+'</strong>'+
+   '<small>'+esc(def.type)+' · '+esc(def.aggregate)+' · '+esc(def.category)+' / '+esc(def.measure)+'</small></div>'+
+   (canManage()?'<div class="actions"><button class="btn small" data-sheet-action="editChart" data-index="'+index+'">Edit</button>'+
+   '<button class="btn small danger" data-sheet-action="deleteChart" data-index="'+index+'">Remove</button></div>':'')+'</div>'+
    '<svg viewBox="0 0 640 270" role="img" aria-label="'+esc(def.title||'Data chart')+'" class="sheet-chart-svg">'+inner+'</svg></div>';
  }
  function paint(){
