@@ -609,8 +609,8 @@
     }
     else if(action==='pasteCells')pasteCellsDialog();
     else if(action==='pasteSave')await pasteCellsSave();
-    else if(action==='rowPrev'){state.rowStart=Math.max(0,state.rowStart-50);state.selected=F.address(state.rowStart,0);paint()}
-    else if(action==='rowNext'){const total=global.NexaSheetTools?.view?.(0,0)?.total||10000;state.rowStart=Math.min(Math.floor((Math.max(1,total)-1)/50)*50,state.rowStart+50);paint()}
+    else if(action==='rowPrev'){state.rowStart=Math.max(0,state.rowStart-50);paint();const row=global.NexaSheetTools?.view?.(state.rowStart,1)?.rows?.[0];if(row!==undefined)selectCell(F.address(row,0))}
+    else if(action==='rowNext'){const total=global.NexaSheetTools?.view?.(0,0)?.total||10000;state.rowStart=Math.min(Math.floor((Math.max(1,total)-1)/50)*50,state.rowStart+50);paint();const row=global.NexaSheetTools?.view?.(state.rowStart,1)?.rows?.[0];if(row!==undefined)selectCell(F.address(row,0))}
     else if(action==='edit')await editCell(state.selected);
     else if(action==='undo')await replayHistory(false);
     else if(action==='redo')await replayHistory(true);
@@ -649,20 +649,33 @@
   }
  }
 
+ function displayRowIndex(address){
+  const p=F.coordinates(address);if(!p)return null;
+  const view=global.NexaSheetTools?.view?.(0,10000);
+  if(!view||view.total===10000&&!global.NexaSheetTools?.settings?.().sort&&!global.NexaSheetTools?.settings?.().filter)return p.row;
+  const index=view.rows.indexOf(p.row);
+  return index>=0?index:null;
+ }
  function visibleCell(address){
   const p=F.coordinates(address);if(!p)return;
-  const start=Math.floor(p.row/50)*50;
+  const index=displayRowIndex(address);
+  const start=Math.floor((index==null?p.row:index)/50)*50;
   if(start!==state.rowStart){state.rowStart=start;paint()}
   selectCell(address);
   state.root?.querySelector('[data-sheet-address="'+address+'"]')?.focus({preventScroll:true});
  }
  function moveSelection(dx,dy,extend=false){
   const p=F.coordinates(state.selected);if(!p)return;
-  const a=F.address(Math.max(0,Math.min(9999,p.row+dy)),Math.max(0,Math.min(25,p.col+dx)));
-  if(!a)return;
-  const start=Math.floor(F.coordinates(a).row/50)*50;
-  if(start!==state.rowStart){state.rowStart=start;paint()}
-  selectCell(a,extend);state.root?.querySelector('[data-sheet-address="'+a+'"]')?.focus({preventScroll:true});
+  const currentView=global.NexaSheetTools?.view?.(0,10000);
+  const displayed=currentView?.rows||Array.from({length:10000},(_,i)=>i);
+  const at=displayed.indexOf(p.row);
+  const nextIndex=Math.min(Math.max(0,at+dy),Math.max(0,displayed.length-1));
+  const row=dy&&at>=0?displayed[nextIndex]:p.row;
+  const target=F.address(row,Math.max(0,Math.min(25,p.col+dx)));
+  if(!target)return;
+  const targetPage=Math.floor((dy&&at>=0?nextIndex:Math.max(0,displayed.indexOf(row)))/50)*50;
+  if(targetPage!==state.rowStart){state.rowStart=targetPage;paint()}
+  selectCell(target,extend);state.root?.querySelector('[data-sheet-address="'+target+'"]')?.focus({preventScroll:true});
  }
  function selectionAddresses(){
   const p=F.coordinates(state.selected);if(!p)return [];
