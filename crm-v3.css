@@ -240,3 +240,16 @@ body.dark .sheet-grid td.offline-draft{background:#59472d!important;outline-colo
 /* Respect the workbook freeze toggle; normal header scrolling is not frozen. */
 .sheet-grid-scroller:not(.sx-freeze-rows) .sheet-grid thead th{position:static}
 .sheet-grid-scroller:not(.sx-freeze-rows) .sheet-grid thead .sheet-grid-corner{position:sticky;left:0;top:auto}
+
+
+/* NexaBridge Sheets: official Google editor entry point, separate from CRM-local worksheets. */
+.nexa-google-sheets{border:1px solid var(--stroke);background:var(--surface);border-radius:14px;padding:20px 21px;margin:0 0 20px}
+.nexa-google-title{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;flex-wrap:wrap}
+.nexa-google-title h2{margin:5px 0 7px;font-size:19px;font-weight:800;letter-spacing:-.35px}
+.nexa-google-title p{margin:0 0 12px;color:var(--muted);font-size:12px;max-width:660px;line-height:1.55}
+.nexa-google-links{display:grid;gap:7px;margin-top:8px}
+.nexa-google-file{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:11px;padding:10px 12px;border:1px solid var(--stroke);border-radius:10px;background:var(--surface2)}
+.nexa-google-file strong{display:block;font-size:13px}
+.nexa-google-file small{display:block;font-size:11px;color:var(--muted);margin-top:3px}
+.nexa-google-file .btn{min-height:32px;padding:7px 10px;font-size:11px}
+@media(max-width:700px){.nexa-google-sheets{padding:14px}.nexa-google-title .actions{width:100%}}
