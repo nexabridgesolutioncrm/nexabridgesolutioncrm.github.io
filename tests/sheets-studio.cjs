@@ -105,6 +105,49 @@ const wait=async(fn,description)=>{for(let i=0;i<180;i++){if(fn())return;await n
  root.querySelector('[data-sheet-action=saveChart]').click();
  await wait(()=>sheets[0].charts.length===1,'chart saved to Supabase mock');
  await wait(()=>root.querySelector('#sheetCharts')?.textContent.includes('Revenue by region'),'chart visible after async save');
+
+ // Owner configures conditional formatting without changing source values.
+ root.querySelector('[data-sheet-action="sf-format"]').click();
+ await wait(()=>root.querySelector('#sfFormatRange'),'conditional formatting dialog');
+ root.querySelector('#sfFormatRange').value='A1:A1';
+ root.querySelector('#sfFormatOperator').value='greater';
+ root.querySelector('#sfFormatValue').value='5';
+ root.querySelector('[data-sheet-action="sf-format-add"]').click();
+ await wait(()=>sheets[0].formatting_rules.length===1,'formatting rule persisted');
+ await wait(()=>root.querySelector('[data-sheet-address=A1]')?.getAttribute('style')?.includes('background:'),'rule applied to cell');
+ root.querySelector('[data-sheet-action=dismiss]').click();
+ // Protected cells are stored on sheet metadata and visibly indicated.
+ root.querySelector('[data-sheet-action="sf-protect"]').click();
+ await wait(()=>root.querySelector('#sfProtectRange'),'protected range dialog');
+ root.querySelector('#sfProtectRange').value='A1:A1';
+ root.querySelector('#sfProtectLabel').value='Approvals only';
+ root.querySelector('[data-sheet-action="sf-protect-add"]').click();
+ await wait(()=>sheets[0].protected_ranges.length===1,'range lock persisted');
+ root.querySelector('[data-sheet-action=dismiss]').click();
+ // A real two-dimensional pivot configuration is stored and rendered from cells.
+ root.querySelector('[data-sheet-action="sf-pivot"]').click();
+ await wait(()=>root.querySelector('#sfPivotTitle'),'pivot editor');
+ root.querySelector('#sfPivotTitle').value='Pipeline grouped report';
+ root.querySelector('#sfPivotRow').value='A';
+ root.querySelector('#sfPivotValue').value='B';
+ root.querySelector('[data-sheet-action="sf-pivot-save"]').click();
+ await wait(()=>sheets[0].pivot_configs.length===1,'pivot metadata saved');
+ assert.ok(root.querySelector('.sf-pivot'),'Pivot table generated');
+ // Threaded cell comments and audit history load via scoped API.
+ root.querySelector('[data-sheet-address=A1]').click();
+ root.querySelector('[data-sheet-action="sf-comments"]').click();
+ await wait(()=>root.querySelector('#sfCommentText'),'comment editor');
+ root.querySelector('#sfCommentText').value='Call lead after five';
+ root.querySelector('[data-sheet-action="sf-post"]').click();
+ await wait(()=>comments.length===1,'comment stored');
+ await wait(()=>root.querySelector('.sf-comment')?.textContent.includes('Call lead after five'),'comment rendered');
+ root.querySelector('[data-sheet-action=dismiss]').click();
+ assert.ok(root.querySelector('[data-sheet-address=A1]')?.classList.contains('commented-cell'),'Cell displays a comment marker');
+ root.querySelector('[data-sheet-action="sf-history"]').click();
+ await wait(()=>root.querySelector('.sf-revision'),'audit history rendered');
+ assert.ok(root.querySelector('.sf-revision').textContent.includes('Revision 1'));
+ root.querySelector('[data-sheet-action=dismiss]').click();
+
  
  // Multi-cell paste and copy ranges preserve the real cell write path.
  root.querySelector('[data-sheet-action=pasteCells]').click();
@@ -153,6 +196,7 @@ const wait=async(fn,description)=>{for(let i=0;i<180;i++){if(fn())return;await n
  assert.equal(viewerRoot.querySelector('[data-sheet-action=save]'),null,'Viewer cannot save cells');
  assert.equal(viewerRoot.querySelector('[data-sheet-action=pasteCells]'),null,'Viewer cannot bulk paste');
  assert.equal(viewerRoot.querySelector('[data-sheet-action=chart]'),null,'Viewer cannot create charts');
+ assert.ok(viewerRoot.querySelector('[data-sheet-address=A1]').classList.contains('protected-cell'),'Viewer sees protected range');
  const writesBefore=calls.filter(x=>x.path.endsWith('/cell')).length;
  viewerRoot.querySelector('[data-sheet-address=A1]').dispatchEvent(new win.MouseEvent('dblclick',{bubbles:true}));
  assert.equal(viewerRoot.querySelector('.studio-in-cell-editor'),null,'Viewer cannot inline-edit a cell');
