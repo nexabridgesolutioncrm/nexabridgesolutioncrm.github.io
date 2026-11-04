@@ -102,13 +102,22 @@ async function adapter(input,init={}){
  if(path==='data'&&method==='GET')return reply(await getData());
  // Sheets Studio: independently stored spreadsheet cells. Every row is org-scoped and RLS-protected.
  if(path==='sheets'&&method==='GET'){
-  const sheets=await secured('/rest/v1/crm_spreadsheets?select=id,name,created_at,updated_at,charts,formatting_rules,pivot_configs,protected_ranges&org_id=eq.'+encodeURIComponent(orgId)+'&order=updated_at.desc&limit=100');
+  const sheets=await secured('/rest/v1/crm_spreadsheets?select=id,name,parent_id,created_at,updated_at,charts,formatting_rules,pivot_configs,protected_ranges&org_id=eq.'+encodeURIComponent(orgId)+'&order=updated_at.desc&limit=100');
   return reply(sheets);
  }
  if(path==='sheets'&&method==='POST'){
   if(!['owner','admin','agent'].includes(member?.role))return err('Read-only account',403);
   const name=String(b.name||'').trim().slice(0,120);if(!name)return err('Sheet name is required',400);
-  const rows=await secured('/rest/v1/crm_spreadsheets?select=*&org_id=eq.'+encodeURIComponent(orgId),{method:'POST',body:{org_id:orgId,name,created_by:member.id},prefer:'return=representation'});
+  let parentId=null;
+  if(b.parentId){
+   parentId=String(b.parentId);
+   if(!/^[a-f0-9-]{36}$/i.test(parentId))return err('Invalid workbook ID');
+   const found=await secured('/rest/v1/crm_spreadsheets?select=id&id=eq.'+encodeURIComponent(parentId)+'&parent_id=is.null&org_id=eq.'+encodeURIComponent(orgId)+'&limit=1');
+   if(!found.length)return err('Workbook not found or access denied',404);
+   const tabs=await secured('/rest/v1/crm_spreadsheets?select=id&parent_id=eq.'+encodeURIComponent(parentId)+'&org_id=eq.'+encodeURIComponent(orgId)+'&limit=20');
+   if(tabs.length>=19)return err('Maximum 20 tabs per workbook');
+  }
+  const rows=await secured('/rest/v1/crm_spreadsheets?select=*&org_id=eq.'+encodeURIComponent(orgId),{method:'POST',body:{org_id:orgId,name,created_by:member.id,parent_id:parentId},prefer:'return=representation'});
   return reply(rows[0],201);
  }
  const sheetMatch=/^sheets\/([a-f0-9-]{36})(?:\/(cell|bulk|comments|history)(?:\/([A-Z]{1,3}[1-9][0-9]{0,4}))?)?$/.exec(path);
@@ -128,6 +137,11 @@ async function adapter(input,init={}){
   if(!action&&method==='PATCH'){
    if(!['owner','admin'].includes(member?.role))return err('Only Owner/Admin can edit spreadsheet configurations',403);
    const changes={},allowedCharts=['bar','line','pie','doughnut','area','scatter','horizontal'];
+   if(Object.prototype.hasOwnProperty.call(b,'name')){
+    const newName=String(b.name||'').trim();
+    if(!newName||newName.length>120)return err('Invalid spreadsheet name',400);
+    changes.name=newName;
+   }
    if(Object.prototype.hasOwnProperty.call(b,'charts')){
     if(!Array.isArray(b.charts)||b.charts.length>30||JSON.stringify(b.charts).length>16000)return err('Invalid chart definitions');
     changes.charts=b.charts.map(c=>({id:String(c.id||'').slice(0,45),title:String(c.title||'Chart').slice(0,80),
