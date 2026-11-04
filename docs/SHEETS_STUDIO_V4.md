@@ -53,3 +53,12 @@ The CRM's original spreadsheet-like grids remain intact and have their own limit
 - Scripts: integrations/SheetsStudioAppsScript.gs and integrations/SheetsStudioAppsScript.appsscript.json.
 
 Tests use a simulated backend; true multi-person collaborative acceptance testing and Google OAuth user authorization remain to be performed with real accounts before calling this fully production-hardened.
+
+## Reliability patch 4.2.0 (2026-11-04)
+
+- Viewer permissions are enforced in Sheets Studio controls: read-only formula bar and no create, paste, chart-edit or save actions. Backend RLS remains the authorization boundary.
+- Leaving Sheets Studio clears browser-memory sheet lists, cell contents and account state. Late asynchronous requests from an older user session cannot repaint the next account's workspace.
+- Revision conflicts show a recovery dialog containing the exact unsaved cell value; the user can copy it without overwriting the remote edit.
+- CSV export prefixes dangerous spreadsheet-leading characters with a literal apostrophe to mitigate CSV formula injection.
+- CI now tests a viewer switching onto the same device and preserves unsaved values during concurrent edits.
+- This patch does not alter existing production CRM or Sheets data.
