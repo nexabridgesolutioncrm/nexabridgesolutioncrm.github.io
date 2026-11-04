@@ -285,7 +285,14 @@
   selectCell(address);state.editing=address;
   const input=document.createElement('input');
   input.className='studio-in-cell-editor';input.value=initialValue===undefined?dataCell(address).raw_value:initialValue;input.setAttribute('aria-label','Edit cell '+address);
-  node.replaceChildren(input);input.focus();if(initialValue===undefined)input.select();else input.setSelectionRange(input.value.length,input.value.length);
+  const choices=global.NexaSheetTools?.choices?.(address)||[];
+  if(choices.length){
+   const list=document.createElement('datalist');
+   list.id='studioChoices-'+address;
+   for(const value of choices){const option=document.createElement('option');option.value=value;list.appendChild(option)}
+   input.setAttribute('list',list.id);node.replaceChildren(input,list);
+  }else node.replaceChildren(input);
+  input.focus();if(initialValue===undefined)input.select();else input.setSelectionRange(input.value.length,input.value.length);
   let finished=false;
   async function finish(save){
    if(finished)return;finished=true;
