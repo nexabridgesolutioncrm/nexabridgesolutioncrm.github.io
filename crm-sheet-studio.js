@@ -14,8 +14,8 @@
  const api=(path,opts)=>state.api(path,opts||{});
  function notice(message,error=false){state.status=String(message||'');const label=state.root?.querySelector('#sheetStatus');if(label){label.textContent=state.status;label.classList.toggle('bad',error)}}
  function dataCell(addr){return state.cells.get(addr)||{address:addr,raw_value:'',revision:0}}
- function engine(){return new F.FormulaEngine(state.cells)}
- function cellText(addr,formula){const raw=dataCell(addr).raw_value;return raw[0]==='='?display(formula.evaluateCell(addr)):raw}
+ function engine(){return new F.FormulaEngine(state.cells,global.NexaSheetFeatures?.external?.()||new Map())}
+ function cellText(addr,formula){return display(formula.displayCell(addr))}
  function setCells(rows){state.cells=new Map((rows||[]).map(x=>[x.address,x]))}
  function escapeAttr(v){return esc(v)}
  function removeRemote(){
@@ -24,6 +24,7 @@
   state.client=null;state.realtime=false;state.presence=[];
  }
  function leave(){
+  global.NexaSheetOffline?.leave?.();global.NexaSheetFeatures?.reset?.();
   state.generation++;removeRemote();
   state.root=null;state.user=null;state.api=null;state.list=[];state.active=null;
   state.cells.clear();state.selected='A1';state.anchor='A1';state.range=false;
@@ -56,24 +57,25 @@
   const body='<tbody>'+Array.from({length:rows},(_,r)=>
    '<tr><th class="sheet-grid-row-head">'+(state.rowStart+r+1)+'</th>'+
    Array.from({length:cols},(_,c)=>{const address=F.address(state.rowStart+r,c),entry=dataCell(address),value=cellText(address,calc);
+    const decor=global.NexaSheetFeatures?.cellDecoration?.(address,value)||{className:'',style:''};
     return '<td data-sheet-address="'+address+'" tabindex="0" class="sheet-studio-cell'+
-     (address===selected?' selected':'')+(rangeIncludes(address)?' range-selected':'')+(state.presence.some(p=>p.cell===address&&p.id!==state.user?.id)?' peer-active':'')+(entry.raw_value.startsWith('=')?' formula':'')+'">'+
+     (address===selected?' selected':'')+(rangeIncludes(address)?' range-selected':'')+(state.presence.some(p=>p.cell===address&&p.id!==state.user?.id)?' peer-active':'')+(entry.raw_value.startsWith('=')?' formula':'')+decor.className+(entry.offline?' offline-draft':'')+'"'+decor.style+'> '+
      '<span>'+esc(value).slice(0,800)+'</span></td>';
    }).join('')+'</tr>'
   ).join('')+'</tbody>';
   return header()+'<section class="sheet-studio-toolbar">'+
    '<div class="sheet-studio-title"><strong>▦ '+esc(name)+'</strong><small>'+state.cells.size+' saved cells</small></div>'+
-   '<div class="actions"><button class="btn" data-sheet-action="refresh">↻ Refresh</button><button class="btn" data-sheet-action="copyCells">Copy range</button>'+(canCreate()?'<button class="btn" data-sheet-action="pasteCells">Paste cells</button>':'')+
+   '<div class="actions"><button class="btn" data-sheet-action="refresh">↻ Refresh</button>'+(global.NexaSheetOffline?.toolbar?.()||'')+(global.NexaSheetFeatures?.toolbar?.()||'')+'<button class="btn" data-sheet-action="copyCells">Copy range</button>'+(canCreate()?'<button class="btn" data-sheet-action="pasteCells">Paste cells</button>':'')+
    (canManage()?'<button class="btn" data-sheet-action="chart">＋ New chart</button>':'')+
    '<button class="btn" data-sheet-action="export">↓ Export CSV</button>'+
    (canCreate()?'<button class="btn" data-sheet-action="import">↑ Import XLSX</button>':'')+'</div></section>'+
-   '<div class="sheet-formula-bar"><span id="studioNameBox">'+esc(selected)+'</span>'+
+   (global.NexaSheetFeatures?.banner?.()||'')+'<div class="sheet-formula-bar"><span id="studioNameBox">'+esc(selected)+'</span>'+
    '<span class="sheet-fx">ƒx</span><input id="studioFormulaBar" aria-label="Cell formula or value" '+(canCreate()?'':'readonly ')+'value="'+escapeAttr(dataCell(selected).raw_value)+'" placeholder="'+(canCreate()?'Enter text or =SUM(A1:A10)':'Read-only cell · select to inspect')+'">'+
    (canCreate()?'<button class="btn primary" data-sheet-action="save">Save cell</button>':'<span class="sheet-readonly-note">Read-only workspace</span>')+'</div>'+
    '<div class="sheet-grid-scroller"><table id="studioGrid" class="sheet-grid">'+head+body+'</table></div>'+ '<div class="sheet-rowpager"><span>Rows '+(state.rowStart+1)+'–'+(state.rowStart+50)+' · 26 columns</span><div class="actions"><button class="btn small" data-sheet-action="rowPrev" '+(state.rowStart===0?'disabled':'')+'>← Previous 50</button><button class="btn small" data-sheet-action="rowNext" '+(state.rowStart>=9950?'disabled':'')+'>Next 50 →</button></div></div>'+
    '<p class="sheet-studio-instructions">'+(canCreate()?'Select any cell, then type in the formula bar or double-click it. Formulas begin with =. Updates are saved with revision checks, so conflicting edits cannot overwrite silently.':'This account can browse, calculate and export cells. Only authorized members can edit.')+'</p>'+
    '<div class="sheet-chart-section"><div class="sheet-section-title"><h2>Charts</h2><span>Live calculations from the sheet</span></div>'+
-   '<div class="sheet-chart-grid" id="sheetCharts">'+chartsHTML()+'</div></div>'+
+   '<div class="sheet-chart-grid" id="sheetCharts">'+chartsHTML()+'</div></div>'+(global.NexaSheetFeatures?.panels?.()||'')+
    '<div id="studioModalHost"></div>';
  }
  function chartsHTML(){
